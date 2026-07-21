@@ -97,22 +97,4 @@ async function atualizarTemposReparo(atualizacoes) {
   }
 }
 
-async function getArmariosNaoMapeados() {
-  const [rows] = await pool.query(
-    `SELECT b.ARMARIO AS armario, COUNT(*) AS backlogReparos
-     FROM backlog_elos b
-     LEFT JOIN depara_bucket d ON d.ARMARIO = b.ARMARIO
-     WHERE d.ARMARIO IS NULL
-       AND b.CLUSTER_ = ?
-       AND b.SPECIFICATION_TYPE = ?
-       AND b.ARMARIO IS NOT NULL AND b.ARMARIO <> ''
-       AND ${CONDICOES_BACKLOG_ABERTO}
-     GROUP BY b.ARMARIO
-     ORDER BY backlogReparos DESC`,
-    [CLUSTER_ESCOPO, SPECIFICATION_TYPE_REPARO]
-  );
-
-  return rows;
-}
-
-module.exports = { getResumoBuckets, getArmariosNaoMapeados, getTemposReparo, atualizarTemposReparo };
+module.exports = { getResumoBuckets, getTemposReparo, atualizarTemposReparo };

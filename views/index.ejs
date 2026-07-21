@@ -119,18 +119,18 @@
         <tr>
           <th rowspan="2" title="Empresa aliada responsável pelo bucket">Aliada</th>
           <th rowspan="2" title="Agrupamento de armários (BKT) mapeado em depara_bucket">Bucket</th>
-          <th colspan="2" class="group-header col-backlog" title="Quantidade de reparos em aberto e a meta calculada sobre eles">BACKLOG</th>
-          <th colspan="2" class="group-header col-ordens" title="Previsto dividido entre as duas janelas de horário">ORDENS</th>
-          <th colspan="2" class="group-header col-minutos" title="Ordens de cada janela × tempo de reparo do bucket (depara_tempo_bucket)">COTAS(min)</th>
-          <th rowspan="2" class="num" title="Produção Única = Previsto × PU do reparo">PU</th>
+          <th colspan="2" class="group-header col-backlog col-divider" title="Quantidade de reparos em aberto e a meta calculada sobre eles">BACKLOG</th>
+          <th colspan="2" class="group-header col-ordens col-divider" title="Previsto dividido entre as duas janelas de horário">ORDENS</th>
+          <th colspan="2" class="group-header col-minutos col-divider" title="Ordens de cada janela × tempo de reparo do bucket (depara_tempo_bucket)">COTAS(min)</th>
+          <th rowspan="2" class="num col-divider" title="Produção Única = Previsto × PU do reparo">PU</th>
           <th rowspan="2" class="num" title="Técnicos necessários = PU ÷ Meta de PU por técnico, arredondado para cima (não existe fração de técnico)">Técnicos</th>
         </tr>
         <tr>
-          <th class="num col-backlog" title="Total de chamados de reparo em aberto no bucket (regra de backlog no topo da página)">Backlog Reparos</th>
+          <th class="num col-backlog col-divider" title="Total de chamados de reparo em aberto no bucket (regra de backlog no topo da página)">Backlog Reparos</th>
           <th class="num col-backlog" title="Backlog Reparos × percentual configurado na engrenagem">Previsto (<%= percentual %>%)</th>
-          <th class="num col-ordens" title="Parte do Previsto alocada para a janela 08:30-12:30">08:30 - 12:30</th>
+          <th class="num col-ordens col-divider" title="Parte do Previsto alocada para a janela 08:30-12:30">08:30 - 12:30</th>
           <th class="num col-ordens" title="Restante do Previsto: janela 12:30-18:00">12:30 - 18:00</th>
-          <th class="num col-minutos" title="Ordens de 08:30-12:30 × tempo de reparo do bucket">08:30 - 12:30</th>
+          <th class="num col-minutos col-divider" title="Ordens de 08:30-12:30 × tempo de reparo do bucket">08:30 - 12:30</th>
           <th class="num col-minutos" title="Ordens de 12:30-18:00 × tempo de reparo do bucket">12:30 - 18:00</th>
         </tr>
       </thead>
@@ -141,13 +141,18 @@
           <tr class="<%= novaAliada ? 'group-start' : '' %>">
             <td><span class="aliada-badge aliada-color-<%= aliadaCores[linha.aliada] %>"><%= linha.aliada %></span></td>
             <td><%= linha.bucket %></td>
-            <td class="<%= numCls('col-backlog', linha.backlogReparos) %>"><%= linha.backlogReparos %></td>
+            <td class="<%= numCls('col-backlog', linha.backlogReparos) %> col-divider">
+              <%= linha.backlogReparos %>
+              <% if (linha.maiorVolume) { %>
+                <svg class="volume-flag" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" title="Um dos <%= 3 %> buckets com maior volume de backlog"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+              <% } %>
+            </td>
             <td class="<%= numCls('col-backlog', linha.previstoResolucao) %>"><%= linha.previstoResolucao %></td>
-            <td class="<%= numCls('col-ordens', linha.janela0830_1230) %>"><%= linha.janela0830_1230 %></td>
+            <td class="<%= numCls('col-ordens', linha.janela0830_1230) %> col-divider"><%= linha.janela0830_1230 %></td>
             <td class="<%= numCls('col-ordens', linha.janela1230_1800) %>"><%= linha.janela1230_1800 %></td>
-            <td class="<%= numCls('col-minutos', linha.minutos0830_1230) %>"><%= linha.minutos0830_1230 %></td>
+            <td class="<%= numCls('col-minutos', linha.minutos0830_1230) %> col-divider"><%= linha.minutos0830_1230 %></td>
             <td class="<%= numCls('col-minutos', linha.minutos1230_1800) %>"><%= linha.minutos1230_1800 %></td>
-            <td class="<%= numCls('', linha.pu) %>"><%= linha.pu %></td>
+            <td class="<%= numCls('', linha.pu) %> col-divider"><%= linha.pu %></td>
             <td class="<%= numCls('', linha.tecnicos) %>"><%= linha.tecnicos %></td>
           </tr>
         <% }) %>
@@ -155,51 +160,18 @@
       <tfoot>
         <tr>
           <td colspan="2" title="Soma de todos os buckets do cluster GOIANIA">Total geral</td>
-          <td class="<%= numCls('col-backlog', totalGeral) %>"><%= totalGeral %></td>
+          <td class="<%= numCls('col-backlog', totalGeral) %> col-divider"><%= totalGeral %></td>
           <td class="<%= numCls('col-backlog', totalPrevisto) %>"><%= totalPrevisto %></td>
-          <td class="<%= numCls('col-ordens', totalJanela0830_1230) %>"><%= totalJanela0830_1230 %></td>
+          <td class="<%= numCls('col-ordens', totalJanela0830_1230) %> col-divider"><%= totalJanela0830_1230 %></td>
           <td class="<%= numCls('col-ordens', totalJanela1230_1800) %>"><%= totalJanela1230_1800 %></td>
-          <td class="<%= numCls('col-minutos', totalMinutos0830_1230) %>"><%= totalMinutos0830_1230 %></td>
+          <td class="<%= numCls('col-minutos', totalMinutos0830_1230) %> col-divider"><%= totalMinutos0830_1230 %></td>
           <td class="<%= numCls('col-minutos', totalMinutos1230_1800) %>"><%= totalMinutos1230_1800 %></td>
-          <td class="<%= numCls('', totalPu) %>"><%= totalPu %></td>
+          <td class="<%= numCls('', totalPu) %> col-divider"><%= totalPu %></td>
           <td class="<%= numCls('', totalTecnicos) %>"><%= totalTecnicos %></td>
         </tr>
       </tfoot>
     </table>
   </div>
 </section>
-
-<% if (naoMapeados.length > 0) { %>
-<section class="panel panel-warning">
-  <div class="panel-header">
-    <h2 title="Armários com backlog aberto que ainda não têm bucket cadastrado em depara_bucket">
-      <svg class="title-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
-      Armários sem bucket mapeado
-    </h2>
-    <p class="hint">
-      Registros de <code>backlog_elos</code> (cluster GOIANIA) cujo ARMARIO não existe em <code>depara_bucket</code>.
-      Atualize o depara para incluir estes armários.
-    </p>
-  </div>
-  <div class="table-scroll">
-    <table class="cotas-table">
-      <thead>
-        <tr>
-          <th title="Código do armário em backlog_elos sem correspondência em depara_bucket">Armário</th>
-          <th class="num" title="Quantidade de chamados de reparo em aberto neste armário">Backlog Reparos</th>
-        </tr>
-      </thead>
-      <tbody>
-        <% naoMapeados.forEach(item => { %>
-          <tr>
-            <td><%= item.armario %></td>
-            <td class="num"><%= item.backlogReparos %></td>
-          </tr>
-        <% }) %>
-      </tbody>
-    </table>
-  </div>
-</section>
-<% } %>
 
 <%- include('partials/footer') %>

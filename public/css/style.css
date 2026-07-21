@@ -7,8 +7,6 @@
   --border: #e3e5e8;
   --accent: #6c3ce0;
   --accent-contrast: #ffffff;
-  --warning-bg: #fff8ec;
-  --warning-border: #f2c265;
   --aliada-0-bg: #fde3ce;
   --aliada-0-fg: #c15a08;
   --aliada-1-bg: #e0edfb;
@@ -31,8 +29,6 @@
     --text: #eef0f3;
     --muted: #9aa1ac;
     --border: #2c2f38;
-    --warning-bg: #2a2416;
-    --warning-border: #7a5a1e;
     --aliada-0-bg: #4a3018;
     --aliada-0-fg: #f5a862;
     --aliada-1-bg: #1c2e47;
@@ -110,11 +106,6 @@ body {
   border: 1px solid var(--border);
   border-radius: 10px;
   padding: 1.5rem;
-}
-
-.panel-warning {
-  background: var(--warning-bg);
-  border-color: var(--warning-border);
 }
 
 .panel-header h2 {
@@ -349,6 +340,10 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
+.cotas-table tbody td.num {
+  font-weight: 500;
+}
+
 .cotas-table tbody tr.group-start td,
 .tempo-table tbody tr.group-start td {
   border-top: 2px solid var(--border);
@@ -372,6 +367,24 @@ body {
 
 .cotas-table .col-divider {
   border-left: 1px solid var(--col-divider);
+}
+
+.volume-flag {
+  color: var(--accent);
+  vertical-align: middle;
+  margin-left: 0.1rem;
+  animation: volume-flag-bounce 1.2s ease-in-out infinite;
+}
+
+@keyframes volume-flag-bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .volume-flag {
+    animation: none;
+  }
 }
 
 .aliada-badge {

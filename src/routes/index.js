@@ -1,7 +1,6 @@
 const express = require('express');
 const {
   getResumoBuckets,
-  getArmariosNaoMapeados,
   getTemposReparo,
   atualizarTemposReparo,
 } = require('../services/bucketService');
@@ -13,6 +12,8 @@ const PERCENTUAL_JANELA_PADRAO = 70;
 const PU_REPARO_PADRAO = 0.80;
 const META_PU_TECNICO_PADRAO = 2.9;
 const ALIADA_COR_QTD = 4;
+// Quantos buckets (por maior Backlog Reparos) ganham a setinha de destaque na tabela.
+const TOP_N_VOLUME = 3;
 
 // Mapa aliada -> índice de cor (0..ALIADA_COR_QTD-1), na ordem em que cada aliada aparece,
 // reaproveitado tanto na tabela de resumo quanto na lista de tempos de reparo do modal.
@@ -53,17 +54,24 @@ router.get('/', async (req, res, next) => {
     const puReparo = normalizarPu(req.query.puReparo, PU_REPARO_PADRAO);
     const metaPuTecnico = normalizarMetaPuTecnico(req.query.metaPuTecnico, META_PU_TECNICO_PADRAO);
 
-    const [{ linhas, totalGeral }, naoMapeados, temposReparo] = await Promise.all([
+    const [{ linhas, totalGeral }, temposReparo] = await Promise.all([
       getResumoBuckets(),
-      getArmariosNaoMapeados(),
       getTemposReparo(),
     ]);
+
+    // Ranking por Backlog Reparos: os TOP_N_VOLUME primeiros ganham a setinha de maior volume.
+    const rankBacklog = new Map(
+      [...linhas]
+        .sort((a, b) => b.backlogReparos - a.backlogReparos)
+        .map((l, i) => [l.bucket, i])
+    );
 
     const linhasComPrevisto = linhas.map(linha => {
       const previstoResolucao = Math.round(linha.backlogReparos * percentual / 100);
       const janela0830_1230 = Math.round(previstoResolucao * percentualJanela / 100);
       const janela1230_1800 = previstoResolucao - janela0830_1230;
       const pu = Math.round(previstoResolucao * puReparo * 100) / 100;
+      const rank = rankBacklog.get(linha.bucket);
       return {
         ...linha,
         previstoResolucao,
@@ -73,6 +81,7 @@ router.get('/', async (req, res, next) => {
         minutos1230_1800: janela1230_1800 * linha.tempoReparoMinutos,
         pu,
         tecnicos: Math.ceil(pu / metaPuTecnico),
+        maiorVolume: linha.backlogReparos > 0 && rank < TOP_N_VOLUME,
       };
     });
 
@@ -90,7 +99,6 @@ router.get('/', async (req, res, next) => {
       totalMinutos1230_1800: linhasComPrevisto.reduce((acc, l) => acc + l.minutos1230_1800, 0),
       totalPu,
       totalTecnicos: Math.ceil(totalPu / metaPuTecnico),
-      naoMapeados,
       percentual,
       percentualJanela,
       puReparo,
