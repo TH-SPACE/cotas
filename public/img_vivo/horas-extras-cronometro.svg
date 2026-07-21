@@ -1,0 +1,36 @@
+<svg width="256" height="256" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="cronRoxo" x1="48" y1="48" x2="208" y2="224" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#660099"/>
+      <stop offset="1" stop-color="#9B26B6"/>
+    </linearGradient>
+    <linearGradient id="cronArco" x1="70" y1="70" x2="186" y2="200" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#EB3C96"/>
+      <stop offset="1" stop-color="#B026C4"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Botão superior -->
+  <rect x="112" y="24" width="32" height="20" rx="6" fill="#FFFFFF"/>
+  <line x1="128" y1="44" x2="128" y2="58" stroke="#FFFFFF" stroke-width="10" stroke-linecap="round"/>
+
+  <!-- Corpo do cronômetro -->
+  <circle cx="128" cy="150" r="86" fill="url(#cronRoxo)"/>
+  <circle cx="128" cy="150" r="86" fill="none" stroke="#FFFFFF" stroke-opacity="0.15" stroke-width="6"/>
+
+  <!-- Arco de progresso (tempo além do normal) -->
+  <path d="M128 78 A72 72 0 1 1 66 186" fill="none" stroke="url(#cronArco)"
+        stroke-width="14" stroke-linecap="round"/>
+
+  <!-- Marcadores -->
+  <g fill="#FFFFFF" opacity="0.85">
+    <rect x="124" y="96"  width="8" height="16" rx="4"/>
+    <rect x="124" y="188" width="8" height="16" rx="4"/>
+    <rect x="82"  y="146" width="16" height="8" rx="4"/>
+    <rect x="158" y="146" width="16" height="8" rx="4"/>
+  </g>
+
+  <!-- Ponteiro -->
+  <line x1="128" y1="150" x2="160" y2="118" stroke="#FFFFFF" stroke-width="10" stroke-linecap="round"/>
+  <circle cx="128" cy="150" r="9" fill="#FFFFFF"/>
+</svg>

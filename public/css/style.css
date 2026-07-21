@@ -49,6 +49,12 @@ body {
   gap: 0.5rem;
 }
 
+.topbar-logo {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+}
+
 .badge {
   background: var(--accent);
   color: var(--accent-contrast);
@@ -65,7 +71,7 @@ body {
 }
 
 .container {
-  max-width: 900px;
+  max-width: 1400px;
   margin: 2rem 0;
   padding: 0 1.5rem;
   display: flex;
@@ -88,6 +94,14 @@ body {
 .panel-header h2 {
   margin: 0 0 0.25rem;
   font-size: 1.05rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.title-icon {
+  color: var(--muted);
+  flex-shrink: 0;
 }
 
 .panel-header-row {
@@ -127,7 +141,9 @@ body {
   border: 1px solid var(--border);
   border-radius: 10px;
   padding: 0;
-  width: min(360px, 90vw);
+  width: min(600px, 94vw);
+  max-height: 92vh;
+  overflow-y: auto;
   background: var(--panel-bg);
   color: var(--text);
 }
@@ -215,6 +231,50 @@ body {
   opacity: 0.9;
 }
 
+.modal-section-divider {
+  border-top: 1px solid var(--border);
+}
+
+.modal-subtitle {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.modal-body-scroll {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.6rem 1rem;
+}
+
+.modal-body-scroll .field-row {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.25rem;
+}
+
+.modal-body-scroll .field-row label {
+  font-size: 0.75rem;
+  line-height: 1.25;
+}
+
+.modal-body-scroll .field-input {
+  width: 100%;
+}
+
+.modal-body-scroll .field-input input {
+  flex: 1;
+  width: auto;
+  min-width: 0;
+}
+
+.table-scroll {
+  width: 100%;
+  overflow-x: auto;
+}
+
 .cotas-table {
   width: 100%;
   border-collapse: collapse;
@@ -235,6 +295,11 @@ body {
   font-size: 0.78rem;
   text-transform: uppercase;
   letter-spacing: 0.03em;
+}
+
+.cotas-table thead th.group-header {
+  text-align: center;
+  border-bottom: 1px solid var(--border);
 }
 
 .cotas-table tfoot td {

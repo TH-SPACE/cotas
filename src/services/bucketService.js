@@ -19,14 +19,17 @@ async function getResumoBuckets() {
     `SELECT
        d.ALIADA AS aliada,
        d.BKT AS bucket,
-       COUNT(b.COD_SS) AS backlogReparos
+       COUNT(b.COD_SS) AS backlogReparos,
+       COALESCE(t.REPARO, 0) AS tempoReparoMinutos
      FROM depara_bucket d
      LEFT JOIN backlog_elos b
        ON b.ARMARIO = d.ARMARIO
        AND b.CLUSTER_ = ?
        AND b.SPECIFICATION_TYPE = ?
        AND ${CONDICOES_BACKLOG_ABERTO}
-     GROUP BY d.ALIADA, d.BKT
+     LEFT JOIN depara_tempo_bucket t
+       ON t.BUCKET = d.BKT
+     GROUP BY d.ALIADA, d.BKT, t.REPARO
      ORDER BY d.ALIADA, d.BKT`,
     [CLUSTER_ESCOPO, SPECIFICATION_TYPE_REPARO]
   );
@@ -34,6 +37,37 @@ async function getResumoBuckets() {
   const totalGeral = rows.reduce((acc, row) => acc + row.backlogReparos, 0);
 
   return { linhas: rows, totalGeral };
+}
+
+async function getTemposReparo() {
+  const [rows] = await pool.query(
+    `SELECT ALIADA AS aliada, BUCKET AS bucket, REPARO AS reparo
+     FROM depara_tempo_bucket
+     ORDER BY ALIADA, BUCKET`
+  );
+
+  return rows;
+}
+
+// Atualiza por BUCKET (não pelo par ALIADA+BUCKET) porque o nome do bucket já é
+// único na tabela e a ALIADA de origem pode divergir de depara_bucket (ex.: BKT_ITABERAI).
+async function atualizarTemposReparo(atualizacoes) {
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+    for (const { bucket, reparo } of atualizacoes) {
+      await conn.query(
+        `UPDATE depara_tempo_bucket SET REPARO = ? WHERE BUCKET = ?`,
+        [reparo, bucket]
+      );
+    }
+    await conn.commit();
+  } catch (err) {
+    await conn.rollback();
+    throw err;
+  } finally {
+    conn.release();
+  }
 }
 
 async function getArmariosNaoMapeados() {
@@ -54,4 +88,4 @@ async function getArmariosNaoMapeados() {
   return rows;
 }
 
-module.exports = { getResumoBuckets, getArmariosNaoMapeados };
+module.exports = { getResumoBuckets, getArmariosNaoMapeados, getTemposReparo, atualizarTemposReparo };

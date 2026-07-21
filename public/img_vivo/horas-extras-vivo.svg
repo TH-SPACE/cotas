@@ -1,0 +1,39 @@
+<svg width="256" height="256" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="vivoRoxo" x1="40" y1="40" x2="216" y2="216" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#660099"/>
+      <stop offset="1" stop-color="#9B26B6"/>
+    </linearGradient>
+    <linearGradient id="vivoBadge" x1="168" y1="168" x2="232" y2="232" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#EB3C96"/>
+      <stop offset="1" stop-color="#8B1FB0"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Corpo do relógio -->
+  <circle cx="116" cy="116" r="82" fill="url(#vivoRoxo)"/>
+  <circle cx="116" cy="116" r="82" fill="none" stroke="#FFFFFF" stroke-opacity="0.15" stroke-width="6"/>
+
+  <!-- Marcadores de hora -->
+  <g fill="#FFFFFF" opacity="0.85">
+    <rect x="112" y="46"  width="8" height="18" rx="4"/>
+    <rect x="112" y="168" width="8" height="18" rx="4"/>
+    <rect x="46"  y="112" width="18" height="8" rx="4"/>
+    <rect x="168" y="112" width="18" height="8" rx="4"/>
+  </g>
+
+  <!-- Ponteiros -->
+  <g stroke="#FFFFFF" stroke-linecap="round" fill="none">
+    <line x1="116" y1="116" x2="116" y2="74"  stroke-width="9"/>
+    <line x1="116" y1="116" x2="152" y2="132" stroke-width="9"/>
+  </g>
+  <circle cx="116" cy="116" r="9" fill="#FFFFFF"/>
+
+  <!-- Badge de horas extras (+) -->
+  <circle cx="200" cy="200" r="42" fill="#FFFFFF"/>
+  <circle cx="200" cy="200" r="36" fill="url(#vivoBadge)"/>
+  <g stroke="#FFFFFF" stroke-width="9" stroke-linecap="round">
+    <line x1="200" y1="182" x2="200" y2="218"/>
+    <line x1="182" y1="200" x2="218" y2="200"/>
+  </g>
+</svg>

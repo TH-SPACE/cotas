@@ -3,26 +3,26 @@
 <section class="panel">
   <div class="panel-header panel-header-row">
     <div>
-      <h2>Resumo de Backlog por Bucket</h2>
+      <h2>
+        <svg class="title-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/></svg>
+        Resumo de Backlog por Bucket
+      </h2>
       <p class="hint">
         Backlog em aberto = defeito (GOIANIA), exceto CANCELADA, ENCERRADA, EXECUCAO e aberturas massivas.
       </p>
     </div>
     <button type="button" class="icon-btn" id="config-open-btn" aria-haspopup="dialog" aria-controls="config-modal" title="Configurações">
-      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="12" cy="12" r="3"></circle>
-        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-      </svg>
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.65 1.65 0 0 0-1.8-.3 1.65 1.65 0 0 0-1 1.5V21a2 2 0 0 1-4 0v-.1A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.65 1.65 0 0 0 .3-1.8 1.65 1.65 0 0 0-1.5-1H3a2 2 0 0 1 0-4h.1A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.65 1.65 0 0 0 1.8.3H9a1.65 1.65 0 0 0 1-1.5V3a2 2 0 0 1 4 0v.1a1.65 1.65 0 0 0 1 1.5 1.65 1.65 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.65 1.65 0 0 0-.3 1.8V9a1.65 1.65 0 0 0 1.5 1H21a2 2 0 0 1 0 4h-.1a1.65 1.65 0 0 0-1.5 1z"/></svg>
     </button>
   </div>
 
   <dialog id="config-modal" class="config-modal">
-    <form method="get" action="/">
-      <div class="modal-header">
-        <h3>Configurações</h3>
-        <button type="button" class="icon-btn" id="config-close-btn" aria-label="Fechar">&times;</button>
-      </div>
+    <div class="modal-header">
+      <h3>Configurações</h3>
+      <button type="button" class="icon-btn" id="config-close-btn" aria-label="Fechar">&times;</button>
+    </div>
 
+    <form method="get" action="/" class="modal-section">
       <div class="modal-body">
         <div class="field-row">
           <label for="percentual">Previsto de resolução</label>
@@ -55,70 +55,114 @@
         <button type="submit">Aplicar</button>
       </div>
     </form>
+
+    <form method="post" action="/config/tempo-reparo" class="modal-section modal-section-divider">
+      <input type="hidden" name="percentual" value="<%= percentual %>" />
+      <input type="hidden" name="percentualJanela" value="<%= percentualJanela %>" />
+
+      <div class="modal-body">
+        <h4 class="modal-subtitle">Tempo de reparo por bucket (min)</h4>
+        <div class="modal-body-scroll">
+          <% temposReparo.forEach(t => { %>
+            <div class="field-row">
+              <label for="reparo-<%= t.bucket %>"><%= t.aliada %> · <%= t.bucket %></label>
+              <div class="field-input">
+                <input type="hidden" name="bucket[]" value="<%= t.bucket %>" />
+                <input type="number" id="reparo-<%= t.bucket %>" name="reparo[]" min="0" step="1" value="<%= t.reparo %>" />
+                <span>min</span>
+              </div>
+            </div>
+          <% }) %>
+        </div>
+        <p class="hint">Atualiza a tabela <code>depara_tempo_bucket</code> (coluna REPARO).</p>
+      </div>
+
+      <div class="modal-footer">
+        <button type="submit">Salvar tempos</button>
+      </div>
+    </form>
   </dialog>
 
-  <table class="cotas-table">
-    <thead>
-      <tr>
-        <th>Aliada</th>
-        <th>Bucket</th>
-        <th class="num">Backlog Reparos</th>
-        <th class="num">Previsto (<%= percentual %>%)</th>
-        <th class="num">08:30 - 12:30</th>
-        <th class="num">12:30 - 18:00</th>
-      </tr>
-    </thead>
-    <tbody>
-      <% let aliadaAtual = null; %>
-      <% linhas.forEach(linha => { %>
-        <% const novaAliada = linha.aliada !== aliadaAtual; aliadaAtual = linha.aliada; %>
+  <div class="table-scroll">
+    <table class="cotas-table">
+      <thead>
         <tr>
-          <td class="<%= novaAliada ? 'aliada-cell' : 'aliada-cell repeat' %>"><%= novaAliada ? linha.aliada : '' %></td>
-          <td><%= linha.bucket %></td>
-          <td class="num"><%= linha.backlogReparos %></td>
-          <td class="num"><%= linha.previstoResolucao %></td>
-          <td class="num"><%= linha.janela0830_1230 %></td>
-          <td class="num"><%= linha.janela1230_1800 %></td>
+          <th rowspan="2">Aliada</th>
+          <th rowspan="2">Bucket</th>
+          <th colspan="2" class="group-header">BACKLOG</th>
+          <th colspan="2" class="group-header">ORDENS</th>
+          <th colspan="2" class="group-header">MINUTOS</th>
         </tr>
-      <% }) %>
-    </tbody>
-    <tfoot>
-      <tr>
-        <td colspan="2">Total geral</td>
-        <td class="num"><%= totalGeral %></td>
-        <td class="num"><%= totalPrevisto %></td>
-        <td class="num"><%= totalJanela0830_1230 %></td>
-        <td class="num"><%= totalJanela1230_1800 %></td>
-      </tr>
-    </tfoot>
-  </table>
+        <tr>
+          <th class="num">Backlog Reparos</th>
+          <th class="num">Previsto (<%= percentual %>%)</th>
+          <th class="num">08:30 - 12:30</th>
+          <th class="num">12:30 - 18:00</th>
+          <th class="num">08:30 - 12:30</th>
+          <th class="num">12:30 - 18:00</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% let aliadaAtual = null; %>
+        <% linhas.forEach(linha => { %>
+          <% const novaAliada = linha.aliada !== aliadaAtual; aliadaAtual = linha.aliada; %>
+          <tr>
+            <td class="<%= novaAliada ? 'aliada-cell' : 'aliada-cell repeat' %>"><%= novaAliada ? linha.aliada : '' %></td>
+            <td><%= linha.bucket %></td>
+            <td class="num"><%= linha.backlogReparos %></td>
+            <td class="num"><%= linha.previstoResolucao %></td>
+            <td class="num"><%= linha.janela0830_1230 %></td>
+            <td class="num"><%= linha.janela1230_1800 %></td>
+            <td class="num"><%= linha.minutos0830_1230 %></td>
+            <td class="num"><%= linha.minutos1230_1800 %></td>
+          </tr>
+        <% }) %>
+      </tbody>
+      <tfoot>
+        <tr>
+          <td colspan="2">Total geral</td>
+          <td class="num"><%= totalGeral %></td>
+          <td class="num"><%= totalPrevisto %></td>
+          <td class="num"><%= totalJanela0830_1230 %></td>
+          <td class="num"><%= totalJanela1230_1800 %></td>
+          <td class="num"><%= totalMinutos0830_1230 %></td>
+          <td class="num"><%= totalMinutos1230_1800 %></td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
 </section>
 
 <% if (naoMapeados.length > 0) { %>
 <section class="panel panel-warning">
   <div class="panel-header">
-    <h2>Armários sem bucket mapeado</h2>
+    <h2>
+      <svg class="title-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+      Armários sem bucket mapeado
+    </h2>
     <p class="hint">
       Registros de <code>backlog_elos</code> (cluster GOIANIA) cujo ARMARIO não existe em <code>depara_bucket</code>.
       Atualize o depara para incluir estes armários.
     </p>
   </div>
-  <table class="cotas-table">
-    <thead>
-      <tr>
-        <th>Armário</th>
-        <th class="num">Backlog Reparos</th>
-      </tr>
-    </thead>
-    <tbody>
-      <% naoMapeados.forEach(item => { %>
+  <div class="table-scroll">
+    <table class="cotas-table">
+      <thead>
         <tr>
-          <td><%= item.armario %></td>
-          <td class="num"><%= item.backlogReparos %></td>
+          <th>Armário</th>
+          <th class="num">Backlog Reparos</th>
         </tr>
-      <% }) %>
-    </tbody>
-  </table>
+      </thead>
+      <tbody>
+        <% naoMapeados.forEach(item => { %>
+          <tr>
+            <td><%= item.armario %></td>
+            <td class="num"><%= item.backlogReparos %></td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
 </section>
 <% } %>
 
