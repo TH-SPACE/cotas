@@ -1,0 +1,22 @@
+{
+  "name": "calculadora_cotas",
+  "version": "1.0.0",
+  "description": "Calculadora de Cotas - GO",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "import:depara": "node scripts/import-depara.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "dotenv": "^17.4.2",
+    "ejs": "^6.0.1",
+    "express": "^5.2.1",
+    "mysql2": "^3.23.1"
+  }
+}

@@ -1,0 +1,67 @@
+<%- include('partials/head') %>
+
+<section class="panel">
+  <div class="panel-header">
+    <h2>Resumo de Backlog por Bucket</h2>
+    <p class="hint">
+      Backlog em aberto = defeito (GOIANIA), exceto CANCELADA, ENCERRADA, EXECUCAO e aberturas massivas.
+    </p>
+  </div>
+
+  <table class="cotas-table">
+    <thead>
+      <tr>
+        <th>Aliada</th>
+        <th>Bucket</th>
+        <th class="num">Backlog Reparos</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% let aliadaAtual = null; %>
+      <% linhas.forEach(linha => { %>
+        <% const novaAliada = linha.aliada !== aliadaAtual; aliadaAtual = linha.aliada; %>
+        <tr>
+          <td class="<%= novaAliada ? 'aliada-cell' : 'aliada-cell repeat' %>"><%= novaAliada ? linha.aliada : '' %></td>
+          <td><%= linha.bucket %></td>
+          <td class="num"><%= linha.backlogReparos %></td>
+        </tr>
+      <% }) %>
+    </tbody>
+    <tfoot>
+      <tr>
+        <td colspan="2">Total geral</td>
+        <td class="num"><%= totalGeral %></td>
+      </tr>
+    </tfoot>
+  </table>
+</section>
+
+<% if (naoMapeados.length > 0) { %>
+<section class="panel panel-warning">
+  <div class="panel-header">
+    <h2>Armários sem bucket mapeado</h2>
+    <p class="hint">
+      Registros de <code>backlog_elos</code> (cluster GOIANIA) cujo ARMARIO não existe em <code>depara_bucket</code>.
+      Atualize o depara para incluir estes armários.
+    </p>
+  </div>
+  <table class="cotas-table">
+    <thead>
+      <tr>
+        <th>Armário</th>
+        <th class="num">Backlog Reparos</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% naoMapeados.forEach(item => { %>
+        <tr>
+          <td><%= item.armario %></td>
+          <td class="num"><%= item.backlogReparos %></td>
+        </tr>
+      <% }) %>
+    </tbody>
+  </table>
+</section>
+<% } %>
+
+<%- include('partials/footer') %>
