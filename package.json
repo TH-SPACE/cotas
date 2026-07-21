@@ -7,6 +7,7 @@
     "start": "node server.js",
     "dev": "node --watch server.js",
     "import:depara": "node scripts/import-depara.js",
+    "import:tempo": "node scripts/import-depara-tempo.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
