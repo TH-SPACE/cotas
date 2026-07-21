@@ -66,9 +66,18 @@ body {
 .topbar h1 {
   font-size: 1.25rem;
   margin: 0;
+}
+
+.topbar-link {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  color: inherit;
+  text-decoration: none;
+}
+
+.topbar-link:hover {
+  opacity: 0.85;
 }
 
 .topbar-logo {
@@ -84,12 +93,6 @@ body {
   padding: 0.15rem 0.5rem;
   border-radius: 999px;
   font-weight: 600;
-}
-
-.topbar nav a {
-  color: var(--muted);
-  text-decoration: none;
-  font-size: 0.9rem;
 }
 
 .container {
@@ -379,12 +382,6 @@ body {
 @keyframes volume-flag-bounce {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-3px); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .volume-flag {
-    animation: none;
-  }
 }
 
 .aliada-badge {
