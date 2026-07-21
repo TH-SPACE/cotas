@@ -1,4 +1,5 @@
 <%- include('partials/head') %>
+<% const numCls = (grupo, valor) => `num ${grupo}${valor === 0 ? ' valor-zero' : ''}`; %>
 
 <section class="panel">
   <div class="panel-header panel-header-row">
@@ -118,19 +119,19 @@
         <tr>
           <th rowspan="2" title="Empresa aliada responsável pelo bucket">Aliada</th>
           <th rowspan="2" title="Agrupamento de armários (BKT) mapeado em depara_bucket">Bucket</th>
-          <th colspan="2" class="group-header" title="Quantidade de reparos em aberto e a meta calculada sobre eles">BACKLOG</th>
-          <th colspan="2" class="group-header" title="Previsto dividido entre as duas janelas de horário">ORDENS</th>
-          <th colspan="2" class="group-header" title="Ordens de cada janela × tempo de reparo do bucket (depara_tempo_bucket)">MINUTOS</th>
+          <th colspan="2" class="group-header col-backlog" title="Quantidade de reparos em aberto e a meta calculada sobre eles">BACKLOG</th>
+          <th colspan="2" class="group-header col-ordens" title="Previsto dividido entre as duas janelas de horário">ORDENS</th>
+          <th colspan="2" class="group-header col-minutos" title="Ordens de cada janela × tempo de reparo do bucket (depara_tempo_bucket)">COTAS(min)</th>
           <th rowspan="2" class="num" title="Produção Única = Previsto × PU do reparo">PU</th>
           <th rowspan="2" class="num" title="Técnicos necessários = PU ÷ Meta de PU por técnico, arredondado para cima (não existe fração de técnico)">Técnicos</th>
         </tr>
         <tr>
-          <th class="num" title="Total de chamados de reparo em aberto no bucket (regra de backlog no topo da página)">Backlog Reparos</th>
-          <th class="num" title="Backlog Reparos × percentual configurado na engrenagem">Previsto (<%= percentual %>%)</th>
-          <th class="num" title="Parte do Previsto alocada para a janela 08:30-12:30">08:30 - 12:30</th>
-          <th class="num" title="Restante do Previsto: janela 12:30-18:00">12:30 - 18:00</th>
-          <th class="num" title="Ordens de 08:30-12:30 × tempo de reparo do bucket">08:30 - 12:30</th>
-          <th class="num" title="Ordens de 12:30-18:00 × tempo de reparo do bucket">12:30 - 18:00</th>
+          <th class="num col-backlog" title="Total de chamados de reparo em aberto no bucket (regra de backlog no topo da página)">Backlog Reparos</th>
+          <th class="num col-backlog" title="Backlog Reparos × percentual configurado na engrenagem">Previsto (<%= percentual %>%)</th>
+          <th class="num col-ordens" title="Parte do Previsto alocada para a janela 08:30-12:30">08:30 - 12:30</th>
+          <th class="num col-ordens" title="Restante do Previsto: janela 12:30-18:00">12:30 - 18:00</th>
+          <th class="num col-minutos" title="Ordens de 08:30-12:30 × tempo de reparo do bucket">08:30 - 12:30</th>
+          <th class="num col-minutos" title="Ordens de 12:30-18:00 × tempo de reparo do bucket">12:30 - 18:00</th>
         </tr>
       </thead>
       <tbody>
@@ -140,28 +141,28 @@
           <tr class="<%= novaAliada ? 'group-start' : '' %>">
             <td><span class="aliada-badge aliada-color-<%= aliadaCores[linha.aliada] %>"><%= linha.aliada %></span></td>
             <td><%= linha.bucket %></td>
-            <td class="num"><%= linha.backlogReparos %></td>
-            <td class="num"><%= linha.previstoResolucao %></td>
-            <td class="num"><%= linha.janela0830_1230 %></td>
-            <td class="num"><%= linha.janela1230_1800 %></td>
-            <td class="num"><%= linha.minutos0830_1230 %></td>
-            <td class="num"><%= linha.minutos1230_1800 %></td>
-            <td class="num"><%= linha.pu %></td>
-            <td class="num"><%= linha.tecnicos %></td>
+            <td class="<%= numCls('col-backlog', linha.backlogReparos) %>"><%= linha.backlogReparos %></td>
+            <td class="<%= numCls('col-backlog', linha.previstoResolucao) %>"><%= linha.previstoResolucao %></td>
+            <td class="<%= numCls('col-ordens', linha.janela0830_1230) %>"><%= linha.janela0830_1230 %></td>
+            <td class="<%= numCls('col-ordens', linha.janela1230_1800) %>"><%= linha.janela1230_1800 %></td>
+            <td class="<%= numCls('col-minutos', linha.minutos0830_1230) %>"><%= linha.minutos0830_1230 %></td>
+            <td class="<%= numCls('col-minutos', linha.minutos1230_1800) %>"><%= linha.minutos1230_1800 %></td>
+            <td class="<%= numCls('', linha.pu) %>"><%= linha.pu %></td>
+            <td class="<%= numCls('', linha.tecnicos) %>"><%= linha.tecnicos %></td>
           </tr>
         <% }) %>
       </tbody>
       <tfoot>
         <tr>
           <td colspan="2" title="Soma de todos os buckets do cluster GOIANIA">Total geral</td>
-          <td class="num"><%= totalGeral %></td>
-          <td class="num"><%= totalPrevisto %></td>
-          <td class="num"><%= totalJanela0830_1230 %></td>
-          <td class="num"><%= totalJanela1230_1800 %></td>
-          <td class="num"><%= totalMinutos0830_1230 %></td>
-          <td class="num"><%= totalMinutos1230_1800 %></td>
-          <td class="num"><%= totalPu %></td>
-          <td class="num"><%= totalTecnicos %></td>
+          <td class="<%= numCls('col-backlog', totalGeral) %>"><%= totalGeral %></td>
+          <td class="<%= numCls('col-backlog', totalPrevisto) %>"><%= totalPrevisto %></td>
+          <td class="<%= numCls('col-ordens', totalJanela0830_1230) %>"><%= totalJanela0830_1230 %></td>
+          <td class="<%= numCls('col-ordens', totalJanela1230_1800) %>"><%= totalJanela1230_1800 %></td>
+          <td class="<%= numCls('col-minutos', totalMinutos0830_1230) %>"><%= totalMinutos0830_1230 %></td>
+          <td class="<%= numCls('col-minutos', totalMinutos1230_1800) %>"><%= totalMinutos1230_1800 %></td>
+          <td class="<%= numCls('', totalPu) %>"><%= totalPu %></td>
+          <td class="<%= numCls('', totalTecnicos) %>"><%= totalTecnicos %></td>
         </tr>
       </tfoot>
     </table>

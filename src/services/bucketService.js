@@ -14,24 +14,51 @@ const CONDICOES_BACKLOG_ABERTO = `
   AND UPPER(TRIM(COALESCE(b.STATUS_REASON, ''))) <> 'ABERTA MASSIVA'
 `;
 
+// Bucket "curinga": tudo que não é ABILITY nem ONDACOM (armário sem linha em depara_bucket)
+// conta para a VIVO / BKT_GOIANIA — regra definida pelo usuário.
+const ALIADA_CURINGA = 'VIVO';
+const BUCKET_CURINGA = 'BKT_GOIANIA';
+
 async function getResumoBuckets() {
   const [rows] = await pool.query(
-    `SELECT
-       d.ALIADA AS aliada,
-       d.BKT AS bucket,
-       COUNT(b.COD_SS) AS backlogReparos,
-       COALESCE(t.REPARO, 0) AS tempoReparoMinutos
-     FROM depara_bucket d
-     LEFT JOIN backlog_elos b
-       ON b.ARMARIO = d.ARMARIO
-       AND b.CLUSTER_ = ?
-       AND b.SPECIFICATION_TYPE = ?
-       AND ${CONDICOES_BACKLOG_ABERTO}
-     LEFT JOIN depara_tempo_bucket t
-       ON t.BUCKET = d.BKT
-     GROUP BY d.ALIADA, d.BKT, t.REPARO
-     ORDER BY d.ALIADA, d.BKT`,
-    [CLUSTER_ESCOPO, SPECIFICATION_TYPE_REPARO]
+    `SELECT aliada, bucket, backlogReparos, tempoReparoMinutos FROM (
+       SELECT
+         d.ALIADA AS aliada,
+         d.BKT AS bucket,
+         COUNT(b.COD_SS) AS backlogReparos,
+         COALESCE(t.REPARO, 0) AS tempoReparoMinutos
+       FROM depara_bucket d
+       LEFT JOIN backlog_elos b
+         ON b.ARMARIO = d.ARMARIO
+         AND b.CLUSTER_ = ?
+         AND b.SPECIFICATION_TYPE = ?
+         AND ${CONDICOES_BACKLOG_ABERTO}
+       LEFT JOIN depara_tempo_bucket t
+         ON t.BUCKET = d.BKT
+       GROUP BY d.ALIADA, d.BKT, t.REPARO
+
+       UNION ALL
+
+       SELECT
+         ? AS aliada,
+         ? AS bucket,
+         COUNT(b.COD_SS) AS backlogReparos,
+         COALESCE(MAX(t.REPARO), 0) AS tempoReparoMinutos
+       FROM backlog_elos b
+       LEFT JOIN depara_bucket d ON d.ARMARIO = b.ARMARIO
+       LEFT JOIN depara_tempo_bucket t ON t.BUCKET = ?
+       WHERE d.ARMARIO IS NULL
+         AND b.CLUSTER_ = ?
+         AND b.SPECIFICATION_TYPE = ?
+         AND b.ARMARIO IS NOT NULL AND b.ARMARIO <> ''
+         AND ${CONDICOES_BACKLOG_ABERTO}
+     ) resumo
+     ORDER BY aliada, bucket`,
+    [
+      CLUSTER_ESCOPO, SPECIFICATION_TYPE_REPARO,
+      ALIADA_CURINGA, BUCKET_CURINGA, BUCKET_CURINGA,
+      CLUSTER_ESCOPO, SPECIFICATION_TYPE_REPARO,
+    ]
   );
 
   const totalGeral = rows.reduce((acc, row) => acc + row.backlogReparos, 0);

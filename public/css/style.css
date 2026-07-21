@@ -9,14 +9,19 @@
   --accent-contrast: #ffffff;
   --warning-bg: #fff8ec;
   --warning-border: #f2c265;
-  --aliada-0-bg: #ede4fb;
-  --aliada-0-fg: #6c3ce0;
-  --aliada-1-bg: #fde4ef;
-  --aliada-1-fg: #c22a72;
+  --aliada-0-bg: #fde3ce;
+  --aliada-0-fg: #c15a08;
+  --aliada-1-bg: #e0edfb;
+  --aliada-1-fg: #1d5fa8;
   --aliada-2-bg: #e1f3ef;
   --aliada-2-fg: #17806b;
   --aliada-3-bg: #fff1d6;
   --aliada-3-fg: #9a6300;
+  --col-backlog-bg: #f1eefb;
+  --col-ordens-bg: #eaf1fb;
+  --col-minutos-bg: #fbf1e6;
+  --zero-color: #b7bbc2;
+  --col-divider: #c7cad1;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -28,14 +33,19 @@
     --border: #2c2f38;
     --warning-bg: #2a2416;
     --warning-border: #7a5a1e;
-    --aliada-0-bg: #3a2a5c;
-    --aliada-0-fg: #c9a8f5;
-    --aliada-1-bg: #4a2233;
-    --aliada-1-fg: #f5a8cb;
+    --aliada-0-bg: #4a3018;
+    --aliada-0-fg: #f5a862;
+    --aliada-1-bg: #1c2e47;
+    --aliada-1-fg: #7fb2ea;
     --aliada-2-bg: #1f3d38;
     --aliada-2-fg: #7fd9c4;
     --aliada-3-bg: #4a3a12;
     --aliada-3-fg: #f0c674;
+    --col-backlog-bg: #221f2e;
+    --col-ordens-bg: #1a2636;
+    --col-minutos-bg: #2b2118;
+    --zero-color: #565b64;
+    --col-divider: #454a56;
   }
 }
 
@@ -274,8 +284,8 @@ body {
 }
 
 .tempo-table thead th {
-  color: var(--muted);
-  font-weight: 600;
+  color: var(--text);
+  font-weight: 700;
   font-size: 0.72rem;
   text-transform: uppercase;
   letter-spacing: 0.03em;
@@ -316,8 +326,8 @@ body {
 }
 
 .cotas-table thead th {
-  color: var(--muted);
-  font-weight: 600;
+  color: var(--text);
+  font-weight: 700;
   font-size: 0.78rem;
   text-transform: uppercase;
   letter-spacing: 0.03em;
@@ -342,6 +352,26 @@ body {
 .cotas-table tbody tr.group-start td,
 .tempo-table tbody tr.group-start td {
   border-top: 2px solid var(--border);
+}
+
+.cotas-table .col-backlog {
+  background: var(--col-backlog-bg);
+}
+
+.cotas-table .col-ordens {
+  background: var(--col-ordens-bg);
+}
+
+.cotas-table .col-minutos {
+  background: var(--col-minutos-bg);
+}
+
+.cotas-table .valor-zero {
+  color: var(--zero-color);
+}
+
+.cotas-table .col-divider {
+  border-left: 1px solid var(--col-divider);
 }
 
 .aliada-badge {
