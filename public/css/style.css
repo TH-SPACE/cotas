@@ -9,6 +9,14 @@
   --accent-contrast: #ffffff;
   --warning-bg: #fff8ec;
   --warning-border: #f2c265;
+  --aliada-0-bg: #ede4fb;
+  --aliada-0-fg: #6c3ce0;
+  --aliada-1-bg: #fde4ef;
+  --aliada-1-fg: #c22a72;
+  --aliada-2-bg: #e1f3ef;
+  --aliada-2-fg: #17806b;
+  --aliada-3-bg: #fff1d6;
+  --aliada-3-fg: #9a6300;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -20,6 +28,14 @@
     --border: #2c2f38;
     --warning-bg: #2a2416;
     --warning-border: #7a5a1e;
+    --aliada-0-bg: #3a2a5c;
+    --aliada-0-fg: #c9a8f5;
+    --aliada-1-bg: #4a2233;
+    --aliada-1-fg: #f5a8cb;
+    --aliada-2-bg: #1f3d38;
+    --aliada-2-fg: #7fd9c4;
+    --aliada-3-bg: #4a3a12;
+    --aliada-3-fg: #f0c674;
   }
 }
 
@@ -141,7 +157,7 @@ body {
   border: 1px solid var(--border);
   border-radius: 10px;
   padding: 0;
-  width: min(600px, 94vw);
+  width: min(760px, 95vw);
   max-height: 92vh;
   overflow-y: auto;
   background: var(--panel-bg);
@@ -243,31 +259,41 @@ body {
   letter-spacing: 0.03em;
 }
 
-.modal-body-scroll {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 0.6rem 1rem;
-}
-
-.modal-body-scroll .field-row {
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.25rem;
-}
-
-.modal-body-scroll .field-row label {
-  font-size: 0.75rem;
-  line-height: 1.25;
-}
-
-.modal-body-scroll .field-input {
+.tempo-table {
   width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
 }
 
-.modal-body-scroll .field-input input {
-  flex: 1;
-  width: auto;
-  min-width: 0;
+.tempo-table th,
+.tempo-table td {
+  text-align: left;
+  padding: 0.4rem 0.5rem;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+.tempo-table thead th {
+  color: var(--muted);
+  font-weight: 600;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.tempo-table .num {
+  text-align: center;
+}
+
+.tempo-table input[type="number"] {
+  width: 4.5rem;
+  padding: 0.3rem 0.4rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 0.85rem;
+  text-align: center;
 }
 
 .table-scroll {
@@ -313,13 +339,25 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
-.aliada-cell {
-  font-weight: 600;
+.cotas-table tbody tr.group-start td,
+.tempo-table tbody tr.group-start td {
+  border-top: 2px solid var(--border);
 }
 
-.aliada-cell.repeat {
-  font-weight: 400;
+.aliada-badge {
+  display: inline-block;
+  padding: 0.15rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
 }
+
+.aliada-color-0 { background: var(--aliada-0-bg); color: var(--aliada-0-fg); }
+.aliada-color-1 { background: var(--aliada-1-bg); color: var(--aliada-1-fg); }
+.aliada-color-2 { background: var(--aliada-2-bg); color: var(--aliada-2-fg); }
+.aliada-color-3 { background: var(--aliada-3-bg); color: var(--aliada-3-fg); }
 
 .footer {
   text-align: center;

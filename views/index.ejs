@@ -3,7 +3,7 @@
 <section class="panel">
   <div class="panel-header panel-header-row">
     <div>
-      <h2>
+      <h2 title="Backlog de reparos agrupado por Aliada e Bucket, cruzando depara_bucket com backlog_elos">
         <svg class="title-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/></svg>
         Resumo de Backlog por Bucket
       </h2>
@@ -11,74 +11,103 @@
         Backlog em aberto = defeito (GOIANIA), exceto CANCELADA, ENCERRADA, EXECUCAO e aberturas massivas.
       </p>
     </div>
-    <button type="button" class="icon-btn" id="config-open-btn" aria-haspopup="dialog" aria-controls="config-modal" title="Configurações">
+    <button type="button" class="icon-btn" id="config-open-btn" aria-haspopup="dialog" aria-controls="config-modal" title="Configurações: previsto, janelas de horário, PU e tempos de reparo">
       <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.65 1.65 0 0 0-1.8-.3 1.65 1.65 0 0 0-1 1.5V21a2 2 0 0 1-4 0v-.1A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.65 1.65 0 0 0 .3-1.8 1.65 1.65 0 0 0-1.5-1H3a2 2 0 0 1 0-4h.1A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.65 1.65 0 0 0 1.8.3H9a1.65 1.65 0 0 0 1-1.5V3a2 2 0 0 1 4 0v.1a1.65 1.65 0 0 0 1 1.5 1.65 1.65 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.65 1.65 0 0 0-.3 1.8V9a1.65 1.65 0 0 0 1.5 1H21a2 2 0 0 1 0 4h-.1a1.65 1.65 0 0 0-1.5 1z"/></svg>
     </button>
   </div>
 
   <dialog id="config-modal" class="config-modal">
     <div class="modal-header">
-      <h3>Configurações</h3>
-      <button type="button" class="icon-btn" id="config-close-btn" aria-label="Fechar">&times;</button>
+      <h3 title="Ajustes usados nos cálculos do Resumo de Backlog por Bucket">Configurações</h3>
+      <button type="button" class="icon-btn" id="config-close-btn" aria-label="Fechar" title="Fechar">&times;</button>
     </div>
 
     <form method="get" action="/" class="modal-section">
       <div class="modal-body">
         <div class="field-row">
-          <label for="percentual">Previsto de resolução</label>
+          <label for="percentual" title="Percentual do Backlog Reparos que vira meta de resolução (coluna Previsto)">Previsto de resolução</label>
           <div class="field-input">
-            <input type="number" id="percentual" name="percentual" min="0" max="100" step="1" value="<%= percentual %>" />
+            <input type="number" id="percentual" name="percentual" min="0" max="100" step="1" value="<%= percentual %>" title="Percentual do backlog considerado resolvível" />
             <span>%</span>
           </div>
         </div>
 
         <div class="field-row">
-          <label for="percentualJanela">08:30 - 12:30</label>
+          <label for="percentualJanela" title="Percentual do Previsto alocado para a janela da manhã (08:30-12:30)">08:30 - 12:30</label>
           <div class="field-input">
-            <input type="number" id="percentualJanela" name="percentualJanela" min="0" max="100" step="1" value="<%= percentualJanela %>" />
+            <input type="number" id="percentualJanela" name="percentualJanela" min="0" max="100" step="1" value="<%= percentualJanela %>" title="Percentual do Previsto na janela 08:30-12:30" />
             <span>%</span>
           </div>
         </div>
 
         <div class="field-row">
-          <label for="percentualJanelaTarde">12:30 - 18:00</label>
+          <label for="percentualJanelaTarde" title="Calculado automaticamente como 100% menos a janela da manhã">12:30 - 18:00</label>
           <div class="field-input">
-            <input type="number" id="percentualJanelaTarde" min="0" max="100" step="1" value="<%= 100 - percentualJanela %>" />
+            <input type="number" id="percentualJanelaTarde" min="0" max="100" step="1" value="<%= 100 - percentualJanela %>" title="Preenchido automaticamente: 100% - janela da manhã" />
             <span>%</span>
           </div>
         </div>
 
         <p class="hint">As janelas 08:30-12:30 e 12:30-18:00 sempre somam 100%.</p>
+
+        <div class="field-row">
+          <label for="puReparo" title="Quantidade de PU que cada reparo previsto representa">PU do reparo</label>
+          <div class="field-input">
+            <input type="number" id="puReparo" name="puReparo" min="0" step="0.01" value="<%= puReparo %>" title="PU gerado por cada reparo previsto (hoje 0,80)" />
+          </div>
+        </div>
+
+        <div class="field-row">
+          <label for="metaPuTecnico" title="Quantidade de PU que 1 técnico consegue entregar, usada para estimar quantos técnicos são necessários">Meta de PU por técnico</label>
+          <div class="field-input">
+            <input type="number" id="metaPuTecnico" name="metaPuTecnico" min="0.01" step="0.1" value="<%= metaPuTecnico %>" title="PU que 1 técnico entrega (hoje 2,9)" />
+          </div>
+        </div>
+
+        <p class="hint">PU = Previsto × PU do reparo. Técnicos = PU ÷ Meta de PU por técnico, arredondado para cima (não existe fração de técnico).</p>
       </div>
 
       <div class="modal-footer">
-        <button type="submit">Aplicar</button>
+        <button type="submit" title="Recarrega a página aplicando estes valores">Aplicar</button>
       </div>
     </form>
 
     <form method="post" action="/config/tempo-reparo" class="modal-section modal-section-divider">
       <input type="hidden" name="percentual" value="<%= percentual %>" />
       <input type="hidden" name="percentualJanela" value="<%= percentualJanela %>" />
+      <input type="hidden" name="puReparo" value="<%= puReparo %>" />
+      <input type="hidden" name="metaPuTecnico" value="<%= metaPuTecnico %>" />
 
       <div class="modal-body">
-        <h4 class="modal-subtitle">Tempo de reparo por bucket (min)</h4>
-        <div class="modal-body-scroll">
-          <% temposReparo.forEach(t => { %>
-            <div class="field-row">
-              <label for="reparo-<%= t.bucket %>"><%= t.aliada %> · <%= t.bucket %></label>
-              <div class="field-input">
-                <input type="hidden" name="bucket[]" value="<%= t.bucket %>" />
-                <input type="number" id="reparo-<%= t.bucket %>" name="reparo[]" min="0" step="1" value="<%= t.reparo %>" />
-                <span>min</span>
-              </div>
-            </div>
-          <% }) %>
-        </div>
+        <h4 class="modal-subtitle" title="Tempo médio de um reparo em cada bucket, usado na coluna MINUTOS">Tempo de reparo por bucket (min)</h4>
+        <table class="tempo-table">
+          <thead>
+            <tr>
+              <th title="Empresa aliada dona do bucket">Aliada</th>
+              <th title="Nome do bucket em depara_tempo_bucket">Bucket</th>
+              <th class="num" title="Minutos que um reparo leva neste bucket">Reparo (min)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% let aliadaTempoAtual = null; %>
+            <% temposReparo.forEach(t => { %>
+              <% const novaAliadaTempo = t.aliada !== aliadaTempoAtual; aliadaTempoAtual = t.aliada; %>
+              <tr class="<%= novaAliadaTempo ? 'group-start' : '' %>">
+                <td><span class="aliada-badge aliada-color-<%= aliadaCores[t.aliada] %>"><%= t.aliada %></span></td>
+                <td><%= t.bucket %></td>
+                <td class="num">
+                  <input type="hidden" name="bucket[]" value="<%= t.bucket %>" />
+                  <input type="number" name="reparo[]" min="0" step="1" value="<%= t.reparo %>" aria-label="Tempo de reparo (min) para <%= t.bucket %>" title="Minutos de um reparo em <%= t.bucket %>" />
+                </td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
         <p class="hint">Atualiza a tabela <code>depara_tempo_bucket</code> (coluna REPARO).</p>
       </div>
 
       <div class="modal-footer">
-        <button type="submit">Salvar tempos</button>
+        <button type="submit" title="Grava estes tempos em depara_tempo_bucket">Salvar tempos</button>
       </div>
     </form>
   </dialog>
@@ -87,27 +116,29 @@
     <table class="cotas-table">
       <thead>
         <tr>
-          <th rowspan="2">Aliada</th>
-          <th rowspan="2">Bucket</th>
-          <th colspan="2" class="group-header">BACKLOG</th>
-          <th colspan="2" class="group-header">ORDENS</th>
-          <th colspan="2" class="group-header">MINUTOS</th>
+          <th rowspan="2" title="Empresa aliada responsável pelo bucket">Aliada</th>
+          <th rowspan="2" title="Agrupamento de armários (BKT) mapeado em depara_bucket">Bucket</th>
+          <th colspan="2" class="group-header" title="Quantidade de reparos em aberto e a meta calculada sobre eles">BACKLOG</th>
+          <th colspan="2" class="group-header" title="Previsto dividido entre as duas janelas de horário">ORDENS</th>
+          <th colspan="2" class="group-header" title="Ordens de cada janela × tempo de reparo do bucket (depara_tempo_bucket)">MINUTOS</th>
+          <th rowspan="2" class="num" title="Produção Única = Previsto × PU do reparo">PU</th>
+          <th rowspan="2" class="num" title="Técnicos necessários = PU ÷ Meta de PU por técnico, arredondado para cima (não existe fração de técnico)">Técnicos</th>
         </tr>
         <tr>
-          <th class="num">Backlog Reparos</th>
-          <th class="num">Previsto (<%= percentual %>%)</th>
-          <th class="num">08:30 - 12:30</th>
-          <th class="num">12:30 - 18:00</th>
-          <th class="num">08:30 - 12:30</th>
-          <th class="num">12:30 - 18:00</th>
+          <th class="num" title="Total de chamados de reparo em aberto no bucket (regra de backlog no topo da página)">Backlog Reparos</th>
+          <th class="num" title="Backlog Reparos × percentual configurado na engrenagem">Previsto (<%= percentual %>%)</th>
+          <th class="num" title="Parte do Previsto alocada para a janela 08:30-12:30">08:30 - 12:30</th>
+          <th class="num" title="Restante do Previsto: janela 12:30-18:00">12:30 - 18:00</th>
+          <th class="num" title="Ordens de 08:30-12:30 × tempo de reparo do bucket">08:30 - 12:30</th>
+          <th class="num" title="Ordens de 12:30-18:00 × tempo de reparo do bucket">12:30 - 18:00</th>
         </tr>
       </thead>
       <tbody>
         <% let aliadaAtual = null; %>
         <% linhas.forEach(linha => { %>
           <% const novaAliada = linha.aliada !== aliadaAtual; aliadaAtual = linha.aliada; %>
-          <tr>
-            <td class="<%= novaAliada ? 'aliada-cell' : 'aliada-cell repeat' %>"><%= novaAliada ? linha.aliada : '' %></td>
+          <tr class="<%= novaAliada ? 'group-start' : '' %>">
+            <td><span class="aliada-badge aliada-color-<%= aliadaCores[linha.aliada] %>"><%= linha.aliada %></span></td>
             <td><%= linha.bucket %></td>
             <td class="num"><%= linha.backlogReparos %></td>
             <td class="num"><%= linha.previstoResolucao %></td>
@@ -115,18 +146,22 @@
             <td class="num"><%= linha.janela1230_1800 %></td>
             <td class="num"><%= linha.minutos0830_1230 %></td>
             <td class="num"><%= linha.minutos1230_1800 %></td>
+            <td class="num"><%= linha.pu %></td>
+            <td class="num"><%= linha.tecnicos %></td>
           </tr>
         <% }) %>
       </tbody>
       <tfoot>
         <tr>
-          <td colspan="2">Total geral</td>
+          <td colspan="2" title="Soma de todos os buckets do cluster GOIANIA">Total geral</td>
           <td class="num"><%= totalGeral %></td>
           <td class="num"><%= totalPrevisto %></td>
           <td class="num"><%= totalJanela0830_1230 %></td>
           <td class="num"><%= totalJanela1230_1800 %></td>
           <td class="num"><%= totalMinutos0830_1230 %></td>
           <td class="num"><%= totalMinutos1230_1800 %></td>
+          <td class="num"><%= totalPu %></td>
+          <td class="num"><%= totalTecnicos %></td>
         </tr>
       </tfoot>
     </table>
@@ -136,7 +171,7 @@
 <% if (naoMapeados.length > 0) { %>
 <section class="panel panel-warning">
   <div class="panel-header">
-    <h2>
+    <h2 title="Armários com backlog aberto que ainda não têm bucket cadastrado em depara_bucket">
       <svg class="title-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
       Armários sem bucket mapeado
     </h2>
@@ -149,8 +184,8 @@
     <table class="cotas-table">
       <thead>
         <tr>
-          <th>Armário</th>
-          <th class="num">Backlog Reparos</th>
+          <th title="Código do armário em backlog_elos sem correspondência em depara_bucket">Armário</th>
+          <th class="num" title="Quantidade de chamados de reparo em aberto neste armário">Backlog Reparos</th>
         </tr>
       </thead>
       <tbody>
