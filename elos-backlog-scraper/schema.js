@@ -1,4 +1,5 @@
 // Definicoes de tabela compartilhadas entre setup-db.js, index.js e test-import.js.
+const { descriptografar } = require('./cryptoUtil');
 
 async function criarTabelaAtualizacao(conn) {
   await conn.query(`
@@ -281,7 +282,11 @@ async function criarTabelaCredenciais(conn) {
 async function getCredenciais(conn) {
   await criarTabelaCredenciais(conn);
   const [linhas] = await conn.query('SELECT usuario, senha FROM elos_credenciais WHERE id = 1');
-  return linhas[0] || null;
+  if (!linhas[0]) return null;
+  // Senha vem criptografada da tabela (ver cryptoUtil.js e src/services/elosCredenciaisService.js
+  // do projeto calculadora_cotas, que é quem grava) -- descriptografa aqui pra devolver
+  // já pronta pra logar no Elos.
+  return { usuario: linhas[0].usuario, senha: descriptografar(linhas[0].senha) };
 }
 
 module.exports = {

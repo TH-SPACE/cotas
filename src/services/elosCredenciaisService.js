@@ -2,7 +2,9 @@
 // editáveis por aqui em vez de exigir acesso ao .env do servidor -- útil quando quem
 // costuma mexer nisso sai de férias e outra pessoa precisa trocar o usuário/senha.
 // A raspagem lê da mesma tabela (fallback pro .env se a tabela estiver vazia).
+// Senha fica criptografada na tabela (ver cryptoUtil.js) -- nunca em texto puro.
 const pool = require('../db');
+const { criptografar } = require('./cryptoUtil');
 
 async function criarTabelaElosCredenciais() {
   await pool.query(`
@@ -26,11 +28,12 @@ async function getElosCredenciais() {
 }
 
 // Senha em branco = mantém a atual (não sobrescreve com vazio); só troca se o
-// usuário realmente digitou uma senha nova no formulário.
+// usuário realmente digitou uma senha nova no formulário. A que já está salva já
+// vem criptografada do banco, então só cripta de novo quando é uma senha nova.
 async function salvarElosCredenciais(usuario, senha) {
   await criarTabelaElosCredenciais();
   const [linhas] = await pool.query('SELECT senha FROM elos_credenciais WHERE id = 1');
-  const senhaFinal = senha || (linhas[0] ? linhas[0].senha : '');
+  const senhaFinal = senha ? criptografar(senha) : (linhas[0] ? linhas[0].senha : '');
 
   await pool.query(
     `INSERT INTO elos_credenciais (id, usuario, senha, atualizado_em) VALUES (1, ?, ?, NOW())

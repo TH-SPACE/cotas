@@ -50,9 +50,16 @@ DB_USER=root
 DB_PASSWORD=
 DB_NAME=cotas
 DB_NAME_INDICADORES=indicadores
+
+# Chave de criptografia da senha do Elos salva em elos_credenciais (ver
+# src/services/cryptoUtil.js) -- gere uma vez com:
+#   node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+# e use a MESMA chave aqui e em elos-backlog-scraper/.env (um lado cripta,
+# o outro decripta). Trocar a chave depois invalida qualquer senha já salva.
+ELOS_CRED_ENCRYPTION_KEY=
 ```
 
-E outro em `elos-backlog-scraper/.env` (ver `elos-backlog-scraper/.env.example`) — precisa apontar pro mesmo `DB_NAME=cotas`, já que é lá que `backlog_instalacoes`/`elos_credenciais` moram.
+E outro em `elos-backlog-scraper/.env` (ver `elos-backlog-scraper/.env.example`) — precisa apontar pro mesmo `DB_NAME=cotas` e ter a **mesma** `ELOS_CRED_ENCRYPTION_KEY`, já que é lá que `backlog_instalacoes`/`elos_credenciais` moram e onde a senha é descriptografada de fato pra logar no Elos.
 
 ## Instalação e execução (dev local)
 
