@@ -1,5 +1,10 @@
 const pool = require('../db');
 const { CLUSTER_ESCOPO, SPECIFICATION_TYPE_INSTALACAO } = require('./instalacaoBucketService');
+const {
+  SPECIFICATION_TYPE_EXCLUIDOS: SERVICO_SPECIFICATION_TYPE_EXCLUIDOS,
+  SPECIFICATION_PRODUCT_PREFIXO_EXCLUIDO_TEXTO: SERVICO_SPECIFICATION_PRODUCT_PREFIXO_EXCLUIDO_TEXTO,
+} = require('./servicoBucketService');
+const { SPECIFICATION_PRODUCT_CONTEM_TEXTO: ME_SPECIFICATION_PRODUCT_CONTEM_TEXTO } = require('./meBucketService');
 
 // Ordem e nomes exatos do cabeçalho do export diário do ELOS (BackLogDiario_*.csv,
 // pipe-delimited, ISO-8859-1/latin1). Se o ELOS mudar o layout, a importação falha
@@ -97,13 +102,37 @@ const CREATE_TABLE_PU_PRODUTO_SQL = `
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
 `;
 
+// Mesma ideia da tabela acima, só que pro recorte de Serviços (peso de PU pode ser
+// diferente do mesmo produto usado em Instalações — ex.: "BANDA LARGA" nova
+// instalação normalmente exige mais esforço que "BANDA LARGA" como alteração).
+const CREATE_TABLE_PU_PRODUTO_SERVICO_SQL = `
+  CREATE TABLE IF NOT EXISTS depara_pu_produto_servico (
+    SPECIFICATION_PRODUCT VARCHAR(100) NOT NULL,
+    PU DECIMAL(6,2) NOT NULL DEFAULT 0,
+    ATUALIZADO_EM DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (SPECIFICATION_PRODUCT)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+`;
+
+// Mesma ideia, pro recorte de ME (Mudança de Endereço).
+const CREATE_TABLE_PU_PRODUTO_ME_SQL = `
+  CREATE TABLE IF NOT EXISTS depara_pu_produto_me (
+    SPECIFICATION_PRODUCT VARCHAR(100) NOT NULL,
+    PU DECIMAL(6,2) NOT NULL DEFAULT 0,
+    ATUALIZADO_EM DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (SPECIFICATION_PRODUCT)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+`;
+
 const INDICE_SPECIFICATION_PRODUCT = COLUNAS.indexOf('SPECIFICATION_PRODUCT');
 const INDICE_SPECIFICATION_TYPE = COLUNAS.indexOf('SPECIFICATION_TYPE');
 const INDICE_CLUSTER = COLUNAS.indexOf('CLUSTER_');
 
 // Cadastra com PU=0 (== "ainda não configurado") qualquer SPECIFICATION_PRODUCT que
-// apareça no arquivo e ainda não tenha linha em depara_pu_produto, e devolve todos os
-// produtos do arquivo que estão com PU=0 agora — novos ou que o usuário nunca configurou.
+// apareça no arquivo e ainda não tenha linha em depara_pu_produto. O aviso de "quem
+// está com PU=0 agora" não depende deste momento do upload — a página recalcula isso
+// toda vez que carrega, a partir da tabela (ver views/index.ejs), pra não sumir depois
+// que o usuário navega pra longe do redirect do upload.
 // Só olha o recorte que o painel de Instalações realmente usa (GOIANIA + INSTALAÇÃO):
 // os outros SPECIFICATION_TYPE do mesmo CSV (ALTERAÇÃO/DESCONEXÃO/...) não entram no
 // cálculo de PU de instalações, então não faz sentido pedir PU pra eles aqui.
@@ -120,23 +149,60 @@ async function sincronizarPuProdutos(conn, linhas) {
       .filter(Boolean)
   )];
 
-  if (produtosNoArquivo.length === 0) return [];
-
   for (const produto of produtosNoArquivo) {
     await conn.query(
       'INSERT IGNORE INTO depara_pu_produto (SPECIFICATION_PRODUCT, PU) VALUES (?, 0)',
       [produto]
     );
   }
+}
 
-  const [semPu] = await conn.query(
-    `SELECT SPECIFICATION_PRODUCT FROM depara_pu_produto
-     WHERE PU = 0 AND SPECIFICATION_PRODUCT IN (?)
-     ORDER BY SPECIFICATION_PRODUCT`,
-    [produtosNoArquivo]
-  );
+// Mesma lógica de sincronizarPuProdutos, só que pro recorte de Serviços: tudo que
+// não é INSTALAÇÃO nem DESCONEXÃO, excluindo produtos de Mudança de Endereço.
+async function sincronizarPuProdutosServicos(conn, linhas) {
+  await conn.query(CREATE_TABLE_PU_PRODUTO_SERVICO_SQL);
 
-  return semPu.map(row => row.SPECIFICATION_PRODUCT);
+  const produtosNoArquivo = [...new Set(
+    linhas
+      .filter(linha =>
+        linha[INDICE_CLUSTER] === CLUSTER_ESCOPO &&
+        !SERVICO_SPECIFICATION_TYPE_EXCLUIDOS.includes(linha[INDICE_SPECIFICATION_TYPE]) &&
+        !linha[INDICE_SPECIFICATION_PRODUCT].startsWith(SERVICO_SPECIFICATION_PRODUCT_PREFIXO_EXCLUIDO_TEXTO)
+      )
+      .map(linha => linha[INDICE_SPECIFICATION_PRODUCT])
+      .filter(Boolean)
+  )];
+
+  for (const produto of produtosNoArquivo) {
+    await conn.query(
+      'INSERT IGNORE INTO depara_pu_produto_servico (SPECIFICATION_PRODUCT, PU) VALUES (?, 0)',
+      [produto]
+    );
+  }
+}
+
+// Mesma lógica de sincronizarPuProdutos, só que pro recorte de ME: qualquer
+// SPECIFICATION_PRODUCT que contenha "MUDANÇA DE ENDEREÇO" (sem restrição de
+// SPECIFICATION_TYPE — ALTERAÇÃO e DESCONEXÃO contam as duas).
+async function sincronizarPuProdutosMe(conn, linhas) {
+  await conn.query(CREATE_TABLE_PU_PRODUTO_ME_SQL);
+
+  const produtosNoArquivo = [...new Set(
+    linhas
+      .filter(linha =>
+        linha[INDICE_CLUSTER] === CLUSTER_ESCOPO &&
+        linha[INDICE_SPECIFICATION_PRODUCT].includes(ME_SPECIFICATION_PRODUCT_CONTEM_TEXTO)
+      )
+      .map(linha => linha[INDICE_SPECIFICATION_PRODUCT])
+      .filter(Boolean)
+  )];
+
+  for (const produto of produtosNoArquivo) {
+    await conn.query(
+      'INSERT IGNORE INTO depara_pu_produto_me (SPECIFICATION_PRODUCT, PU) VALUES (?, 0)',
+      [produto]
+    );
+  }
 }
 
 async function inserirBatch(conn, nomeArquivo, linhas) {
@@ -165,10 +231,12 @@ async function importarInstalacoes(buffer, nomeArquivo) {
       await inserirBatch(conn, nomeArquivo, linhas.slice(i, i + BATCH_SIZE));
     }
 
-    const produtosSemPu = await sincronizarPuProdutos(conn, linhas);
+    await sincronizarPuProdutos(conn, linhas);
+    await sincronizarPuProdutosServicos(conn, linhas);
+    await sincronizarPuProdutosMe(conn, linhas);
 
     await conn.commit();
-    return { totalLinhas: linhas.length, produtosSemPu };
+    return { totalLinhas: linhas.length };
   } catch (err) {
     await conn.rollback();
     throw err;
@@ -177,4 +245,14 @@ async function importarInstalacoes(buffer, nomeArquivo) {
   }
 }
 
-module.exports = { importarInstalacoes, parseCsv, COLUNAS };
+// Data da última carga do ELOS pro backlog_instalacoes inteiro (mesma coluna
+// DATA_CARGA do export, compartilhada pelos painéis de Instalações e Serviços já
+// que os dois leem da mesma tabela/upload).
+async function getDataCargaInstalacoes() {
+  const [rows] = await pool.query(
+    `SELECT MAX(STR_TO_DATE(DATA_CARGA, '%d/%m/%Y %H:%i:%s')) AS dataCarga FROM backlog_instalacoes`
+  );
+  return rows[0].dataCarga;
+}
+
+module.exports = { importarInstalacoes, parseCsv, COLUNAS, getDataCargaInstalacoes };

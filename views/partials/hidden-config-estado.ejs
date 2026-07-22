@@ -22,7 +22,9 @@ const _exceto = typeof exceto !== 'undefined' ? exceto : [];
 <% if (!_exceto.includes('puReparo')) { %><input type="hidden" name="puReparo" value="<%= puReparo %>" /><% } %>
 <% if (!_exceto.includes('metaPuTecnico')) { %><input type="hidden" name="metaPuTecnico" value="<%= metaPuTecnico %>" /><% } %>
 <% if (!_exceto.includes('percentualInstalacao')) { %><input type="hidden" name="percentualInstalacao" value="<%= percentualInstalacao %>" /><% } %>
-<% if (!_exceto.includes('percentualJanelaInstalacao')) { %><input type="hidden" name="percentualJanelaInstalacao" value="<%= percentualJanelaInstalacao %>" /><% } %>
+<% if (!_exceto.includes('percentualJanela1Instalacao')) { %><input type="hidden" name="percentualJanela1Instalacao" value="<%= percentualJanela1Instalacao %>" /><% } %>
+<% if (!_exceto.includes('percentualJanela2Instalacao')) { %><input type="hidden" name="percentualJanela2Instalacao" value="<%= percentualJanela2Instalacao %>" /><% } %>
+<% if (!_exceto.includes('percentualJanela3Instalacao')) { %><input type="hidden" name="percentualJanela3Instalacao" value="<%= percentualJanela3Instalacao %>" /><% } %>
 <% if (!_exceto.includes('metaPuTecnicoInstalacao')) { %><input type="hidden" name="metaPuTecnicoInstalacao" value="<%= metaPuTecnicoInstalacao %>" /><% } %>
 <% if (!_exceto.includes('statusInstalacao')) { %>
   <% statusInstalacaoSelecionados.forEach(v => { %><input type="hidden" name="statusInstalacao" value="<%= v %>" /><% }) %>
@@ -32,4 +34,32 @@ const _exceto = typeof exceto !== 'undefined' ? exceto : [];
 <% } %>
 <% if (!_exceto.includes('tecnologiaAcesso')) { %>
   <% tecnologiaAcessoSelecionadas.forEach(v => { %><input type="hidden" name="tecnologiaAcesso" value="<%= v %>" /><% }) %>
+<% } %>
+<% if (!_exceto.includes('percentualServico')) { %><input type="hidden" name="percentualServico" value="<%= percentualServico %>" /><% } %>
+<% if (!_exceto.includes('percentualJanela1Servico')) { %><input type="hidden" name="percentualJanela1Servico" value="<%= percentualJanela1Servico %>" /><% } %>
+<% if (!_exceto.includes('percentualJanela2Servico')) { %><input type="hidden" name="percentualJanela2Servico" value="<%= percentualJanela2Servico %>" /><% } %>
+<% if (!_exceto.includes('percentualJanela3Servico')) { %><input type="hidden" name="percentualJanela3Servico" value="<%= percentualJanela3Servico %>" /><% } %>
+<% if (!_exceto.includes('metaPuTecnicoServico')) { %><input type="hidden" name="metaPuTecnicoServico" value="<%= metaPuTecnicoServico %>" /><% } %>
+<% if (!_exceto.includes('statusServico')) { %>
+  <% statusServicoSelecionados.forEach(v => { %><input type="hidden" name="statusServico" value="<%= v %>" /><% }) %>
+<% } %>
+<% if (!_exceto.includes('statusReasonServico')) { %>
+  <% statusReasonServicoSelecionados.forEach(v => { %><input type="hidden" name="statusReasonServico" value="<%= v %>" /><% }) %>
+<% } %>
+<% if (!_exceto.includes('tecnologiaAcessoServico')) { %>
+  <% tecnologiaAcessoServicoSelecionadas.forEach(v => { %><input type="hidden" name="tecnologiaAcessoServico" value="<%= v %>" /><% }) %>
+<% } %>
+<% if (!_exceto.includes('percentualMe')) { %><input type="hidden" name="percentualMe" value="<%= percentualMe %>" /><% } %>
+<% if (!_exceto.includes('percentualJanela1Me')) { %><input type="hidden" name="percentualJanela1Me" value="<%= percentualJanela1Me %>" /><% } %>
+<% if (!_exceto.includes('percentualJanela2Me')) { %><input type="hidden" name="percentualJanela2Me" value="<%= percentualJanela2Me %>" /><% } %>
+<% if (!_exceto.includes('percentualJanela3Me')) { %><input type="hidden" name="percentualJanela3Me" value="<%= percentualJanela3Me %>" /><% } %>
+<% if (!_exceto.includes('metaPuTecnicoMe')) { %><input type="hidden" name="metaPuTecnicoMe" value="<%= metaPuTecnicoMe %>" /><% } %>
+<% if (!_exceto.includes('statusMe')) { %>
+  <% statusMeSelecionados.forEach(v => { %><input type="hidden" name="statusMe" value="<%= v %>" /><% }) %>
+<% } %>
+<% if (!_exceto.includes('statusReasonMe')) { %>
+  <% statusReasonMeSelecionados.forEach(v => { %><input type="hidden" name="statusReasonMe" value="<%= v %>" /><% }) %>
+<% } %>
+<% if (!_exceto.includes('tecnologiaAcessoMe')) { %>
+  <% tecnologiaAcessoMeSelecionadas.forEach(v => { %><input type="hidden" name="tecnologiaAcessoMe" value="<%= v %>" /><% }) %>
 <% } %>

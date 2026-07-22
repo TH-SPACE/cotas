@@ -1,9 +1,26 @@
 // Matemática compartilhada entre os painéis de Reparos e Instalações: ambos
 // partem de "quantidade em aberto por bucket" + "tempo médio por bucket" e chegam
 // em previsto/janelas/PU/técnicos do mesmo jeito, só mudando os nomes dos campos
-// de origem (backlogReparos/tempoReparoMinutos vs backlogInstalacoes/tempoInstalacaoMinutos).
+// de origem (backlogReparos/tempoReparoMinutos vs backlogInstalacoes/tempoInstalacaoMinutos)
+// e o número de janelas de horário (Reparos usa 2, Instalações usa 4).
 
 const TOP_N_VOLUME_PADRAO = 3;
+
+// `percentuaisJanela` traz o percentual de todas as janelas MENOS a última — a
+// última é sempre o restante (100% - soma das outras), igual ao "12:30-18:00" dos
+// Reparos já funcionava, só generalizado pra N janelas em vez de fixo em 2.
+// Nunca fica negativa: se a soma das editáveis passar de 100%, o restante vira 0.
+function distribuirEmJanelas(total, percentuaisJanela) {
+  const janelas = [];
+  let restante = total;
+  percentuaisJanela.forEach(pct => {
+    const qtd = Math.round(total * pct / 100);
+    janelas.push(qtd);
+    restante -= qtd;
+  });
+  janelas.push(Math.max(0, restante));
+  return janelas;
+}
 
 // PU pode vir de duas formas: um peso único pra tudo (`pu`, usado pelos Reparos) ou
 // um total bruto já ponderado por linha (`campoPuBruto`, usado pelas Instalações —
@@ -11,7 +28,7 @@ const TOP_N_VOLUME_PADRAO = 3;
 // já soma o peso ticket-a-ticket e aqui só aplicamos o percentual de "previsto").
 function calcularLinhasComPrevisto(linhas, config) {
   const {
-    percentual, percentualJanela, pu, metaPuTecnico,
+    percentual, percentuaisJanela, pu, metaPuTecnico,
     campoBacklog, campoTempo, campoPuBruto, topNVolume = TOP_N_VOLUME_PADRAO,
   } = config;
 
@@ -23,8 +40,8 @@ function calcularLinhasComPrevisto(linhas, config) {
 
   return linhas.map(linha => {
     const previstoResolucao = Math.round(linha[campoBacklog] * percentual / 100);
-    const janela0830_1230 = Math.round(previstoResolucao * percentualJanela / 100);
-    const janela1230_1800 = previstoResolucao - janela0830_1230;
+    const janelas = distribuirEmJanelas(previstoResolucao, percentuaisJanela);
+    const minutos = janelas.map(qtd => qtd * linha[campoTempo]);
     const puCalculado = campoPuBruto !== undefined
       ? Math.round(linha[campoPuBruto] * percentual / 100 * 100) / 100
       : Math.round(previstoResolucao * pu * 100) / 100;
@@ -33,10 +50,8 @@ function calcularLinhasComPrevisto(linhas, config) {
     return {
       ...linha,
       previstoResolucao,
-      janela0830_1230,
-      janela1230_1800,
-      minutos0830_1230: janela0830_1230 * linha[campoTempo],
-      minutos1230_1800: janela1230_1800 * linha[campoTempo],
+      janelas,
+      minutos,
       pu: puCalculado,
       tecnicos: Math.ceil(puCalculado / metaPuTecnico),
       maiorVolume: linha[campoBacklog] > 0 && rank < topNVolume,
@@ -45,17 +60,18 @@ function calcularLinhasComPrevisto(linhas, config) {
 }
 
 function calcularTotais(totalGeral, linhasComPrevisto, config) {
-  const { percentual, percentualJanela, metaPuTecnico } = config;
+  const { percentual, percentuaisJanela, metaPuTecnico } = config;
   const totalPrevisto = Math.round(totalGeral * percentual / 100);
-  const totalJanela0830_1230 = Math.round(totalPrevisto * percentualJanela / 100);
+  const totalJanelas = distribuirEmJanelas(totalPrevisto, percentuaisJanela);
+  const totalMinutos = totalJanelas.map((_, i) =>
+    linhasComPrevisto.reduce((acc, l) => acc + l.minutos[i], 0)
+  );
   const totalPu = Math.round(linhasComPrevisto.reduce((acc, l) => acc + l.pu, 0) * 100) / 100;
 
   return {
     totalPrevisto,
-    totalJanela0830_1230,
-    totalJanela1230_1800: totalPrevisto - totalJanela0830_1230,
-    totalMinutos0830_1230: linhasComPrevisto.reduce((acc, l) => acc + l.minutos0830_1230, 0),
-    totalMinutos1230_1800: linhasComPrevisto.reduce((acc, l) => acc + l.minutos1230_1800, 0),
+    totalJanelas,
+    totalMinutos,
     totalPu,
     totalTecnicos: Math.ceil(totalPu / metaPuTecnico),
   };

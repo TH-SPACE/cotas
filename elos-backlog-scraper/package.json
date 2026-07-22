@@ -1,0 +1,22 @@
+{
+  "name": "elos-backlog-scraper",
+  "version": "1.0.0",
+  "description": "Raspagem independente do backlog Elos (Instalacoes e Reparos): login, exporta CSV e sobe para o banco",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "loop-instalacoes": "node loop-instalacoes.js",
+    "setup-db": "node setup-db.js",
+    "test-import": "node test-import.js",
+    "test-import-instalacoes": "node test-import-instalacoes.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.6.1",
+    "fs-extra": "^11.3.6",
+    "moment": "^2.30.1",
+    "mysql2": "^3.23.1",
+    "puppeteer": "^21.6.1",
+    "puppeteer-extra": "^3.3.6",
+    "puppeteer-extra-plugin-stealth": "^2.11.2"
+  }
+}

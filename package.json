@@ -6,6 +6,9 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node --watch server.js",
+    "scraper:instalacoes": "node elos-backlog-scraper/loop-instalacoes.js",
+    "dev:all": "concurrently -n calculadora,scraper -c blue,green \"npm:dev\" \"npm:scraper:instalacoes\"",
+    "start:all": "concurrently -n calculadora,scraper -c blue,green \"npm:start\" \"npm:scraper:instalacoes\"",
     "import:depara": "node scripts/import-depara.js",
     "import:tempo": "node scripts/import-depara-tempo.js",
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -20,5 +23,8 @@
     "express": "^5.2.1",
     "multer": "^2.2.0",
     "mysql2": "^3.23.1"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.4"
   }
 }

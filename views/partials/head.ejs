@@ -15,5 +15,80 @@
         Calculadora de Cotas <span class="badge" title="Cluster GOIANIA">GO</span>
       </a>
     </h1>
+    <% // Nas seções (#secao-*) só existem no HTML da página principal (index). Quando
+       // este header é renderizado em outra página (ex.: /resumo-cotas), um href
+       // relativo tipo "#secao-instalacoes" ficaria tentando rolar a página atual,
+       // que não tem esse id, e não navegaria a lugar nenhum. `linkVoltar` só é
+       // passado pelas páginas que NÃO são a index (ver rota /resumo-cotas), então
+       // serve de sinal: se existir, prefixa o link de volta pra index (preservando
+       // filtros) antes do "#", forçando a navegação completa até lá. %>
+    <% const prefixoSecao = typeof linkVoltar !== 'undefined' ? linkVoltar : ''; %>
+    <nav class="topbar-nav" aria-label="Atalhos de navegação">
+      <a href="<%= prefixoSecao %>#secao-instalacoes" class="topbar-nav-item" title="Ir para Resumo de Backlog de Instalações">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94z"/></svg>
+        <span>Instalações</span>
+      </a>
+      <a href="<%= prefixoSecao %>#secao-servicos" class="topbar-nav-item" title="Ir para Resumo de Backlog de Serviços">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/><circle cx="12" cy="12" r="3"/></svg>
+        <span>Serviços</span>
+      </a>
+      <a href="<%= prefixoSecao %>#secao-me" class="topbar-nav-item" title="Ir para Resumo de Backlog de ME (Mudança de Endereço)">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+        <span>ME</span>
+      </a>
+      <a href="<%= prefixoSecao %>#secao-reparos" class="topbar-nav-item" title="Ir para Resumo de Backlog de Reparos">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/></svg>
+        <span>Reparos</span>
+      </a>
+      <a href="<%= typeof linkResumoCotas !== 'undefined' ? linkResumoCotas : '/resumo-cotas' %>" class="topbar-nav-item" title="Ver resumo consolidado de COTAS(min) de Instalação, ME, Serviços e Reparos, um por bucket">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        <span>Resumo COTAS</span>
+      </a>
+    </nav>
+    <button type="button" class="icon-btn" id="config-elos-open-btn" aria-haspopup="dialog" aria-controls="config-elos-modal" title="Credenciais de login da raspagem automática do Elos">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="15" r="4"/><path d="M10.5 12.5 20 3M17 6l3 3M14 9l2 2"/></svg>
+    </button>
   </header>
+  <dialog id="config-elos-modal" class="config-modal">
+    <div class="modal-header">
+      <h3 title="Login usado pela raspagem automática (elos-backlog-scraper) que baixa o backlog de Instalações do Elos a cada 10-25 min">Credenciais do Elos</h3>
+      <button type="button" class="icon-btn" id="config-elos-close-btn" aria-label="Fechar" title="Fechar">&times;</button>
+    </div>
+
+    <form method="post" action="/config/elos-credenciais" class="modal-section">
+      <div class="modal-body">
+        <p class="hint">
+          Login usado pela raspagem automática do backlog de Instalações. Troque aqui quando quem
+          costuma cuidar disso sair (férias, etc.) e outra pessoa precisar usar seu próprio usuário.
+        </p>
+        <div class="field-row">
+          <label for="elos-usuario-input">Usuário Elos</label>
+          <input
+            type="text"
+            id="elos-usuario-input"
+            name="elosUsuario"
+            autocomplete="off"
+            required
+            value="<%= (typeof elosCredenciais !== 'undefined' && elosCredenciais) ? elosCredenciais.usuario : '' %>"
+          />
+        </div>
+        <div class="field-row">
+          <label for="elos-senha-input">Senha Elos</label>
+          <input
+            type="password"
+            id="elos-senha-input"
+            name="elosSenha"
+            autocomplete="off"
+            placeholder="<%= (typeof elosCredenciais !== 'undefined' && elosCredenciais) ? 'deixe em branco para manter a atual' : '' %>"
+          />
+        </div>
+        <% if (typeof elosCredenciais !== 'undefined' && elosCredenciais) { %>
+          <p class="hint">Atualizado em <strong><%= elosCredenciais.atualizadoEm %></strong></p>
+        <% } %>
+      </div>
+      <div class="modal-footer">
+        <button type="submit" title="Salva as credenciais do Elos">Salvar</button>
+      </div>
+    </form>
+  </dialog>
   <main class="container">

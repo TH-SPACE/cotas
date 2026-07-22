@@ -1,0 +1,294 @@
+// Definicoes de tabela compartilhadas entre setup-db.js, index.js e test-import.js.
+
+async function criarTabelaAtualizacao(conn) {
+  await conn.query(`
+    CREATE TABLE IF NOT EXISTS atualizacao (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      tipo VARCHAR(100) NOT NULL,
+      datahora DATETIME,
+      UNIQUE KEY idx_tipo (tipo)
+    )
+  `);
+}
+
+// Garante que existe uma linha de controle para o `tipo` informado (ex:
+// 'backlog_elos', 'backlog_instalacoes'), sem sobrescrever se ja existir.
+async function garantirRegistroAtualizacao(conn, tipo) {
+  await conn.query(
+    "INSERT IGNORE INTO atualizacao (tipo, datahora) VALUES (?, '2000-01-01 00:00:00')",
+    [tipo]
+  );
+}
+
+async function criarTabelaBacklog(conn, tableName) {
+  await conn.query(`
+    CREATE TABLE IF NOT EXISTS \`${tableName}\` (
+      COD_SS VARCHAR(100) PRIMARY KEY,
+      STATUS VARCHAR(100) DEFAULT '',
+      STATUS_REASON VARCHAR(255) DEFAULT '',
+      DATA_STATUS DATETIME NULL,
+      ARMARIO VARCHAR(100) DEFAULT '',
+      STREETNAME VARCHAR(255) DEFAULT '',
+      STATEORPROVINCE VARCHAR(100) DEFAULT '',
+      POSTCODE VARCHAR(20) DEFAULT '',
+      CNL VARCHAR(100) DEFAULT '',
+      NEIGHBORDHOOD VARCHAR(255) DEFAULT '',
+      CATEGORIZES_TYPE VARCHAR(100) DEFAULT '',
+      SPECIFICATION_TYPE VARCHAR(100) DEFAULT '',
+      SPECIFICATION_PRODUCT VARCHAR(100) DEFAULT '',
+      DETAIL VARCHAR(500) DEFAULT '',
+      DATA_ABERTURA DATETIME NULL,
+      DATA_VENCIMENTO DATETIME NULL,
+      TIME_SLOT VARCHAR(100) DEFAULT '',
+      PHYSICALRESOURCESUMMARY TEXT,
+      TELEPHONENUMERIC VARCHAR(50) DEFAULT '',
+      DESIGNATOR VARCHAR(100) DEFAULT '',
+      CITY VARCHAR(255) DEFAULT '',
+      CLUSTER_ VARCHAR(100) DEFAULT '',
+      FABRICA VARCHAR(100) DEFAULT '',
+      REGIONAL VARCHAR(100) DEFAULT '',
+      CUSTOMER_DOCUMENTNUMERIC VARCHAR(50) DEFAULT '',
+      CUSTOMER_NAME VARCHAR(255) DEFAULT '',
+      EXECUTEDBYLOGIN VARCHAR(100) DEFAULT '',
+      EXECUTEDBYNAME VARCHAR(255) DEFAULT '',
+      NOTDONEREASON VARCHAR(255) DEFAULT '',
+      PRIORITY VARCHAR(50) DEFAULT '',
+      SCHEDULEPROFILE VARCHAR(100) DEFAULT '',
+      CUSTOMER_SEGMENT VARCHAR(100) DEFAULT '',
+      DATA_AGENDADA VARCHAR(100) DEFAULT '',
+      REDESPACHO VARCHAR(100) DEFAULT '',
+      CONTEXTO_SIEBEL VARCHAR(255) DEFAULT '',
+      TOTAL_REPETIDO_30D_PL VARCHAR(50) DEFAULT '',
+      TECNICO_CHECKLIST VARCHAR(100) DEFAULT '',
+      SERVICE_TECHNOLOGY VARCHAR(100) DEFAULT '',
+      VELOCIDADEADSL VARCHAR(100) DEFAULT '',
+      REPETIDO_PRODUTO_30D VARCHAR(50) DEFAULT '',
+      REGISTRADO_CHECKLIST VARCHAR(100) DEFAULT '',
+      CUSTOMER_RANK VARCHAR(50) DEFAULT '',
+      SEGMENTACAO VARCHAR(100) DEFAULT '',
+      DESIGNADOR_TV VARCHAR(100) DEFAULT '',
+      REDE VARCHAR(100) DEFAULT '',
+      MICROAREA VARCHAR(100) DEFAULT '',
+      TELEPHONIC_AREA VARCHAR(100) DEFAULT '',
+      CENTRAL_OFFICE VARCHAR(100) DEFAULT '',
+      PHYSICAL_LINK_MEDIA_TYPE VARCHAR(100) DEFAULT '',
+      FLAG_RECENTE VARCHAR(50) DEFAULT '',
+      EXECUTOR_BA VARCHAR(100) DEFAULT '',
+      TEC_ANTERIOR VARCHAR(100) DEFAULT '',
+      PRIMEIRO_AGENDAMENTO VARCHAR(100) DEFAULT '',
+      CABO_PRIMARIO VARCHAR(100) DEFAULT '',
+      PAR_PRIMARIO VARCHAR(100) DEFAULT '',
+      CABO_SECUNDARIO VARCHAR(100) DEFAULT '',
+      PAR_SECUNDARIO VARCHAR(100) DEFAULT '',
+      LATERAL_PRIMARIO VARCHAR(100) DEFAULT '',
+      LATERAL VARCHAR(100) DEFAULT '',
+      NUMERO_CAIXA VARCHAR(100) DEFAULT '',
+      NOME_MSAN VARCHAR(100) DEFAULT '',
+      NP VARCHAR(100) DEFAULT '',
+      DATA_CARGA VARCHAR(100) DEFAULT '',
+      DATA_LAST_UPDATE_PLWO VARCHAR(100) DEFAULT '',
+      ID_FIBRA VARCHAR(100) DEFAULT '',
+      OLT VARCHAR(100) DEFAULT '',
+      OLT_PORTA VARCHAR(100) DEFAULT '',
+      OLT_SLOT VARCHAR(100) DEFAULT '',
+      SPLITTER_FIBRA_L2 VARCHAR(100) DEFAULT '',
+      ORIGEM_CONTATO VARCHAR(100) DEFAULT '',
+      ABERTURA_TIPO2_SIEBEL VARCHAR(100) DEFAULT '',
+      LATITUDE VARCHAR(50) DEFAULT '',
+      LONGITUDE VARCHAR(50) DEFAULT '',
+      CLIENTE_GOAS VARCHAR(100) DEFAULT '',
+      MARCACAO_VIA_CHAT VARCHAR(100) DEFAULT '',
+      PLATFORM VARCHAR(100) DEFAULT '',
+      IND_CRITICOS VARCHAR(100) DEFAULT '',
+      IND_DISPONIBILIDADE_FIBRA VARCHAR(100) DEFAULT '',
+      SAS_BUSINESSID VARCHAR(100) DEFAULT '',
+      SAS_STATUSREASON VARCHAR(255) DEFAULT '',
+      SASEVEN_CODE VARCHAR(100) DEFAULT '',
+      SASEVEN_VIVO1_ID VARCHAR(100) DEFAULT '',
+      SASEVEN_DATA_INICIO VARCHAR(100) DEFAULT '',
+      SASEVEN_FLAG_ATIVO VARCHAR(50) DEFAULT '',
+      SASEVEN_DATA_PREVISAO VARCHAR(100) DEFAULT '',
+      SASEVEN_DATA_FECHAMENTO VARCHAR(100) DEFAULT '',
+      SASEVEN_LEVEL VARCHAR(100) DEFAULT '',
+      SASEVEN_CREATOR VARCHAR(100) DEFAULT '',
+      SASCAUSA_NOME VARCHAR(255) DEFAULT '',
+      XA_FAULT_REASON VARCHAR(255) DEFAULT '',
+      XA_OPERATOR_ID VARCHAR(100) DEFAULT '',
+      XA_API_CANCEL_REASON VARCHAR(255) DEFAULT '',
+      NOM_SISTEMA_ORIGEM VARCHAR(100) DEFAULT '',
+      FLAG_ICMCOE VARCHAR(50) DEFAULT '',
+      DESIGNADOR_ACESSO VARCHAR(100) DEFAULT '',
+      FLAG_CASAINTELIGENTE VARCHAR(50) DEFAULT '',
+      PARENT1 VARCHAR(255) DEFAULT '',
+      PARENT2 VARCHAR(255) DEFAULT '',
+      PARENT3 VARCHAR(255) DEFAULT '',
+      PARENT4 VARCHAR(255) DEFAULT '',
+      AURA_CASO VARCHAR(100) DEFAULT '',
+      AURA_DAT_ENVIO VARCHAR(100) DEFAULT '',
+      AURA_DAT_CONF VARCHAR(100) DEFAULT '',
+      AURA_RETORNO VARCHAR(255) DEFAULT '',
+      IFI VARCHAR(50) DEFAULT '',
+      IFI_GERADOR VARCHAR(100) DEFAULT '',
+      IRR VARCHAR(50) DEFAULT '',
+      IRR_GERADOR VARCHAR(100) DEFAULT '',
+      STATUS_GOPER VARCHAR(50) DEFAULT ''
+    )
+  `);
+}
+
+// Tabela do backlog de Instalacoes -- schema copiado da tabela real que ja existia
+// no banco `indicadores` do usuario (105 colunas: ID autoincrement como chave,
+// a maioria das colunas em TEXT solto, so as 6 usadas em filtro/indice viram
+// VARCHAR(30), e ARQUIVO_ORIGEM/IMPORTADO_EM rastreiam a origem de cada linha).
+// NUMERO_OS sozinho NAO e unico (uma OS pode ter varias linhas, uma por
+// produto/atividade), entao nao da pra usar upsert por chave natural -- a
+// estrategia de carga e "snapshot": truncar e recarregar a cada raspagem
+// (ver importInstalacoes.js).
+async function criarTabelaInstalacoes(conn, tableName) {
+  await conn.query(`
+    CREATE TABLE IF NOT EXISTS \`${tableName}\` (
+      ID INT AUTO_INCREMENT PRIMARY KEY,
+      NUMERO_OS VARCHAR(30) DEFAULT '',
+      STATUS VARCHAR(30) DEFAULT '',
+      STATUS_REASON TEXT,
+      DATA_STATUS TEXT,
+      ARMARIO VARCHAR(30) DEFAULT '',
+      STREETNAME TEXT,
+      STATEORPROVINCE TEXT,
+      POSTCODE TEXT,
+      CNL TEXT,
+      NEIGHBORDHOOD TEXT,
+      CATEGORIZES_TYPE TEXT,
+      SPECIFICATION_TYPE VARCHAR(30) DEFAULT '',
+      SPECIFICATION_PRODUCT TEXT,
+      DETAIL TEXT,
+      DATA_ABERTURA TEXT,
+      DATA_VENCIMENTO TEXT,
+      TIME_SLOT TEXT,
+      PHYSICALRESOURCESUMMARY TEXT,
+      TELEPHONENUMERIC TEXT,
+      DESIGNATOR TEXT,
+      CIDADE TEXT,
+      CLUSTER_ VARCHAR(30) DEFAULT '',
+      REGIONAL VARCHAR(30) DEFAULT '',
+      CUSTOMER_DOCUMENTNUMERIC TEXT,
+      CUSTOMER_NAME TEXT,
+      EXECUTEDBYLOGIN TEXT,
+      EXECUTEDBYNAME TEXT,
+      NOTDONEREASON TEXT,
+      PRIORITY TEXT,
+      SCHEDULEPROFILE TEXT,
+      CUSTOMER_SEGMENT TEXT,
+      CUSTOMER_TEMPERATURE TEXT,
+      CUSTOMER_RANK TEXT,
+      SEGMENTACAO TEXT,
+      SERVICE_TECHNOLOGY TEXT,
+      SPECIFICATION_ACRONYM TEXT,
+      PORTABILITY_STATUS TEXT,
+      PORTABILITY_START TEXT,
+      PORTABILITY_END TEXT,
+      REDESPACHO TEXT,
+      DATEOFSTATUSPORTABILITY TEXT,
+      DATEOFSTATUSEXECUTION TEXT,
+      CONTRACTOR TEXT,
+      PON TEXT,
+      RPON TEXT,
+      AGENDADO_NA_VENDA TEXT,
+      VELOCIDADEADSL TEXT,
+      DATA_AGENDADA TEXT,
+      DTH_PURO TEXT,
+      TOTAL_PONTO_ADICIONAL TEXT,
+      PACOTE_TV TEXT,
+      FLAG_GPON TEXT,
+      DATA_CANCELAMENTO TEXT,
+      LOGIN_CANCELAMENTO TEXT,
+      MOTIVO_DE_CANCELAMENTO TEXT,
+      OBSERVACAO TEXT,
+      REDE TEXT,
+      MICROAREA TEXT,
+      TELEPHONIC_AREA TEXT,
+      CENTRAL_OFFICE TEXT,
+      TECNOLOGIA_ACESSO TEXT,
+      DESIGNADOR_TV TEXT,
+      DTH_CONECTADO TEXT,
+      PRODUTOS_ADICIONAR TEXT,
+      PRODUTOS_MODIFICAR TEXT,
+      PRODUTOS_ATIVO TEXT,
+      PRODUTOS_DESCONECTAR TEXT,
+      DATA_CARGA TEXT,
+      DATA_LAST_UPDATE_PLWO TEXT,
+      TECNOLOGIA_TV TEXT,
+      LATITUDE TEXT,
+      LONGITUDE TEXT,
+      CLIENTE_GOAS TEXT,
+      MARCACAO_VIA_CHAT TEXT,
+      PLATFORM TEXT,
+      EXCECAO_ATUAL TEXT,
+      EXCECAO_ATUAL_ATIVIDADE TEXT,
+      EXCECAO_ATUAL_GRUPO TEXT,
+      RECUSA_ANTECIPAR TEXT,
+      DATA_COMPROMISSO TEXT,
+      DATA_PRIMEIRA_AGENDA TEXT,
+      DESC_GRUPO_RESPONSABILIDADE TEXT,
+      DESC_CANAL TEXT,
+      DESC_GRUPO_CANAL TEXT,
+      FLAG_CANAL_ATENDIMENTO TEXT,
+      FLAG_VENDE_INSTALA TEXT,
+      CLIENTES_V_SAV TEXT,
+      NOM_SISTEMA_ORIGEM TEXT,
+      FLAG_MATRIX TEXT,
+      FLAG_EVEREST TEXT,
+      FLAG_MT24H TEXT,
+      FLAG_PRD_ALTA TEXT,
+      ID_PRD_ULT_DESC TEXT,
+      DESIGNADOR_ACESSO TEXT,
+      FLAG_CASAINTELIGENTE TEXT,
+      PARENT1 TEXT,
+      PARENT2 TEXT,
+      PARENT3 TEXT,
+      PARENT4 TEXT,
+      FLAG_FIBRATODOS TEXT,
+      FLAG_ANATEL TEXT,
+      FLAG_RIFAINA TEXT,
+      ARQUIVO_ORIGEM VARCHAR(255),
+      IMPORTADO_EM DATETIME,
+      INDEX idx_numero_os (NUMERO_OS),
+      INDEX idx_armario (ARMARIO),
+      INDEX idx_cluster (CLUSTER_),
+      INDEX idx_regional (REGIONAL),
+      INDEX idx_status (STATUS),
+      INDEX idx_specification_type (SPECIFICATION_TYPE)
+    )
+  `);
+}
+
+// Mesma tabela que a calculadora usa (src/services/elosCredenciaisService.js) --
+// dá pra trocar o usuário/senha da raspagem pela página web, sem precisar editar
+// o .env no servidor (útil quando quem cuida disso sai de férias, por exemplo).
+// Cria com IF NOT EXISTS só por segurança; quem normalmente cria essa tabela é a
+// calculadora, então aqui ela quase sempre já existe.
+async function criarTabelaCredenciais(conn) {
+  await conn.query(`
+    CREATE TABLE IF NOT EXISTS elos_credenciais (
+      id TINYINT PRIMARY KEY,
+      usuario VARCHAR(100) NOT NULL,
+      senha VARCHAR(255) NOT NULL,
+      atualizado_em DATETIME
+    )
+  `);
+}
+
+async function getCredenciais(conn) {
+  await criarTabelaCredenciais(conn);
+  const [linhas] = await conn.query('SELECT usuario, senha FROM elos_credenciais WHERE id = 1');
+  return linhas[0] || null;
+}
+
+module.exports = {
+  criarTabelaAtualizacao,
+  garantirRegistroAtualizacao,
+  criarTabelaBacklog,
+  criarTabelaInstalacoes,
+  criarTabelaCredenciais,
+  getCredenciais
+};

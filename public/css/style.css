@@ -20,6 +20,11 @@
   --col-minutos-bg: #fbf1e6;
   --zero-color: #b7bbc2;
   --col-divider: #c7cad1;
+  --table-header-bg: #2c2850;
+  --table-header-fg: #ffffff;
+  --table-card-border: #c3b2ec;
+  --table-stripe-bg: #f2f3f5;
+  --table-shadow: 0 6px 18px rgba(44, 40, 80, 0.14);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -42,10 +47,19 @@
     --col-minutos-bg: #2b2118;
     --zero-color: #565b64;
     --col-divider: #454a56;
+    --table-header-bg: #1f1b38;
+    --table-header-fg: #f3f0ff;
+    --table-card-border: #4a3d78;
+    --table-stripe-bg: #24262d;
+    --table-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
   }
 }
 
 * { box-sizing: border-box; }
+
+html {
+  scroll-behavior: smooth;
+}
 
 body {
   margin: 0;
@@ -55,6 +69,9 @@ body {
 }
 
 .topbar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -86,6 +103,39 @@ body {
   flex-shrink: 0;
 }
 
+.topbar-nav {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.topbar-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.45rem 0.8rem;
+  border-radius: 8px;
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 0.85rem;
+  font-weight: 600;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.topbar-nav-item:hover {
+  background: var(--bg);
+  color: var(--accent);
+}
+
+.topbar-nav-item svg {
+  flex-shrink: 0;
+}
+
+@media (max-width: 700px) {
+  .topbar-nav-item span {
+    display: none;
+  }
+}
+
 .badge {
   background: var(--accent);
   color: var(--accent-contrast);
@@ -95,8 +145,30 @@ body {
   font-weight: 600;
 }
 
+.data-carga-destaque {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--col-ordens-bg);
+  color: var(--text);
+  font-size: 0.9rem;
+  padding: 0.5rem 0.9rem;
+  border-radius: 8px;
+  border-left: 3px solid var(--accent);
+  margin: 0.5rem 0 0.9rem;
+}
+
+.data-carga-destaque svg {
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
+.data-carga-destaque strong {
+  font-weight: 700;
+}
+
 .container {
-  max-width: 1400px;
+  max-width: 1900px;
   margin: 2rem 0;
   padding: 0 1.5rem;
   display: flex;
@@ -147,6 +219,7 @@ body {
   border: 1px solid var(--border);
   border-radius: 8px;
   background: var(--bg);
+  text-decoration: none;
   color: var(--text);
   cursor: pointer;
   flex-shrink: 0;
@@ -435,12 +508,32 @@ body {
 .table-scroll {
   width: 100%;
   overflow-x: auto;
+  overflow-y: hidden;
+  border: 1px solid var(--table-card-border);
+  border-radius: 12px;
+  box-shadow: var(--table-shadow);
 }
 
 .cotas-table {
   width: 100%;
+  table-layout: fixed;
   border-collapse: collapse;
   font-size: 0.9rem;
+}
+
+/* Larguras padronizadas via <colgroup> — as mesmas classes nas duas tabelas
+   (Reparos e Instalações) fazem as colunas equivalentes terem sempre a mesma
+   largura, em vez de cada uma se ajustar ao próprio conteúdo. */
+.colw-aliada {
+  width: 6.5em;
+}
+
+.colw-bucket {
+  width: 11.5em;
+}
+
+.colw-num {
+  width: 5.2em;
 }
 
 .cotas-table th,
@@ -449,19 +542,37 @@ body {
   padding: 0.55rem 0.6rem;
   border-bottom: 1px solid var(--border);
   white-space: nowrap;
+  overflow: hidden;
 }
 
 .cotas-table thead th {
-  color: var(--text);
+  background: var(--table-header-bg);
+  color: var(--table-header-fg);
   font-weight: 700;
   font-size: 0.78rem;
   text-transform: uppercase;
   letter-spacing: 0.03em;
+  white-space: normal;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.18);
 }
 
 .cotas-table thead th.group-header {
   text-align: center;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+.cotas-table thead th.col-divider {
+  border-left-color: rgba(255, 255, 255, 0.3);
+}
+
+/* Nome de bucket/produto pode ser bem mais longo que o resto da linha
+   (ex.: "BKT_GOIANIA_ONDACOM_CONDOMINIO", 30 caracteres) — trunca com reticências
+   em vez de esticar a coluna; o nome completo continua no atributo title. */
+.celula-truncada {
+  max-width: 190px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .cotas-table tfoot td {
@@ -479,21 +590,19 @@ body {
   font-weight: 500;
 }
 
+/* Preto mesmo no corpo da tabela — só valor 0 (.valor-zero, mais abaixo) fica
+   acinzentado. */
+.cotas-table tbody td {
+  color: var(--text);
+}
+
+.cotas-table tbody tr:nth-child(even) {
+  background: var(--table-stripe-bg);
+}
+
 .cotas-table tbody tr.group-start td,
 .tempo-table tbody tr.group-start td {
   border-top: 2px solid var(--border);
-}
-
-.cotas-table .col-backlog {
-  background: var(--col-backlog-bg);
-}
-
-.cotas-table .col-ordens {
-  background: var(--col-ordens-bg);
-}
-
-.cotas-table .col-minutos {
-  background: var(--col-minutos-bg);
 }
 
 .cotas-table .valor-zero {
@@ -502,6 +611,35 @@ body {
 
 .cotas-table .col-divider {
   border-left: 1px solid var(--col-divider);
+}
+
+/* Encolhe progressivamente conforme a tela fica mais estreita, pra empurrar o
+   ponto em que a tabela de Instalações (14 colunas) precisa de rolagem horizontal
+   pra o mais longe possível — sem eliminar 100% em telas realmente pequenas. */
+@media (max-width: 1700px) {
+  .container { padding: 0 1.1rem; }
+  .panel { padding: 1.15rem; }
+  .cotas-table { font-size: 0.82rem; }
+  .cotas-table th, .cotas-table td { padding: 0.42rem 0.45rem; }
+  .cotas-table thead th { font-size: 0.7rem; }
+}
+
+@media (max-width: 1400px) {
+  .container { padding: 0 0.85rem; }
+  .panel { padding: 0.9rem; }
+  .cotas-table { font-size: 0.74rem; }
+  .cotas-table th, .cotas-table td { padding: 0.32rem 0.35rem; }
+  .cotas-table thead th { font-size: 0.62rem; }
+  .aliada-badge { font-size: 0.64rem; padding: 0.1rem 0.45rem; }
+}
+
+@media (max-width: 1150px) {
+  .container { padding: 0 0.6rem; }
+  .panel { padding: 0.7rem; }
+  .cotas-table { font-size: 0.66rem; }
+  .cotas-table th, .cotas-table td { padding: 0.24rem 0.28rem; }
+  .cotas-table thead th { font-size: 0.56rem; }
+  .aliada-badge { font-size: 0.6rem; padding: 0.08rem 0.35rem; }
 }
 
 .volume-flag {

@@ -1,0 +1,100 @@
+<%- include('partials/head') %>
+<% const numCls = (valor) => `num${valor === 0 ? ' valor-zero' : ''}`; %>
+<% const janelaDuasLinhas = (label) => label.replace(' - ', '<br>'); %>
+
+<section class="panel" id="secao-resumo-cotas">
+  <div class="panel-header panel-header-row">
+    <div>
+      <h2 title="COTAS(min) (Ordens de cada janela × tempo do bucket) de cada painel, por janela de horário">
+        <svg class="title-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        Resumo de COTAS(min) por Bucket
+      </h2>
+      <p class="hint">
+        Uma linha por bucket, com as COTAS(min) de cada janela de horário calculadas em cada painel — Instalação, ME, Serviços e Reparos. Bucket sem movimento em algum painel aparece com 0 nas colunas daquele painel.
+      </p>
+    </div>
+    <div class="panel-header-actions">
+      <a href="<%= linkVoltar %>" class="icon-btn" title="Voltar para a página principal">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      </a>
+    </div>
+  </div>
+
+  <div class="table-scroll">
+    <table class="cotas-table">
+      <colgroup>
+        <col class="colw-aliada" />
+        <col class="colw-bucket" />
+        <% janelasInstalacaoLabels.forEach(() => { %><col class="colw-num" /><% }) %>
+        <% janelasMeLabels.forEach(() => { %><col class="colw-num" /><% }) %>
+        <% janelasServicoLabels.forEach(() => { %><col class="colw-num" /><% }) %>
+        <% janelasReparoLabels.forEach(() => { %><col class="colw-num" /><% }) %>
+      </colgroup>
+      <thead>
+        <tr>
+          <th rowspan="2" title="Empresa aliada responsável pelo bucket">Aliada</th>
+          <th rowspan="2" title="Agrupamento de ARDs (armários) mapeado em depara_bucket">Bucket</th>
+          <th colspan="<%= janelasInstalacaoLabels.length %>" class="group-header col-divider" title="COTAS(min) do painel de Instalações, por janela de horário">INSTALAÇÃO</th>
+          <th colspan="<%= janelasMeLabels.length %>" class="group-header col-divider" title="COTAS(min) do painel de ME, por janela de horário">ME</th>
+          <th colspan="<%= janelasServicoLabels.length %>" class="group-header col-divider" title="COTAS(min) do painel de Serviços, por janela de horário">SERVIÇOS</th>
+          <th colspan="<%= janelasReparoLabels.length %>" class="group-header col-divider" title="COTAS(min) do painel de Reparos, por janela de horário">REPAROS</th>
+        </tr>
+        <tr>
+          <% janelasInstalacaoLabels.forEach((label, i) => { %>
+            <th class="num <%= i === 0 ? 'col-divider' : '' %>" title="Instalação — <%= label %>"><%- janelaDuasLinhas(label) %></th>
+          <% }) %>
+          <% janelasMeLabels.forEach((label, i) => { %>
+            <th class="num <%= i === 0 ? 'col-divider' : '' %>" title="ME — <%= label %>"><%- janelaDuasLinhas(label) %></th>
+          <% }) %>
+          <% janelasServicoLabels.forEach((label, i) => { %>
+            <th class="num <%= i === 0 ? 'col-divider' : '' %>" title="Serviços — <%= label %>"><%- janelaDuasLinhas(label) %></th>
+          <% }) %>
+          <% janelasReparoLabels.forEach((label, i) => { %>
+            <th class="num <%= i === 0 ? 'col-divider' : '' %>" title="Reparos — <%= label %>"><%- janelaDuasLinhas(label) %></th>
+          <% }) %>
+        </tr>
+      </thead>
+      <tbody>
+        <% let aliadaAtual = null; %>
+        <% linhasResumo.forEach(linha => { %>
+          <% const novaAliada = linha.aliada !== aliadaAtual; aliadaAtual = linha.aliada; %>
+          <tr class="<%= novaAliada ? 'group-start' : '' %>">
+            <td><span class="aliada-badge aliada-color-<%= aliadaCores[linha.aliada] %>"><%= linha.aliada %></span></td>
+            <td class="celula-truncada" title="<%= linha.bucket %>"><%= linha.bucket %></td>
+            <% linha.instalacao.forEach((min, i) => { %>
+              <td class="<%= numCls(min) %> <%= i === 0 ? 'col-divider' : '' %>"><%= min %></td>
+            <% }) %>
+            <% linha.me.forEach((min, i) => { %>
+              <td class="<%= numCls(min) %> <%= i === 0 ? 'col-divider' : '' %>"><%= min %></td>
+            <% }) %>
+            <% linha.servico.forEach((min, i) => { %>
+              <td class="<%= numCls(min) %> <%= i === 0 ? 'col-divider' : '' %>"><%= min %></td>
+            <% }) %>
+            <% linha.reparo.forEach((min, i) => { %>
+              <td class="<%= numCls(min) %> <%= i === 0 ? 'col-divider' : '' %>"><%= min %></td>
+            <% }) %>
+          </tr>
+        <% }) %>
+      </tbody>
+      <tfoot>
+        <tr>
+          <td colspan="2" title="Soma de todos os buckets">Total geral</td>
+          <% totalMinutosInstalacao.forEach((min, i) => { %>
+            <td class="<%= numCls(min) %> <%= i === 0 ? 'col-divider' : '' %>"><%= min %></td>
+          <% }) %>
+          <% totalMinutosMe.forEach((min, i) => { %>
+            <td class="<%= numCls(min) %> <%= i === 0 ? 'col-divider' : '' %>"><%= min %></td>
+          <% }) %>
+          <% totalMinutosServico.forEach((min, i) => { %>
+            <td class="<%= numCls(min) %> <%= i === 0 ? 'col-divider' : '' %>"><%= min %></td>
+          <% }) %>
+          <% totalMinutosReparo.forEach((min, i) => { %>
+            <td class="<%= numCls(min) %> <%= i === 0 ? 'col-divider' : '' %>"><%= min %></td>
+          <% }) %>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+</section>
+
+<%- include('partials/footer') %>
