@@ -57,6 +57,82 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
+  // Status "ao vivo" da raspagem, no modal "Credenciais do Elos" -- só fica
+  // consultando (polling) o servidor enquanto o modal está aberto, pra não
+  // bater a cada 3s à toa quando ninguém está olhando.
+  const elosModal = document.getElementById('config-elos-modal');
+  const elosOpenBtn = document.getElementById('config-elos-open-btn');
+  const boxStatusRaspagem = document.getElementById('raspagem-status-box');
+  const textoStatusRaspagem = document.getElementById('raspagem-status-texto');
+
+  if (elosModal && elosOpenBtn && boxStatusRaspagem && textoStatusRaspagem) {
+    let intervaloStatusRaspagem = null;
+
+    const atualizarStatusRaspagem = async () => {
+      try {
+        const resposta = await fetch('/api/raspagem-status');
+        const dados = await resposta.json();
+
+        boxStatusRaspagem.classList.remove('alert', 'alert-ok', 'alert-erro');
+
+        if (dados.etapa !== 'ocioso') {
+          boxStatusRaspagem.classList.add('alert', 'alert-ok');
+          textoStatusRaspagem.textContent = `Rodando agora: ${dados.mensagem}`;
+        } else if (dados.ultimoResultado === 'erro') {
+          boxStatusRaspagem.classList.add('alert', 'alert-erro');
+          textoStatusRaspagem.textContent = `Última raspagem falhou em ${dados.ultimaExecucaoEm}: ${dados.ultimoErro}`;
+        } else if (dados.ultimoResultado === 'sucesso') {
+          boxStatusRaspagem.classList.add('alert', 'alert-ok');
+          textoStatusRaspagem.textContent = dados.ultimasLinhas > 0
+            ? `Última raspagem em ${dados.ultimaExecucaoEm}: ${dados.ultimasLinhas} linha(s) importada(s).`
+            : `Última raspagem em ${dados.ultimaExecucaoEm}: sem dados novos no Elos.`;
+        } else {
+          textoStatusRaspagem.textContent = 'Nenhuma raspagem rodou ainda.';
+        }
+      } catch (err) {
+        textoStatusRaspagem.textContent = 'Não foi possível consultar o status agora.';
+      }
+    };
+
+    elosOpenBtn.addEventListener('click', () => {
+      atualizarStatusRaspagem();
+      if (intervaloStatusRaspagem) clearInterval(intervaloStatusRaspagem);
+      intervaloStatusRaspagem = setInterval(atualizarStatusRaspagem, 3000);
+    });
+
+    elosModal.addEventListener('close', () => {
+      if (intervaloStatusRaspagem) {
+        clearInterval(intervaloStatusRaspagem);
+        intervaloStatusRaspagem = null;
+      }
+    });
+
+    const btnExecutarAgora = document.getElementById('raspagem-executar-agora-btn');
+    if (btnExecutarAgora) {
+      btnExecutarAgora.addEventListener('click', async () => {
+        const textoOriginal = btnExecutarAgora.textContent;
+        btnExecutarAgora.disabled = true;
+        btnExecutarAgora.textContent = 'Solicitado...';
+
+        try {
+          await fetch('/api/raspagem-executar-agora', { method: 'POST' });
+        } catch (err) {
+          // a raspagem em si roda em outro processo -- se o pedido falhar aqui,
+          // o usuário só tenta de novo; não tem nada mais a fazer neste catch.
+        }
+
+        atualizarStatusRaspagem();
+
+        // A raspagem confere o pedido a cada 5s (ver loop-instalacoes.js) --
+        // dá uma folga maior que isso antes de deixar clicar de novo.
+        setTimeout(() => {
+          btnExecutarAgora.disabled = false;
+          btnExecutarAgora.textContent = textoOriginal;
+        }, 8000);
+      });
+    }
+  }
+
   const clamp = (valor) => {
     if (Number.isNaN(valor)) return 0;
     return Math.min(100, Math.max(0, valor));

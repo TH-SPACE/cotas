@@ -51,6 +51,7 @@ const {
   construirMapaCoresAliada,
 } = require('../services/calculoBacklogService');
 const { getElosCredenciais, salvarElosCredenciais } = require('../services/elosCredenciaisService');
+const { getStatusRaspagem, solicitarExecucaoManual } = require('../services/raspagemStatusService');
 
 const router = express.Router();
 const upload = multer({ storage: multer.memoryStorage() });
@@ -648,6 +649,42 @@ router.post('/config/elos-credenciais', async (req, res, next) => {
     }
 
     res.redirect(`/?${montarQueryStringEstado(req.body).toString()}`);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Consultado via polling pelo modal "Credenciais do Elos" (public/js/main.js)
+// enquanto ele está aberto, pra mostrar o progresso ao vivo da raspagem
+// (login, exportando, importando...) sem precisar recarregar a página.
+router.get('/api/raspagem-status', async (req, res, next) => {
+  try {
+    const status = await getStatusRaspagem();
+    if (!status) {
+      return res.json({ etapa: 'ocioso', mensagem: '', ultimaExecucaoEm: null, ultimoResultado: null, ultimasLinhas: null, ultimoErro: null });
+    }
+
+    res.json({
+      etapa: status.etapa,
+      mensagem: status.mensagem,
+      ultimaExecucaoEm: status.ultima_execucao_em ? formatarDataCarga(status.ultima_execucao_em) : null,
+      ultimoResultado: status.ultimo_resultado,
+      ultimasLinhas: status.ultimas_linhas,
+      ultimoErro: status.ultimo_erro,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Botão "Executar agora" do modal "Credenciais do Elos" -- só liga a flag;
+// quem roda de fato é o processo separado da raspagem (ver comentário em
+// raspagemStatusService.js). Resposta em JSON porque é chamado via fetch, sem
+// navegação de página (mantém o modal aberto e a barra de status atualizando).
+router.post('/api/raspagem-executar-agora', async (req, res, next) => {
+  try {
+    await solicitarExecucaoManual();
+    res.json({ ok: true });
   } catch (err) {
     next(err);
   }

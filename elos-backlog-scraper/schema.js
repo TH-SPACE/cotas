@@ -289,11 +289,73 @@ async function getCredenciais(conn) {
   return { usuario: linhas[0].usuario, senha: descriptografar(linhas[0].senha) };
 }
 
+// Status "ao vivo" da raspagem, pra pagina da calculadora mostrar o que esta
+// acontecendo agora (login realizado, baixando CSV, importando...) em vez de so
+// saber que existe um processo rodando em algum lugar. Single row (id=1),
+// sobrescrita a cada mudanca de etapa -- nao e historico, e "o que esta
+// acontecendo agora" + "como foi a ultima rodada completa".
+async function criarTabelaStatusRaspagem(conn) {
+  await conn.query(`
+    CREATE TABLE IF NOT EXISTS raspagem_status (
+      id TINYINT PRIMARY KEY,
+      etapa VARCHAR(50) NOT NULL DEFAULT 'ocioso',
+      mensagem VARCHAR(255) NOT NULL DEFAULT '',
+      atualizado_em DATETIME,
+      ultima_execucao_em DATETIME,
+      ultimo_resultado VARCHAR(20),
+      ultimas_linhas INT,
+      ultimo_erro TEXT,
+      execucao_manual_solicitada TINYINT(1) NOT NULL DEFAULT 0
+    )
+  `);
+  // ADD COLUMN IF NOT EXISTS pra tabela que ja existia antes dessa coluna nascer
+  // (MariaDB/MySQL recentes suportam essa clausula; idempotente, roda toda vez).
+  await conn.query(`ALTER TABLE raspagem_status ADD COLUMN IF NOT EXISTS execucao_manual_solicitada TINYINT(1) NOT NULL DEFAULT 0`);
+}
+
+// Consultado durante a espera entre rodadas (loop-instalacoes.js) -- se alguem
+// clicou "Executar agora" na pagina, retorna true E ja zera a flag (consome a
+// solicitacao), pra nao disparar rodadas extras à toa depois.
+async function consumirSolicitacaoManual(conn) {
+  await criarTabelaStatusRaspagem(conn);
+  const [linhas] = await conn.query('SELECT execucao_manual_solicitada FROM raspagem_status WHERE id = 1');
+  const solicitado = !!(linhas[0] && linhas[0].execucao_manual_solicitada);
+  if (solicitado) {
+    await conn.query('UPDATE raspagem_status SET execucao_manual_solicitada = 0 WHERE id = 1');
+  }
+  return solicitado;
+}
+
+async function atualizarStatusRaspagem(conn, etapa, mensagem) {
+  await criarTabelaStatusRaspagem(conn);
+  await conn.query(
+    `INSERT INTO raspagem_status (id, etapa, mensagem, atualizado_em) VALUES (1, ?, ?, NOW())
+     ON DUPLICATE KEY UPDATE etapa = VALUES(etapa), mensagem = VALUES(mensagem), atualizado_em = VALUES(atualizado_em)`,
+    [etapa, mensagem]
+  );
+}
+
+async function registrarResultadoRaspagem(conn, { resultado, linhas, erro }) {
+  await criarTabelaStatusRaspagem(conn);
+  await conn.query(
+    `INSERT INTO raspagem_status (id, etapa, mensagem, atualizado_em, ultima_execucao_em, ultimo_resultado, ultimas_linhas, ultimo_erro)
+     VALUES (1, 'ocioso', '', NOW(), NOW(), ?, ?, ?)
+     ON DUPLICATE KEY UPDATE etapa = 'ocioso', mensagem = '', atualizado_em = NOW(),
+       ultima_execucao_em = VALUES(ultima_execucao_em), ultimo_resultado = VALUES(ultimo_resultado),
+       ultimas_linhas = VALUES(ultimas_linhas), ultimo_erro = VALUES(ultimo_erro)`,
+    [resultado, linhas || null, erro || null]
+  );
+}
+
 module.exports = {
   criarTabelaAtualizacao,
   garantirRegistroAtualizacao,
   criarTabelaBacklog,
   criarTabelaInstalacoes,
   criarTabelaCredenciais,
-  getCredenciais
+  getCredenciais,
+  criarTabelaStatusRaspagem,
+  atualizarStatusRaspagem,
+  registrarResultadoRaspagem,
+  consumirSolicitacaoManual
 };

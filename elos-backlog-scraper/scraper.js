@@ -23,7 +23,12 @@ const TIPO_SERVICO = (process.env.TIPO_SERVICO || 'instalacoes').toLowerCase();
 // de regional e baixa o CSV exportado. Devolve o caminho do arquivo baixado
 // (ou null se o Elos ja estava atualizado e nada precisou ser baixado) e a
 // data de atualizacao lida na pagina (para comparacao com a proxima execucao).
-async function baixarBacklog({ usuario, senha, dataAtualizacaoAnterior }) {
+async function baixarBacklog({ usuario, senha, dataAtualizacaoAnterior, onProgresso }) {
+  // Callback opcional pra reportar progresso pra fora (loop-instalacoes.js grava
+  // isso num status no banco, pra pagina da calculadora mostrar ao vivo) -- se
+  // ninguem passar, so faz nada, o console.log de cada etapa continua rolando.
+  const progresso = onProgresso || (() => {});
+
   fsExtra.ensureDirSync(DOWNLOAD_DIR);
   fsExtra.ensureDirSync(SCREENSHOT_DIR);
   fsExtra.emptyDirSync(DOWNLOAD_DIR);
@@ -50,6 +55,7 @@ async function baixarBacklog({ usuario, senha, dataAtualizacaoAnterior }) {
   });
 
   try {
+    progresso('login', 'Abrindo o Elos...');
     const page = await browser.newPage();
     page.setUserAgent(
       'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36'
@@ -67,6 +73,7 @@ async function baixarBacklog({ usuario, senha, dataAtualizacaoAnterior }) {
     await botaoLogin.click();
     await esperar(randomIntFromInterval(3000, 12000));
     console.log('Login realizado');
+    progresso('login', 'Login realizado');
     await esperar(10000);
 
     await page.screenshot({ path: path.join(SCREENSHOT_DIR, '1-tela-principal.jpg') });
@@ -97,6 +104,7 @@ async function baixarBacklog({ usuario, senha, dataAtualizacaoAnterior }) {
     // #hdDataAtualizacao) so surge alguns segundos depois. Por isso esperamos ativamente
     // pelo elemento em vez de confiar num sleep fixo.
     console.log('Aguardando o dashboard de backlog carregar...');
+    progresso('navegando', 'Abrindo o dashboard de backlog...');
     try {
       await page.waitForSelector('#hdDataAtualizacao', { timeout: 60000 });
     } catch (err) {
@@ -115,12 +123,14 @@ async function baixarBacklog({ usuario, senha, dataAtualizacaoAnterior }) {
 
     if (dataAtualizacaoAnterior && dataAtualizacao === dataAtualizacaoAnterior) {
       console.log('Elos sem dados novos, nada a baixar.');
+      progresso('sem_novidade', 'Elos sem dados novos, nada a importar');
       await page.goto(`${ELOS_URL.replace(/\/elos\/?$/i, '')}/Elos/Public/LogOut`);
       await esperar(3000);
       return { arquivo: null, dataAtualizacao };
     }
 
     console.log('Dados novos detectados no Elos, exportando...');
+    progresso('exportando', 'Dados novos detectados, aplicando filtros e exportando...');
 
     // Marca os filtros de regional/status no dashboard.
     // ATENCAO: estes XPaths sao posicionais (copiados 1:1 do script original)
@@ -152,6 +162,7 @@ async function baixarBacklog({ usuario, senha, dataAtualizacaoAnterior }) {
 
     const botaoExportar = await page.$$('xpath/./html/body/div[3]/div/div[4]/div/div[3]/button');
     await botaoExportar[0].click();
+    progresso('baixando', 'Aguardando o download do CSV...');
 
     let arquivoFinal = null;
     for (let tentativa = 0; tentativa < 60; tentativa++) {
@@ -165,6 +176,7 @@ async function baixarBacklog({ usuario, senha, dataAtualizacaoAnterior }) {
       throw new Error('Download nao completou no tempo esperado');
     }
     console.log('Download finalizado:', arquivoFinal);
+    progresso('baixando', `Download concluído: ${arquivoFinal}`);
 
     await page.goto(`${ELOS_URL.replace(/\/elos\/?$/i, '')}/Elos/Public/LogOut`);
     await esperar(randomIntFromInterval(3000, 10000));

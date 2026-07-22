@@ -61,6 +61,13 @@
           Login usado pela raspagem automática do backlog de Instalações. Troque aqui quando quem
           costuma cuidar disso sair (férias, etc.) e outra pessoa precisar usar seu próprio usuário.
         </p>
+        <p class="hint" id="raspagem-status-box">
+          <span id="raspagem-status-texto">Carregando status da raspagem...</span>
+        </p>
+        <div class="field-row">
+          <span class="hint" style="margin: 0;">Não quer esperar o próximo intervalo automático?</span>
+          <button type="button" class="btn-secundario" id="raspagem-executar-agora-btn" title="Solicita que a raspagem rode agora, sem esperar o intervalo normal (10 a 25 min)">Executar agora</button>
+        </div>
         <div class="field-row">
           <label for="elos-usuario-input">Usuário Elos</label>
           <input

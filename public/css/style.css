@@ -428,6 +428,29 @@ body {
   opacity: 0.9;
 }
 
+.btn-secundario {
+  padding: 0.4rem 0.9rem;
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--accent);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.btn-secundario:hover:not(:disabled) {
+  background: var(--accent);
+  color: var(--accent-contrast);
+}
+
+.btn-secundario:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
 .modal-section-divider {
   border-top: 1px solid var(--border);
 }
