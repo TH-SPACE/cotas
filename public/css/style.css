@@ -1,5 +1,5 @@
 :root {
-  color-scheme: light dark;
+  color-scheme: light;
   --bg: #f5f6f8;
   --panel-bg: #ffffff;
   --text: #1c1e21;
@@ -25,34 +25,6 @@
   --table-card-border: #c3b2ec;
   --table-stripe-bg: #f2f3f5;
   --table-shadow: 0 6px 18px rgba(44, 40, 80, 0.14);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #14151a;
-    --panel-bg: #1d1f26;
-    --text: #eef0f3;
-    --muted: #9aa1ac;
-    --border: #2c2f38;
-    --aliada-0-bg: #4a3018;
-    --aliada-0-fg: #f5a862;
-    --aliada-1-bg: #1c2e47;
-    --aliada-1-fg: #7fb2ea;
-    --aliada-2-bg: #1f3d38;
-    --aliada-2-fg: #7fd9c4;
-    --aliada-3-bg: #4a3a12;
-    --aliada-3-fg: #f0c674;
-    --col-backlog-bg: #221f2e;
-    --col-ordens-bg: #1a2636;
-    --col-minutos-bg: #2b2118;
-    --zero-color: #565b64;
-    --col-divider: #454a56;
-    --table-header-bg: #1f1b38;
-    --table-header-fg: #f3f0ff;
-    --table-card-border: #4a3d78;
-    --table-stripe-bg: #24262d;
-    --table-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
-  }
 }
 
 * { box-sizing: border-box; }
