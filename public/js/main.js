@@ -68,6 +68,19 @@ document.addEventListener('DOMContentLoaded', () => {
   if (elosModal && elosOpenBtn && boxStatusRaspagem && textoStatusRaspagem) {
     let intervaloStatusRaspagem = null;
 
+    // Miniaturas dos screenshots que a raspagem tira a cada etapa (login,
+    // dashboard, exportação...) -- cada <img> só aparece se aquele arquivo
+    // realmente existir agora (nem toda etapa é sempre alcançada). Query string
+    // com timestamp evita servir uma imagem em cache de uma raspagem anterior.
+    const atualizarScreenshotsRaspagem = () => {
+      const agora = Date.now();
+      document.querySelectorAll('#raspagem-screenshots img[data-nome]').forEach((img) => {
+        img.onload = () => { img.style.display = ''; };
+        img.onerror = () => { img.style.display = 'none'; };
+        img.src = `/raspagem-screenshots/${img.dataset.nome}?t=${agora}`;
+      });
+    };
+
     const atualizarStatusRaspagem = async () => {
       try {
         const resposta = await fetch('/api/raspagem-status');
@@ -94,10 +107,15 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     };
 
-    elosOpenBtn.addEventListener('click', () => {
+    const atualizarTudoRaspagem = () => {
       atualizarStatusRaspagem();
+      atualizarScreenshotsRaspagem();
+    };
+
+    elosOpenBtn.addEventListener('click', () => {
+      atualizarTudoRaspagem();
       if (intervaloStatusRaspagem) clearInterval(intervaloStatusRaspagem);
-      intervaloStatusRaspagem = setInterval(atualizarStatusRaspagem, 3000);
+      intervaloStatusRaspagem = setInterval(atualizarTudoRaspagem, 3000);
     });
 
     elosModal.addEventListener('close', () => {
@@ -121,7 +139,7 @@ document.addEventListener('DOMContentLoaded', () => {
           // o usuário só tenta de novo; não tem nada mais a fazer neste catch.
         }
 
-        atualizarStatusRaspagem();
+        atualizarTudoRaspagem();
 
         // A raspagem confere o pedido a cada 5s (ver loop-instalacoes.js) --
         // dá uma folga maior que isso antes de deixar clicar de novo.

@@ -7,14 +7,14 @@ const path = require('path');
 module.exports = {
   apps: [
     {
-      name: 'calculadora-cotas',
+      name: 'cotas',
       script: 'server.js',
       cwd: __dirname,
       autorestart: true,
       watch: false,
     },
     {
-      name: 'elos-scraper-instalacoes',
+      name: 'raspaarbk_instalacoes',
       script: 'loop-instalacoes.js',
       cwd: path.join(__dirname, 'elos-backlog-scraper'),
       autorestart: true,
