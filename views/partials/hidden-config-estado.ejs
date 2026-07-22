@@ -1,0 +1,35 @@
+<%
+/*
+  Reaproveitado por todo formulário que recarrega "/": carrega o estado atual
+  (filtro de tecnologia + configs de Reparos e de Instalações) como campos ocultos,
+  exceto os campos que o próprio formulário já expõe como input visível
+  (passados em `exceto`, um array de nomes) — evita o form "resetar" os outros
+  painéis quando só um é submetido.
+*/
+const _exceto = typeof exceto !== 'undefined' ? exceto : [];
+%>
+<% if (!_exceto.includes('tecnologia')) { %>
+  <% tecnologiasSelecionadas.forEach(tec => { %><input type="hidden" name="tecnologia" value="<%= tec %>" /><% }) %>
+<% } %>
+<% if (!_exceto.includes('statusReparo')) { %>
+  <% statusReparoSelecionados.forEach(v => { %><input type="hidden" name="statusReparo" value="<%= v %>" /><% }) %>
+<% } %>
+<% if (!_exceto.includes('statusReasonReparo')) { %>
+  <% statusReasonReparoSelecionados.forEach(v => { %><input type="hidden" name="statusReasonReparo" value="<%= v %>" /><% }) %>
+<% } %>
+<% if (!_exceto.includes('percentual')) { %><input type="hidden" name="percentual" value="<%= percentual %>" /><% } %>
+<% if (!_exceto.includes('percentualJanela')) { %><input type="hidden" name="percentualJanela" value="<%= percentualJanela %>" /><% } %>
+<% if (!_exceto.includes('puReparo')) { %><input type="hidden" name="puReparo" value="<%= puReparo %>" /><% } %>
+<% if (!_exceto.includes('metaPuTecnico')) { %><input type="hidden" name="metaPuTecnico" value="<%= metaPuTecnico %>" /><% } %>
+<% if (!_exceto.includes('percentualInstalacao')) { %><input type="hidden" name="percentualInstalacao" value="<%= percentualInstalacao %>" /><% } %>
+<% if (!_exceto.includes('percentualJanelaInstalacao')) { %><input type="hidden" name="percentualJanelaInstalacao" value="<%= percentualJanelaInstalacao %>" /><% } %>
+<% if (!_exceto.includes('metaPuTecnicoInstalacao')) { %><input type="hidden" name="metaPuTecnicoInstalacao" value="<%= metaPuTecnicoInstalacao %>" /><% } %>
+<% if (!_exceto.includes('statusInstalacao')) { %>
+  <% statusInstalacaoSelecionados.forEach(v => { %><input type="hidden" name="statusInstalacao" value="<%= v %>" /><% }) %>
+<% } %>
+<% if (!_exceto.includes('statusReasonInstalacao')) { %>
+  <% statusReasonInstalacaoSelecionados.forEach(v => { %><input type="hidden" name="statusReasonInstalacao" value="<%= v %>" /><% }) %>
+<% } %>
+<% if (!_exceto.includes('tecnologiaAcesso')) { %>
+  <% tecnologiaAcessoSelecionadas.forEach(v => { %><input type="hidden" name="tecnologiaAcesso" value="<%= v %>" /><% }) %>
+<% } %>

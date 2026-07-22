@@ -6,24 +6,70 @@
     <div>
       <h2 title="Backlog de reparos agrupado por Aliada e Bucket, cruzando depara_bucket com backlog_elos">
         <svg class="title-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/></svg>
-        Resumo de Backlog por Bucket
+        Resumo de Backlog de Reparos por Bucket
+        <span class="badge" title="Este resumo conta apenas chamados de REPARO (defeito) — instalações têm seção própria">REPAROS</span>
       </h2>
       <p class="hint">
-        Backlog em aberto = defeito (GOIANIA), exceto CANCELADA, ENCERRADA, EXECUCAO e aberturas massivas.
+        Backlog em aberto = defeito (GOIANIA). Status, motivo e tecnologia são filtráveis abaixo (padrão: fora CANCELADA/ENCERRADA/EXECUCAO e motivo ABERTA MASSIVA).
       </p>
     </div>
-    <button type="button" class="icon-btn" id="config-open-btn" aria-haspopup="dialog" aria-controls="config-modal" title="Configurações: previsto, janelas de horário, PU e tempos de reparo">
-      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.65 1.65 0 0 0-1.8-.3 1.65 1.65 0 0 0-1 1.5V21a2 2 0 0 1-4 0v-.1A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.65 1.65 0 0 0 .3-1.8 1.65 1.65 0 0 0-1.5-1H3a2 2 0 0 1 0-4h.1A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.65 1.65 0 0 0 1.8.3H9a1.65 1.65 0 0 0 1-1.5V3a2 2 0 0 1 4 0v.1a1.65 1.65 0 0 0 1 1.5 1.65 1.65 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.65 1.65 0 0 0-.3 1.8V9a1.65 1.65 0 0 0 1.5 1H21a2 2 0 0 1 0 4h-.1a1.65 1.65 0 0 0-1.5 1z"/></svg>
-    </button>
+    <div class="panel-header-actions">
+      <button type="button" class="icon-btn" id="config-open-btn" aria-haspopup="dialog" aria-controls="config-modal" title="Configurações: previsto, janelas de horário, PU e tempos de reparo">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.65 1.65 0 0 0-1.8-.3 1.65 1.65 0 0 0-1 1.5V21a2 2 0 0 1-4 0v-.1A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.65 1.65 0 0 0 .3-1.8 1.65 1.65 0 0 0-1.5-1H3a2 2 0 0 1 0-4h.1A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.65 1.65 0 0 0 1.8.3H9a1.65 1.65 0 0 0 1-1.5V3a2 2 0 0 1 4 0v.1a1.65 1.65 0 0 0 1 1.5 1.65 1.65 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.65 1.65 0 0 0-.3 1.8V9a1.65 1.65 0 0 0 1.5 1H21a2 2 0 0 1 0 4h-.1a1.65 1.65 0 0 0-1.5 1z"/></svg>
+      </button>
+    </div>
   </div>
+
+  <details class="filtro-detalhes" id="filtro-tecnologia-detalhes">
+    <summary>
+      <svg class="filtro-icon" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z"/></svg>
+      Filtros
+      <span class="filtro-resumo">
+        Status <%= statusReparoSelecionados.length %>/<%= filtrosDisponiveisReparo.status.length %>
+        &middot; Motivo <%= statusReasonReparoSelecionados.length %>/<%= filtrosDisponiveisReparo.statusReason.length %>
+        &middot; Tecnologia <%= tecnologiasSelecionadas.length %>/<%= tecnologiasDisponiveis.length %>
+      </span>
+    </summary>
+    <form method="get" action="/" class="filtro-tecnologia filtro-tecnologia-colunas" id="filtro-tecnologia-form">
+      <div class="filtro-grupo">
+        <span class="filtro-tecnologia-label">Status:</span>
+        <% filtrosDisponiveisReparo.status.forEach(valor => { %>
+          <label class="filtro-tecnologia-item">
+            <input type="checkbox" name="statusReparo" value="<%= valor %>" <%= statusReparoSelecionados.includes(valor) ? 'checked' : '' %> />
+            <%= valor === '' ? '(sem status)' : valor %>
+          </label>
+        <% }) %>
+      </div>
+      <div class="filtro-grupo">
+        <span class="filtro-tecnologia-label">Motivo:</span>
+        <% filtrosDisponiveisReparo.statusReason.forEach(valor => { %>
+          <label class="filtro-tecnologia-item">
+            <input type="checkbox" name="statusReasonReparo" value="<%= valor %>" <%= statusReasonReparoSelecionados.includes(valor) ? 'checked' : '' %> />
+            <%= valor === '' ? '(sem motivo)' : valor %>
+          </label>
+        <% }) %>
+      </div>
+      <div class="filtro-grupo">
+        <span class="filtro-tecnologia-label">Tecnologia:</span>
+        <% tecnologiasDisponiveis.forEach(tec => { %>
+          <label class="filtro-tecnologia-item">
+            <input type="checkbox" name="tecnologia" value="<%= tec %>" <%= tecnologiasSelecionadas.includes(tec) ? 'checked' : '' %> />
+            <%= tec %>
+          </label>
+        <% }) %>
+      </div>
+      <%- include('partials/hidden-config-estado', { exceto: ['statusReparo', 'statusReasonReparo', 'tecnologia'] }) %>
+    </form>
+  </details>
 
   <dialog id="config-modal" class="config-modal">
     <div class="modal-header">
-      <h3 title="Ajustes usados nos cálculos do Resumo de Backlog por Bucket">Configurações</h3>
+      <h3 title="Ajustes usados nos cálculos do Resumo de Backlog de Reparos por Bucket">Configurações de Reparos</h3>
       <button type="button" class="icon-btn" id="config-close-btn" aria-label="Fechar" title="Fechar">&times;</button>
     </div>
 
     <form method="get" action="/" class="modal-section">
+      <%- include('partials/hidden-config-estado', { exceto: ['percentual', 'percentualJanela', 'puReparo', 'metaPuTecnico'] }) %>
       <div class="modal-body">
         <div class="field-row">
           <label for="percentual" title="Percentual do Backlog Reparos que vira meta de resolução (coluna Previsto)">Previsto de resolução</label>
@@ -74,10 +120,7 @@
     </form>
 
     <form method="post" action="/config/tempo-reparo" class="modal-section modal-section-divider">
-      <input type="hidden" name="percentual" value="<%= percentual %>" />
-      <input type="hidden" name="percentualJanela" value="<%= percentualJanela %>" />
-      <input type="hidden" name="puReparo" value="<%= puReparo %>" />
-      <input type="hidden" name="metaPuTecnico" value="<%= metaPuTecnico %>" />
+      <%- include('partials/hidden-config-estado', { exceto: [] }) %>
 
       <div class="modal-body">
         <h4 class="modal-subtitle" title="Tempo médio de um reparo em cada bucket, usado na coluna MINUTOS">Tempo de reparo por bucket (min)</h4>
@@ -168,6 +211,288 @@
           <td class="<%= numCls('col-minutos', totalMinutos1230_1800) %>"><%= totalMinutos1230_1800 %></td>
           <td class="<%= numCls('', totalPu) %> col-divider"><%= totalPu %></td>
           <td class="<%= numCls('', totalTecnicos) %>"><%= totalTecnicos %></td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+</section>
+
+<section class="panel">
+  <div class="panel-header panel-header-row">
+    <div>
+      <h2 title="Backlog de instalações agrupado por Aliada e Bucket, cruzando depara_bucket com backlog_instalacoes pelo ARD (ARMARIO)">
+        <svg class="title-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94z"/></svg>
+        Resumo de Backlog de Instalações por Bucket
+        <span class="badge" title="Este resumo conta instalação/ME/serviços do CSV diário do ELOS — reparos têm seção própria">INSTALAÇÕES</span>
+      </h2>
+      <p class="hint">
+        Backlog em aberto = instalação (GOIANIA). Status, motivo e tecnologia são filtráveis abaixo (padrão: fora CANCELADA/ENCERRADA/EXECUCAO e motivo ENRIQUECIMENTO).
+      </p>
+    </div>
+    <div class="panel-header-actions">
+      <button type="button" class="icon-btn" id="instalacoes-upload-open-btn" aria-haspopup="dialog" aria-controls="instalacoes-upload-modal" title="Enviar CSV diário de instalações (tabela backlog_instalacoes)">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M12 4l4 4M12 4 8 8"/><path d="M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></svg>
+      </button>
+      <button type="button" class="icon-btn" id="config-instalacoes-open-btn" aria-haspopup="dialog" aria-controls="config-instalacoes-modal" title="Configurações: previsto, janelas de horário, PU e tempos de instalação">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.65 1.65 0 0 0-1.8-.3 1.65 1.65 0 0 0-1 1.5V21a2 2 0 0 1-4 0v-.1A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.65 1.65 0 0 0 .3-1.8 1.65 1.65 0 0 0-1.5-1H3a2 2 0 0 1 0-4h.1A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.65 1.65 0 0 0 1.8.3H9a1.65 1.65 0 0 0 1-1.5V3a2 2 0 0 1 4 0v.1a1.65 1.65 0 0 0 1 1.5 1.65 1.65 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.65 1.65 0 0 0-.3 1.8V9a1.65 1.65 0 0 0 1.5 1H21a2 2 0 0 1 0 4h-.1a1.65 1.65 0 0 0-1.5 1z"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <details class="filtro-detalhes" id="filtro-instalacoes-detalhes">
+    <summary>
+      <svg class="filtro-icon" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z"/></svg>
+      Filtros
+      <span class="filtro-resumo">
+        Status <%= statusInstalacaoSelecionados.length %>/<%= filtrosDisponiveisInstalacoes.status.length %>
+        &middot; Motivo <%= statusReasonInstalacaoSelecionados.length %>/<%= filtrosDisponiveisInstalacoes.statusReason.length %>
+        &middot; Tecnologia <%= tecnologiaAcessoSelecionadas.length %>/<%= filtrosDisponiveisInstalacoes.tecnologiaAcesso.length %>
+      </span>
+    </summary>
+    <form method="get" action="/" class="filtro-tecnologia filtro-tecnologia-colunas" id="filtro-instalacoes-form">
+      <div class="filtro-grupo">
+        <span class="filtro-tecnologia-label">Status:</span>
+        <% filtrosDisponiveisInstalacoes.status.forEach(valor => { %>
+          <label class="filtro-tecnologia-item">
+            <input type="checkbox" name="statusInstalacao" value="<%= valor %>" <%= statusInstalacaoSelecionados.includes(valor) ? 'checked' : '' %> />
+            <%= valor %>
+          </label>
+        <% }) %>
+      </div>
+      <div class="filtro-grupo">
+        <span class="filtro-tecnologia-label">Motivo:</span>
+        <% filtrosDisponiveisInstalacoes.statusReason.forEach(valor => { %>
+          <label class="filtro-tecnologia-item">
+            <input type="checkbox" name="statusReasonInstalacao" value="<%= valor %>" <%= statusReasonInstalacaoSelecionados.includes(valor) ? 'checked' : '' %> />
+            <%= valor === '' ? '(sem motivo)' : valor %>
+          </label>
+        <% }) %>
+      </div>
+      <div class="filtro-grupo">
+        <span class="filtro-tecnologia-label">Tecnologia:</span>
+        <% filtrosDisponiveisInstalacoes.tecnologiaAcesso.forEach(valor => { %>
+          <label class="filtro-tecnologia-item">
+            <input type="checkbox" name="tecnologiaAcesso" value="<%= valor %>" <%= tecnologiaAcessoSelecionadas.includes(valor) ? 'checked' : '' %> />
+            <%= valor %>
+          </label>
+        <% }) %>
+      </div>
+      <%- include('partials/hidden-config-estado', { exceto: ['statusInstalacao', 'statusReasonInstalacao', 'tecnologiaAcesso'] }) %>
+    </form>
+  </details>
+
+  <% if (instalacoesUpload === 'ok') { %>
+    <p class="alert alert-ok">Arquivo de instalações importado: <strong><%= instalacoesUploadLinhas %></strong> linhas gravadas em <code>backlog_instalacoes</code>.</p>
+  <% } else if (instalacoesUpload === 'erro') { %>
+    <p class="alert alert-erro">Falha ao importar instalações: <%= instalacoesUploadErro %></p>
+  <% } %>
+
+  <% if (produtosSemPu.length > 0) { %>
+    <p class="alert alert-erro">
+      <strong>Atenção:</strong> <%= produtosSemPu.length %> Specification Product(s) sem PU configurado: <%= produtosSemPu.join(', ') %>.
+      Ajuste em "PU por Specification Product" (engrenagem de Instalações) — até lá, eles contam PU=0 no cálculo.
+    </p>
+  <% } %>
+
+  <dialog id="instalacoes-upload-modal" class="config-modal">
+    <div class="modal-header">
+      <h3 title="Envia o export diário do ELOS (instalações/ME/serviços) para a tabela backlog_instalacoes">Importar instalações (backlog diário)</h3>
+      <button type="button" class="icon-btn" id="instalacoes-upload-close-btn" aria-label="Fechar" title="Fechar">&times;</button>
+    </div>
+
+    <form method="post" action="/instalacoes/upload" enctype="multipart/form-data" class="modal-section">
+      <div class="modal-body">
+        <div class="field-row">
+          <label for="instalacoes-arquivo">Arquivo CSV (BackLogDiario_*.csv)</label>
+          <input type="file" id="instalacoes-arquivo" name="arquivo" accept=".csv,.txt" required />
+        </div>
+        <p class="hint">Cada envio <strong>substitui</strong> todo o conteúdo atual de <code>backlog_instalacoes</code> pelo arquivo enviado.</p>
+      </div>
+      <div class="modal-footer">
+        <button type="submit" title="Envia e substitui os dados de backlog_instalacoes">Enviar</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="config-instalacoes-modal" class="config-modal">
+    <div class="modal-header">
+      <h3 title="Ajustes usados nos cálculos do Resumo de Backlog de Instalações por Bucket">Configurações de Instalações</h3>
+      <button type="button" class="icon-btn" id="config-instalacoes-close-btn" aria-label="Fechar" title="Fechar">&times;</button>
+    </div>
+
+    <form method="get" action="/" class="modal-section">
+      <%- include('partials/hidden-config-estado', { exceto: ['percentualInstalacao', 'percentualJanelaInstalacao', 'metaPuTecnicoInstalacao'] }) %>
+      <div class="modal-body">
+        <div class="field-row">
+          <label for="percentualInstalacao" title="Percentual do Backlog Instalações que vira meta de resolução (coluna Previsto)">Previsto de resolução</label>
+          <div class="field-input">
+            <input type="number" id="percentualInstalacao" name="percentualInstalacao" min="0" max="100" step="1" value="<%= percentualInstalacao %>" title="Percentual do backlog considerado resolvível" />
+            <span>%</span>
+          </div>
+        </div>
+
+        <div class="field-row">
+          <label for="percentualJanelaInstalacao" title="Percentual do Previsto alocado para a janela da manhã (08:30-12:30)">08:30 - 12:30</label>
+          <div class="field-input">
+            <input type="number" id="percentualJanelaInstalacao" name="percentualJanelaInstalacao" min="0" max="100" step="1" value="<%= percentualJanelaInstalacao %>" title="Percentual do Previsto na janela 08:30-12:30" />
+            <span>%</span>
+          </div>
+        </div>
+
+        <div class="field-row">
+          <label for="percentualJanelaTardeInstalacao" title="Calculado automaticamente como 100% menos a janela da manhã">12:30 - 18:00</label>
+          <div class="field-input">
+            <input type="number" id="percentualJanelaTardeInstalacao" min="0" max="100" step="1" value="<%= 100 - percentualJanelaInstalacao %>" title="Preenchido automaticamente: 100% - janela da manhã" />
+            <span>%</span>
+          </div>
+        </div>
+
+        <p class="hint">As janelas 08:30-12:30 e 12:30-18:00 sempre somam 100%.</p>
+
+        <div class="field-row">
+          <label for="metaPuTecnicoInstalacao" title="Quantidade de PU que 1 técnico consegue entregar, usada para estimar quantos técnicos são necessários">Meta de PU por técnico</label>
+          <div class="field-input">
+            <input type="number" id="metaPuTecnicoInstalacao" name="metaPuTecnicoInstalacao" min="0.01" step="0.1" value="<%= metaPuTecnicoInstalacao %>" title="PU que 1 técnico entrega" />
+          </div>
+        </div>
+
+        <p class="hint">PU = soma do peso de PU de cada Specification Product em aberto × percentual de Previsto (cada produto tem seu próprio peso — ver "PU por produto" abaixo). Técnicos = PU ÷ Meta de PU por técnico, arredondado para cima.</p>
+      </div>
+
+      <div class="modal-footer">
+        <button type="submit" title="Recarrega a página aplicando estes valores">Aplicar</button>
+      </div>
+    </form>
+
+    <form method="post" action="/config/tempo-instalacao" class="modal-section modal-section-divider">
+      <%- include('partials/hidden-config-estado', { exceto: [] }) %>
+
+      <div class="modal-body">
+        <h4 class="modal-subtitle" title="Tempo médio de uma instalação em cada bucket, usado na coluna MINUTOS">Tempo de instalação por bucket (min)</h4>
+        <table class="tempo-table">
+          <thead>
+            <tr>
+              <th title="Empresa aliada dona do bucket">Aliada</th>
+              <th title="Nome do bucket em depara_tempo_bucket">Bucket</th>
+              <th class="num" title="Minutos que uma instalação leva neste bucket">Instalação (min)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% let aliadaTempoInstalacaoAtual = null; %>
+            <% temposInstalacao.forEach(t => { %>
+              <% const novaAliadaTempoInstalacao = t.aliada !== aliadaTempoInstalacaoAtual; aliadaTempoInstalacaoAtual = t.aliada; %>
+              <tr class="<%= novaAliadaTempoInstalacao ? 'group-start' : '' %>">
+                <td><span class="aliada-badge aliada-color-<%= aliadaCoresInstalacoes[t.aliada] %>"><%= t.aliada %></span></td>
+                <td><%= t.bucket %></td>
+                <td class="num">
+                  <input type="hidden" name="bucket[]" value="<%= t.bucket %>" />
+                  <input type="number" name="instalacao[]" min="0" step="1" value="<%= t.instalacao %>" aria-label="Tempo de instalação (min) para <%= t.bucket %>" title="Minutos de uma instalação em <%= t.bucket %>" />
+                </td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+        <p class="hint">Atualiza a tabela <code>depara_tempo_bucket</code> (coluna INSTALACAO).</p>
+      </div>
+
+      <div class="modal-footer">
+        <button type="submit" title="Grava estes tempos em depara_tempo_bucket">Salvar tempos</button>
+      </div>
+    </form>
+
+    <form method="post" action="/config/pu-produto" class="modal-section modal-section-divider">
+      <%- include('partials/hidden-config-estado', { exceto: [] }) %>
+
+      <div class="modal-body">
+        <h4 class="modal-subtitle" title="Peso de PU de cada Specification Product encontrado em backlog_instalacoes">PU por Specification Product</h4>
+        <table class="tempo-table">
+          <thead>
+            <tr>
+              <th title="Valor da coluna SPECIFICATION_PRODUCT no CSV do ELOS">Specification Product</th>
+              <th class="num" title="Quantas PU cada instalação deste produto representa">PU</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% puProdutos.forEach(p => { %>
+              <tr class="<%= p.pu == 0 ? 'linha-alerta' : '' %>">
+                <td>
+                  <%= p.produto %>
+                  <% if (p.pu == 0) { %>
+                    <span class="badge-alerta" title="Este produto ainda não tem PU configurado — está contando 0 no cálculo">sem PU</span>
+                  <% } %>
+                </td>
+                <td class="num">
+                  <input type="hidden" name="produto[]" value="<%= p.produto %>" />
+                  <input type="number" name="pu[]" min="0" step="0.01" value="<%= p.pu %>" aria-label="PU para <%= p.produto %>" title="PU de uma instalação do produto <%= p.produto %>" />
+                </td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+        <p class="hint">Atualiza a tabela <code>depara_pu_produto</code>. Produtos novos aparecem aqui automaticamente ao subir um CSV (com PU=0 até serem configurados).</p>
+      </div>
+
+      <div class="modal-footer">
+        <button type="submit" title="Grava estes pesos em depara_pu_produto">Salvar PU</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div class="table-scroll">
+    <table class="cotas-table">
+      <thead>
+        <tr>
+          <th rowspan="2" title="Empresa aliada responsável pelo bucket">Aliada</th>
+          <th rowspan="2" title="Agrupamento de ARDs (armários) mapeado em depara_bucket">Bucket</th>
+          <th colspan="2" class="group-header col-backlog col-divider" title="Quantidade de instalações em aberto e a meta calculada sobre elas">BACKLOG</th>
+          <th colspan="2" class="group-header col-ordens col-divider" title="Previsto dividido entre as duas janelas de horário">ORDENS</th>
+          <th colspan="2" class="group-header col-minutos col-divider" title="Ordens de cada janela × tempo de instalação do bucket (depara_tempo_bucket)">COTAS(min)</th>
+          <th rowspan="2" class="num col-divider" title="Produção Única = Previsto × PU da instalação">PU</th>
+          <th rowspan="2" class="num" title="Técnicos necessários = PU ÷ Meta de PU por técnico, arredondado para cima (não existe fração de técnico)">Técnicos</th>
+        </tr>
+        <tr>
+          <th class="num col-backlog col-divider" title="Total de instalações em aberto no bucket (regra de backlog no topo da página)">Backlog Instalações</th>
+          <th class="num col-backlog" title="Backlog Instalações × percentual configurado na engrenagem">Previsto (<%= percentualInstalacao %>%)</th>
+          <th class="num col-ordens col-divider" title="Parte do Previsto alocada para a janela 08:30-12:30">08:30 - 12:30</th>
+          <th class="num col-ordens" title="Restante do Previsto: janela 12:30-18:00">12:30 - 18:00</th>
+          <th class="num col-minutos col-divider" title="Ordens de 08:30-12:30 × tempo de instalação do bucket">08:30 - 12:30</th>
+          <th class="num col-minutos" title="Ordens de 12:30-18:00 × tempo de instalação do bucket">12:30 - 18:00</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% let aliadaAtualInstalacoes = null; %>
+        <% linhasInstalacoes.forEach(linha => { %>
+          <% const novaAliadaInstalacoes = linha.aliada !== aliadaAtualInstalacoes; aliadaAtualInstalacoes = linha.aliada; %>
+          <tr class="<%= novaAliadaInstalacoes ? 'group-start' : '' %>">
+            <td><span class="aliada-badge aliada-color-<%= aliadaCoresInstalacoes[linha.aliada] %>"><%= linha.aliada %></span></td>
+            <td><%= linha.bucket %></td>
+            <td class="<%= numCls('col-backlog', linha.backlogInstalacoes) %> col-divider">
+              <%= linha.backlogInstalacoes %>
+              <% if (linha.maiorVolume) { %>
+                <svg class="volume-flag" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" title="Um dos <%= 3 %> buckets com maior volume de backlog"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+              <% } %>
+            </td>
+            <td class="<%= numCls('col-backlog', linha.previstoResolucao) %>"><%= linha.previstoResolucao %></td>
+            <td class="<%= numCls('col-ordens', linha.janela0830_1230) %> col-divider"><%= linha.janela0830_1230 %></td>
+            <td class="<%= numCls('col-ordens', linha.janela1230_1800) %>"><%= linha.janela1230_1800 %></td>
+            <td class="<%= numCls('col-minutos', linha.minutos0830_1230) %> col-divider"><%= linha.minutos0830_1230 %></td>
+            <td class="<%= numCls('col-minutos', linha.minutos1230_1800) %>"><%= linha.minutos1230_1800 %></td>
+            <td class="<%= numCls('', linha.pu) %> col-divider"><%= linha.pu %></td>
+            <td class="<%= numCls('', linha.tecnicos) %>"><%= linha.tecnicos %></td>
+          </tr>
+        <% }) %>
+      </tbody>
+      <tfoot>
+        <tr>
+          <td colspan="2" title="Soma de todos os buckets do cluster GOIANIA">Total geral</td>
+          <td class="<%= numCls('col-backlog', totalGeralInstalacoes) %> col-divider"><%= totalGeralInstalacoes %></td>
+          <td class="<%= numCls('col-backlog', totalPrevistoInstalacoes) %>"><%= totalPrevistoInstalacoes %></td>
+          <td class="<%= numCls('col-ordens', totalJanela0830_1230Instalacoes) %> col-divider"><%= totalJanela0830_1230Instalacoes %></td>
+          <td class="<%= numCls('col-ordens', totalJanela1230_1800Instalacoes) %>"><%= totalJanela1230_1800Instalacoes %></td>
+          <td class="<%= numCls('col-minutos', totalMinutos0830_1230Instalacoes) %> col-divider"><%= totalMinutos0830_1230Instalacoes %></td>
+          <td class="<%= numCls('col-minutos', totalMinutos1230_1800Instalacoes) %>"><%= totalMinutos1230_1800Instalacoes %></td>
+          <td class="<%= numCls('', totalPuInstalacoes) %> col-divider"><%= totalPuInstalacoes %></td>
+          <td class="<%= numCls('', totalTecnicosInstalacoes) %>"><%= totalTecnicosInstalacoes %></td>
         </tr>
       </tfoot>
     </table>

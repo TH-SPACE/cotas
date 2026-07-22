@@ -157,6 +157,138 @@ body {
   color: var(--accent);
 }
 
+.panel-header-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.alert {
+  margin: 0 0 1rem;
+  padding: 0.7rem 1rem;
+  border-radius: 8px;
+  font-size: 0.88rem;
+}
+
+.alert-ok {
+  background: var(--col-ordens-bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+
+.alert-erro {
+  background: var(--aliada-0-bg);
+  color: var(--aliada-0-fg);
+  border: 1px solid var(--border);
+}
+
+.linha-alerta {
+  background: var(--aliada-0-bg);
+}
+
+.badge-alerta {
+  display: inline-block;
+  margin-left: 0.4rem;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  background: var(--aliada-0-fg);
+  color: var(--accent-contrast);
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.filtro-detalhes {
+  margin: 0 0 1rem;
+}
+
+.filtro-detalhes summary {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 0.9rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text);
+  cursor: pointer;
+  list-style: none;
+}
+
+.filtro-detalhes summary::-webkit-details-marker {
+  display: none;
+}
+
+.filtro-detalhes summary::before {
+  content: '\25B8';
+  color: var(--muted);
+  display: inline-block;
+  transition: transform 0.15s ease;
+}
+
+.filtro-detalhes[open] summary {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.filtro-detalhes[open] summary::before {
+  transform: rotate(90deg);
+}
+
+.filtro-icon {
+  color: var(--muted);
+  flex-shrink: 0;
+}
+
+.filtro-resumo {
+  color: var(--muted);
+  font-weight: 400;
+  font-size: 0.8rem;
+}
+
+.filtro-tecnologia {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.9rem;
+  margin: 0;
+  padding: 0.6rem 0.9rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-top: none;
+  border-radius: 0 0 8px 8px;
+}
+
+.filtro-tecnologia-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.filtro-tecnologia-item {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.88rem;
+  cursor: pointer;
+}
+
+.filtro-tecnologia-colunas {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.filtro-grupo {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
 .config-modal {
   border: 1px solid var(--border);
   border-radius: 10px;

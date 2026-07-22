@@ -7,19 +7,23 @@ const CLUSTER_ESCOPO = 'GOIANIA';
 // "Reparo" = chamado de defeito (exclui instalação/outros tipos que specification_type possa trazer).
 const SPECIFICATION_TYPE_REPARO = 'DEFEITO';
 
-// Regra de "o que é backlog em aberto" para a Calculadora de Cotas - GO (ajustada em
-// relação à base do backlog_b2c: aqui EXECUCAO também sai e DETAIL não é filtrado).
-const CONDICOES_BACKLOG_ABERTO = `
-  UPPER(TRIM(COALESCE(b.STATUS, ''))) NOT IN ('CANCELADA', 'ENCERRADA', 'EXECUCAO')
-  AND UPPER(TRIM(COALESCE(b.STATUS_REASON, ''))) <> 'ABERTA MASSIVA'
-`;
-
 // Bucket "curinga": tudo que não é ABILITY nem ONDACOM (armário sem linha em depara_bucket)
 // conta para a VIVO / BKT_GOIANIA — regra definida pelo usuário.
 const ALIADA_CURINGA = 'VIVO';
 const BUCKET_CURINGA = 'BKT_GOIANIA';
 
-async function getResumoBuckets() {
+const TECNOLOGIA_PADRAO = ['GPON'];
+
+// Valores pré-marcados nos filtros do front na primeira carga — equivalentes à regra
+// fixa antiga (fora CANCELADA/ENCERRADA/EXECUCAO, fora motivo ABERTA MASSIVA). O
+// usuário pode mudar cada um livremente depois (ver getFiltrosDisponiveisReparo).
+const STATUS_EXCLUIDOS_PADRAO = ['CANCELADA', 'ENCERRADA', 'EXECUCAO'];
+const STATUS_REASON_EXCLUIDOS_PADRAO = ['ABERTA MASSIVA'];
+
+async function getResumoBuckets(tecnologias, filtros) {
+  const filtroTecnologia = tecnologias.length > 0 ? tecnologias : TECNOLOGIA_PADRAO;
+  const { status, statusReason } = filtros;
+
   const [rows] = await pool.query(
     `SELECT aliada, bucket, backlogReparos, tempoReparoMinutos FROM (
        SELECT
@@ -32,7 +36,9 @@ async function getResumoBuckets() {
          ON b.ARMARIO = d.ARMARIO
          AND b.CLUSTER_ = ?
          AND b.SPECIFICATION_TYPE = ?
-         AND ${CONDICOES_BACKLOG_ABERTO}
+         AND b.PHYSICAL_LINK_MEDIA_TYPE IN (?)
+         AND b.STATUS IN (?)
+         AND b.STATUS_REASON IN (?)
        LEFT JOIN depara_tempo_bucket t
          ON t.BUCKET = d.BKT
        GROUP BY d.ALIADA, d.BKT, t.REPARO
@@ -50,20 +56,57 @@ async function getResumoBuckets() {
        WHERE d.ARMARIO IS NULL
          AND b.CLUSTER_ = ?
          AND b.SPECIFICATION_TYPE = ?
+         AND b.PHYSICAL_LINK_MEDIA_TYPE IN (?)
+         AND b.STATUS IN (?)
+         AND b.STATUS_REASON IN (?)
          AND b.ARMARIO IS NOT NULL AND b.ARMARIO <> ''
-         AND ${CONDICOES_BACKLOG_ABERTO}
      ) resumo
      ORDER BY aliada, bucket`,
     [
-      CLUSTER_ESCOPO, SPECIFICATION_TYPE_REPARO,
+      CLUSTER_ESCOPO, SPECIFICATION_TYPE_REPARO, filtroTecnologia, status, statusReason,
       ALIADA_CURINGA, BUCKET_CURINGA, BUCKET_CURINGA,
-      CLUSTER_ESCOPO, SPECIFICATION_TYPE_REPARO,
+      CLUSTER_ESCOPO, SPECIFICATION_TYPE_REPARO, filtroTecnologia, status, statusReason,
     ]
   );
 
   const totalGeral = rows.reduce((acc, row) => acc + row.backlogReparos, 0);
 
   return { linhas: rows, totalGeral };
+}
+
+// Tecnologias distintas hoje em backlog_elos para o cluster (ex.: GPON, METALICO),
+// usadas para montar o filtro — assim o front não precisa hardcodar os valores.
+async function getTecnologiasDisponiveis() {
+  const [rows] = await pool.query(
+    `SELECT DISTINCT PHYSICAL_LINK_MEDIA_TYPE AS tecnologia
+     FROM backlog_elos
+     WHERE CLUSTER_ = ? AND PHYSICAL_LINK_MEDIA_TYPE <> ''
+     ORDER BY PHYSICAL_LINK_MEDIA_TYPE`,
+    [CLUSTER_ESCOPO]
+  );
+
+  return rows.map(row => row.tecnologia);
+}
+
+// Valores distintos de STATUS/STATUS_REASON hoje na base (escopo GOIANIA + DEFEITO),
+// para montar os filtros no front sem hardcodar os valores.
+async function getFiltrosDisponiveisReparo() {
+  const escopo = 'CLUSTER_ = ? AND SPECIFICATION_TYPE = ?';
+  const params = [CLUSTER_ESCOPO, SPECIFICATION_TYPE_REPARO];
+
+  const [statusRows] = await pool.query(
+    `SELECT DISTINCT STATUS AS valor FROM backlog_elos WHERE ${escopo} ORDER BY STATUS`,
+    params
+  );
+  const [statusReasonRows] = await pool.query(
+    `SELECT DISTINCT STATUS_REASON AS valor FROM backlog_elos WHERE ${escopo} ORDER BY STATUS_REASON`,
+    params
+  );
+
+  return {
+    status: statusRows.map(r => r.valor),
+    statusReason: statusReasonRows.map(r => r.valor),
+  };
 }
 
 async function getTemposReparo() {
@@ -97,4 +140,13 @@ async function atualizarTemposReparo(atualizacoes) {
   }
 }
 
-module.exports = { getResumoBuckets, getTemposReparo, atualizarTemposReparo };
+module.exports = {
+  getResumoBuckets,
+  getTemposReparo,
+  atualizarTemposReparo,
+  getTecnologiasDisponiveis,
+  TECNOLOGIA_PADRAO,
+  getFiltrosDisponiveisReparo,
+  STATUS_EXCLUIDOS_PADRAO,
+  STATUS_REASON_EXCLUIDOS_PADRAO,
+};
