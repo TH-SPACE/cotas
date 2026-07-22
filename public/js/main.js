@@ -149,6 +149,37 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 8000);
       });
     }
+
+    // Clique numa miniatura abre ela ampliada num lightbox por cima do modal --
+    // só liga uma vez (os <img> não são recriados, só o src muda a cada poll).
+    const lightbox = document.getElementById('raspagem-screenshot-lightbox');
+    const lightboxImg = document.getElementById('raspagem-screenshot-lightbox-img');
+    const lightboxClose = document.getElementById('raspagem-screenshot-lightbox-close');
+
+    if (lightbox && lightboxImg) {
+      document.querySelectorAll('#raspagem-screenshots img[data-nome]').forEach((thumb) => {
+        const abrirLightbox = () => {
+          if (!thumb.src || thumb.style.display === 'none') return;
+          lightboxImg.src = thumb.src;
+          lightboxImg.alt = thumb.alt;
+          lightbox.showModal();
+        };
+        thumb.addEventListener('click', abrirLightbox);
+        thumb.addEventListener('keydown', (event) => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            abrirLightbox();
+          }
+        });
+      });
+
+      if (lightboxClose) {
+        lightboxClose.addEventListener('click', () => lightbox.close());
+      }
+      lightbox.addEventListener('click', (event) => {
+        if (event.target === lightbox) lightbox.close();
+      });
+    }
   }
 
   const clamp = (valor) => {

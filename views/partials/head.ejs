@@ -65,12 +65,12 @@
           <span id="raspagem-status-texto">Carregando status da raspagem...</span>
         </p>
         <div class="raspagem-screenshots" id="raspagem-screenshots">
-          <img data-nome="1-tela-principal.jpg" alt="Tela principal" title="Tela principal" />
-          <img data-nome="2-tela-dashboard.jpg" alt="Dashboard" title="Abrindo Dashboards" />
-          <img data-nome="3-click-menu-1.jpg" alt="Menu Backlog" title="Menu Backlog" />
-          <img data-nome="4-click-menu-2.jpg" alt="Submenu Backlog" title="Submenu Backlog" />
-          <img data-nome="5-dashboard-carregado.jpg" alt="Backlog carregado" title="Backlog carregado" />
-          <img data-nome="5-erro-dashboard-nao-carregou.jpg" alt="Erro" title="Erro ao carregar o dashboard" />
+          <img data-nome="1-tela-principal.jpg" alt="Tela principal" title="Clique para ampliar: Tela principal" role="button" tabindex="0" />
+          <img data-nome="2-tela-dashboard.jpg" alt="Dashboard" title="Clique para ampliar: Abrindo Dashboards" role="button" tabindex="0" />
+          <img data-nome="3-click-menu-1.jpg" alt="Menu Backlog" title="Clique para ampliar: Menu Backlog" role="button" tabindex="0" />
+          <img data-nome="4-click-menu-2.jpg" alt="Submenu Backlog" title="Clique para ampliar: Submenu Backlog" role="button" tabindex="0" />
+          <img data-nome="5-dashboard-carregado.jpg" alt="Backlog carregado" title="Clique para ampliar: Backlog carregado" role="button" tabindex="0" />
+          <img data-nome="5-erro-dashboard-nao-carregou.jpg" alt="Erro" title="Clique para ampliar: Erro ao carregar o dashboard" role="button" tabindex="0" />
         </div>
         <div class="field-row">
           <span class="hint" style="margin: 0;">Não quer esperar o próximo intervalo automático?</span>
@@ -105,5 +105,11 @@
         <button type="submit" title="Salva as credenciais do Elos">Salvar</button>
       </div>
     </form>
+  </dialog>
+  <dialog id="raspagem-screenshot-lightbox" class="lightbox-modal">
+    <div class="lightbox-modal-header">
+      <button type="button" class="icon-btn" id="raspagem-screenshot-lightbox-close" aria-label="Fechar" title="Fechar">&times;</button>
+    </div>
+    <img id="raspagem-screenshot-lightbox-img" alt="Screenshot ampliado" />
   </dialog>
   <main class="container">
