@@ -1,4 +1,5 @@
 const pool = require('../db');
+const { paraInClause } = require('./sqlUtils');
 
 // Mesmo escopo do painel de Reparos (ver bucketService.js).
 const CLUSTER_ESCOPO = 'GOIANIA';
@@ -47,7 +48,9 @@ async function getFiltrosDisponiveisInstalacoes() {
 }
 
 async function getResumoBucketsInstalacoes(filtros) {
-  const { status, statusReason, tecnologiaAcesso } = filtros;
+  const status = paraInClause(filtros.status);
+  const statusReason = paraInClause(filtros.statusReason);
+  const tecnologiaAcesso = paraInClause(filtros.tecnologiaAcesso);
 
   // PU não é um valor único pro painel: cada SPECIFICATION_PRODUCT tem seu próprio
   // peso (depara_pu_produto), então somamos o peso ticket-a-ticket (puBrutoTotal) e

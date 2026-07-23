@@ -37,6 +37,7 @@ const {
   TECNOLOGIA_ACESSO_PADRAO: TECNOLOGIA_ACESSO_PADRAO_ME,
 } = require('../services/meBucketService');
 const { importarInstalacoes, getDataCargaInstalacoes } = require('../services/instalacoesService');
+const { importarReparos } = require('../services/reparosUploadService');
 const { getTemposBucket, atualizarTemposBucket } = require('../services/temposBucketService');
 const {
   calcularPrevisto,
@@ -466,9 +467,6 @@ router.get('/', async (req, res, next) => {
       ...dados,
       linkResumoCotas,
       linkConfiguracoes,
-      instalacoesUpload: req.query.instalacoesUpload,
-      instalacoesUploadLinhas: req.query.instalacoesUploadLinhas,
-      instalacoesUploadErro: req.query.instalacoesUploadErro,
     });
   } catch (err) {
     next(err);
@@ -491,6 +489,12 @@ router.get('/configuracoes', async (req, res, next) => {
       linkVoltar,
       linkResumoCotas,
       linkConfiguracoes,
+      instalacoesUpload: req.query.instalacoesUpload,
+      instalacoesUploadLinhas: req.query.instalacoesUploadLinhas,
+      instalacoesUploadErro: req.query.instalacoesUploadErro,
+      reparosUpload: req.query.reparosUpload,
+      reparosUploadLinhas: req.query.reparosUploadLinhas,
+      reparosUploadErro: req.query.reparosUploadErro,
     });
   } catch (err) {
     next(err);
@@ -614,14 +618,32 @@ router.post('/config/pu-produto-todos', async (req, res, next) => {
 router.post('/instalacoes/upload', upload.single('arquivo'), async (req, res, next) => {
   try {
     if (!req.file) {
-      return res.redirect('/?instalacoesUpload=erro&instalacoesUploadErro=' + encodeURIComponent('Nenhum arquivo selecionado.'));
+      return res.redirect('/configuracoes?instalacoesUpload=erro&instalacoesUploadErro=' + encodeURIComponent('Nenhum arquivo selecionado.'));
     }
 
     const { totalLinhas } = await importarInstalacoes(req.file.buffer, req.file.originalname);
 
-    res.redirect(`/?instalacoesUpload=ok&instalacoesUploadLinhas=${totalLinhas}`);
+    res.redirect(`/configuracoes?instalacoesUpload=ok&instalacoesUploadLinhas=${totalLinhas}`);
   } catch (err) {
-    res.redirect('/?instalacoesUpload=erro&instalacoesUploadErro=' + encodeURIComponent(err.message));
+    res.redirect('/configuracoes?instalacoesUpload=erro&instalacoesUploadErro=' + encodeURIComponent(err.message));
+  }
+});
+
+// Upload manual do backlog de Reparos -- TRUNCATE + INSERT em backlog_elos
+// (substitui tudo), igual ao de Instalações. Diferente de Instalações, essa
+// tabela é compartilhada com outro sistema (ver reparosUploadService.js) --
+// decisão consciente do usuário de manter simples em vez de um upsert escopado.
+router.post('/reparos/upload', upload.single('arquivo'), async (req, res, next) => {
+  try {
+    if (!req.file) {
+      return res.redirect('/configuracoes?reparosUpload=erro&reparosUploadErro=' + encodeURIComponent('Nenhum arquivo selecionado.'));
+    }
+
+    const { totalLinhas } = await importarReparos(req.file.buffer);
+
+    res.redirect(`/configuracoes?reparosUpload=ok&reparosUploadLinhas=${totalLinhas}`);
+  } catch (err) {
+    res.redirect('/configuracoes?reparosUpload=erro&reparosUploadErro=' + encodeURIComponent(err.message));
   }
 });
 

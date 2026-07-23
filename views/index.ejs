@@ -24,14 +24,6 @@
         Backlog em aberto = instalação (GOIANIA). Status, motivo e tecnologia são filtráveis abaixo (padrão: fora CANCELADA/ENCERRADA/EXECUCAO e motivo ENRIQUECIMENTO).
       </p>
     </div>
-    <div class="panel-header-actions">
-      <button type="button" class="icon-btn" id="instalacoes-upload-open-btn" aria-haspopup="dialog" aria-controls="instalacoes-upload-modal" title="Enviar CSV diário de instalações (tabela backlog_instalacoes)">
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M12 4l4 4M12 4 8 8"/><path d="M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></svg>
-      </button>
-      <a href="<%= linkConfiguracoes %>#config-previsto" class="icon-btn" title="Configurações: previsto, janelas de horário, Carga, PU e tempos de instalação">
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.65 1.65 0 0 0-1.8-.3 1.65 1.65 0 0 0-1 1.5V21a2 2 0 0 1-4 0v-.1A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.65 1.65 0 0 0 .3-1.8 1.65 1.65 0 0 0-1.5-1H3a2 2 0 0 1 0-4h.1A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.65 1.65 0 0 0 1.8.3H9a1.65 1.65 0 0 0 1-1.5V3a2 2 0 0 1 4 0v.1a1.65 1.65 0 0 0 1 1.5 1.65 1.65 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.65 1.65 0 0 0-.3 1.8V9a1.65 1.65 0 0 0 1.5 1H21a2 2 0 0 1 0 4h-.1a1.65 1.65 0 0 0-1.5 1z"/></svg>
-      </a>
-    </div>
   </div>
 
   <details class="filtro-detalhes" id="filtro-instalacoes-detalhes">
@@ -76,39 +68,13 @@
     </form>
   </details>
 
-  <% if (instalacoesUpload === 'ok') { %>
-    <p class="alert alert-ok">Arquivo de instalações importado: <strong><%= instalacoesUploadLinhas %></strong> linhas gravadas em <code>backlog_instalacoes</code>.</p>
-  <% } else if (instalacoesUpload === 'erro') { %>
-    <p class="alert alert-erro">Falha ao importar instalações: <%= instalacoesUploadErro %></p>
-  <% } %>
-
   <% const produtosInstalacoesSemPu = calcularProdutosSemPu(puProdutos); %>
   <% if (produtosInstalacoesSemPu.length > 0) { %>
     <p class="alert alert-erro">
       <strong>Atenção:</strong> <%= produtosInstalacoesSemPu.length %> Specification Product(s) sem PU configurado: <%= produtosInstalacoesSemPu.join(', ') %>.
-      Ajuste em "PU por Specification Product" (engrenagem de Instalações) — até lá, eles contam PU=0 no cálculo.
+      Ajuste em "PU por Specification Product" na página de Configurações — até lá, eles contam PU=0 no cálculo.
     </p>
   <% } %>
-
-  <dialog id="instalacoes-upload-modal" class="config-modal">
-    <div class="modal-header">
-      <h3 title="Envia o export diário do ELOS (instalações/ME/serviços) para a tabela backlog_instalacoes">Importar instalações (backlog diário)</h3>
-      <button type="button" class="icon-btn" id="instalacoes-upload-close-btn" aria-label="Fechar" title="Fechar">&times;</button>
-    </div>
-
-    <form method="post" action="/instalacoes/upload" enctype="multipart/form-data" class="modal-section">
-      <div class="modal-body">
-        <div class="field-row">
-          <label for="instalacoes-arquivo">Arquivo CSV (BackLogDiario_*.csv)</label>
-          <input type="file" id="instalacoes-arquivo" name="arquivo" accept=".csv,.txt" required />
-        </div>
-        <p class="hint">Cada envio <strong>substitui</strong> todo o conteúdo atual de <code>backlog_instalacoes</code> pelo arquivo enviado.</p>
-      </div>
-      <div class="modal-footer">
-        <button type="submit" title="Envia e substitui os dados de backlog_instalacoes">Enviar</button>
-      </div>
-    </form>
-  </dialog>
 
   <div class="table-scroll">
     <table class="cotas-table">
@@ -204,11 +170,6 @@
         Backlog em aberto = SPECIFICATION_TYPE diferente de INSTALAÇÃO e DESCONEXÃO, excluindo produtos "MUDANÇA DE ENDEREÇO*" (GOIANIA). Status, motivo e tecnologia são filtráveis abaixo (padrão: fora CANCELADA/ENCERRADA/EXECUCAO e motivo ENRIQUECIMENTO).
       </p>
     </div>
-    <div class="panel-header-actions">
-      <a href="<%= linkConfiguracoes %>#config-previsto" class="icon-btn" title="Configurações: previsto, janelas de horário, Carga, PU e tempos de serviço">
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.65 1.65 0 0 0-1.8-.3 1.65 1.65 0 0 0-1 1.5V21a2 2 0 0 1-4 0v-.1A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.65 1.65 0 0 0 .3-1.8 1.65 1.65 0 0 0-1.5-1H3a2 2 0 0 1 0-4h.1A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.65 1.65 0 0 0 1.8.3H9a1.65 1.65 0 0 0 1-1.5V3a2 2 0 0 1 4 0v.1a1.65 1.65 0 0 0 1 1.5 1.65 1.65 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.65 1.65 0 0 0-.3 1.8V9a1.65 1.65 0 0 0 1.5 1H21a2 2 0 0 1 0 4h-.1a1.65 1.65 0 0 0-1.5 1z"/></svg>
-      </a>
-    </div>
   </div>
 
   <details class="filtro-detalhes" id="filtro-servicos-detalhes">
@@ -257,7 +218,7 @@
   <% if (produtosServicosSemPu.length > 0) { %>
     <p class="alert alert-erro">
       <strong>Atenção:</strong> <%= produtosServicosSemPu.length %> Specification Product(s) sem PU configurado: <%= produtosServicosSemPu.join(', ') %>.
-      Ajuste em "PU por Specification Product" (engrenagem de Serviços) — até lá, eles contam PU=0 no cálculo.
+      Ajuste em "PU por Specification Product" na página de Configurações — até lá, eles contam PU=0 no cálculo.
     </p>
   <% } %>
 
@@ -355,11 +316,6 @@
         Backlog em aberto = SPECIFICATION_PRODUCT contém "MUDANÇA DE ENDEREÇO" (GOIANIA) — conta as duas linhas do CSV (desconexão do endereço antigo e alteração/instalação no novo). Status, motivo e tecnologia são filtráveis abaixo (padrão: fora CANCELADA/ENCERRADA/EXECUCAO e motivo ENRIQUECIMENTO).
       </p>
     </div>
-    <div class="panel-header-actions">
-      <a href="<%= linkConfiguracoes %>#config-previsto" class="icon-btn" title="Configurações: previsto, janelas de horário, Carga, PU e tempos de ME">
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.65 1.65 0 0 0-1.8-.3 1.65 1.65 0 0 0-1 1.5V21a2 2 0 0 1-4 0v-.1A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.65 1.65 0 0 0 .3-1.8 1.65 1.65 0 0 0-1.5-1H3a2 2 0 0 1 0-4h.1A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.65 1.65 0 0 0 1.8.3H9a1.65 1.65 0 0 0 1-1.5V3a2 2 0 0 1 4 0v.1a1.65 1.65 0 0 0 1 1.5 1.65 1.65 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.65 1.65 0 0 0-.3 1.8V9a1.65 1.65 0 0 0 1.5 1H21a2 2 0 0 1 0 4h-.1a1.65 1.65 0 0 0-1.5 1z"/></svg>
-      </a>
-    </div>
   </div>
 
   <details class="filtro-detalhes" id="filtro-me-detalhes">
@@ -408,7 +364,7 @@
   <% if (produtosMeSemPu.length > 0) { %>
     <p class="alert alert-erro">
       <strong>Atenção:</strong> <%= produtosMeSemPu.length %> Specification Product(s) sem PU configurado: <%= produtosMeSemPu.join(', ') %>.
-      Ajuste em "PU por Specification Product" (engrenagem de ME) — até lá, eles contam PU=0 no cálculo.
+      Ajuste em "PU por Specification Product" na página de Configurações — até lá, eles contam PU=0 no cálculo.
     </p>
   <% } %>
 
@@ -505,11 +461,6 @@
       <p class="hint">
         Backlog em aberto = defeito (GOIANIA). Status, motivo e tecnologia são filtráveis abaixo (padrão: fora CANCELADA/ENCERRADA/EXECUCAO e motivo ABERTA MASSIVA).
       </p>
-    </div>
-    <div class="panel-header-actions">
-      <a href="<%= linkConfiguracoes %>#config-previsto" class="icon-btn" title="Configurações: previsto, janelas de horário, Carga e tempos de reparo">
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.65 1.65 0 0 0-1.8-.3 1.65 1.65 0 0 0-1 1.5V21a2 2 0 0 1-4 0v-.1A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.65 1.65 0 0 0 .3-1.8 1.65 1.65 0 0 0-1.5-1H3a2 2 0 0 1 0-4h.1A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.65 1.65 0 0 0 1.8.3H9a1.65 1.65 0 0 0 1-1.5V3a2 2 0 0 1 4 0v.1a1.65 1.65 0 0 0 1 1.5 1.65 1.65 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.65 1.65 0 0 0-.3 1.8V9a1.65 1.65 0 0 0 1.5 1H21a2 2 0 0 1 0 4h-.1a1.65 1.65 0 0 0-1.5 1z"/></svg>
-      </a>
     </div>
   </div>
 

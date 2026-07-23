@@ -8,7 +8,7 @@
         Configurações
       </h2>
       <p class="hint">
-        Previsto/Janelas/PU/Carga e Tempos por bucket em tabelas únicas (coluna por seção) + PU por Specification Product de cada seção, clique no título para abrir.
+        Upload manual do backlog, Previsto/Janelas/PU/Carga e Tempos por bucket em tabelas únicas (coluna por seção) + PU por Specification Product de cada seção.
       </p>
     </div>
     <div class="panel-header-actions">
@@ -17,6 +17,49 @@
       </a>
     </div>
   </div>
+</section>
+
+<section class="panel config-page-panel" id="config-upload">
+  <div class="modal-header">
+    <h3 title="Envia manualmente o export diário do ELOS para as tabelas backlog_instalacoes e backlog_elos">Upload manual de backlog</h3>
+  </div>
+
+  <% if (instalacoesUpload === 'ok') { %>
+    <p class="alert alert-ok" style="margin: 1.25rem 1.25rem 0;">Arquivo de instalações importado: <strong><%= instalacoesUploadLinhas %></strong> linhas gravadas em <code>backlog_instalacoes</code>.</p>
+  <% } else if (instalacoesUpload === 'erro') { %>
+    <p class="alert alert-erro" style="margin: 1.25rem 1.25rem 0;">Falha ao importar instalações: <%= instalacoesUploadErro %></p>
+  <% } %>
+  <% if (reparosUpload === 'ok') { %>
+    <p class="alert alert-ok" style="margin: 1.25rem 1.25rem 0;">Arquivo de reparos importado: <strong><%= reparosUploadLinhas %></strong> linhas gravadas em <code>backlog_elos</code>.</p>
+  <% } else if (reparosUpload === 'erro') { %>
+    <p class="alert alert-erro" style="margin: 1.25rem 1.25rem 0;">Falha ao importar reparos: <%= reparosUploadErro %></p>
+  <% } %>
+
+  <form method="post" action="/instalacoes/upload" enctype="multipart/form-data" class="modal-section">
+    <div class="modal-body">
+      <div class="field-row">
+        <label for="instalacoes-arquivo">Instalações / ME / Serviços — CSV (BackLogDiario_*.csv)</label>
+        <input type="file" id="instalacoes-arquivo" name="arquivo" accept=".csv,.txt" required />
+      </div>
+      <p class="hint">Cada envio <strong>substitui</strong> todo o conteúdo atual de <code>backlog_instalacoes</code> pelo arquivo enviado.</p>
+    </div>
+    <div class="modal-footer">
+      <button type="submit" title="Envia e substitui os dados de backlog_instalacoes">Enviar</button>
+    </div>
+  </form>
+
+  <form method="post" action="/reparos/upload" enctype="multipart/form-data" class="modal-section modal-section-divider">
+    <div class="modal-body">
+      <div class="field-row">
+        <label for="reparos-arquivo">Reparos — CSV (export de Reparos do ELOS)</label>
+        <input type="file" id="reparos-arquivo" name="arquivo" accept=".csv,.txt" required />
+      </div>
+      <p class="hint">Cada envio <strong>substitui</strong> todo o conteúdo atual de <code>backlog_elos</code> pelo arquivo enviado — atenção: essa tabela é compartilhada com outro sistema, um arquivo errado ou de outro escopo apaga dados que não são deste app.</p>
+    </div>
+    <div class="modal-footer">
+      <button type="submit" title="Envia e substitui os dados de backlog_elos">Enviar</button>
+    </div>
+  </form>
 </section>
 
 <section class="panel config-page-panel" id="config-previsto">

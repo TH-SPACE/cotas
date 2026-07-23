@@ -1,4 +1,5 @@
 const pool = require('../db');
+const { paraInClause } = require('./sqlUtils');
 
 // Mesmo escopo dos painéis de Reparos/Instalações.
 const CLUSTER_ESCOPO = 'GOIANIA';
@@ -56,7 +57,9 @@ async function getFiltrosDisponiveisServicos() {
 }
 
 async function getResumoBucketsServicos(filtros) {
-  const { status, statusReason, tecnologiaAcesso } = filtros;
+  const status = paraInClause(filtros.status);
+  const statusReason = paraInClause(filtros.statusReason);
+  const tecnologiaAcesso = paraInClause(filtros.tecnologiaAcesso);
 
   // Mesmo raciocínio de Instalações: PU vem do peso por SPECIFICATION_PRODUCT
   // (depara_pu_produto_servico), somado ticket-a-ticket em puBrutoTotal.

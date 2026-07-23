@@ -1,4 +1,5 @@
 const pool = require('../db');
+const { paraInClause } = require('./sqlUtils');
 
 // Único table deste app que mora em outro banco (indicadores, não cotas) --
 // backlog_elos já tem sua própria raspagem na intranet e continua lá por
@@ -31,7 +32,8 @@ const STATUS_REASON_EXCLUIDOS_PADRAO = ['ABERTA MASSIVA'];
 
 async function getResumoBuckets(tecnologias, filtros) {
   const filtroTecnologia = tecnologias.length > 0 ? tecnologias : TECNOLOGIA_PADRAO;
-  const { status, statusReason } = filtros;
+  const status = paraInClause(filtros.status);
+  const statusReason = paraInClause(filtros.statusReason);
 
   const [rows] = await pool.query(
     `SELECT aliada, bucket, backlogReparos, tempoReparoMinutos FROM (
