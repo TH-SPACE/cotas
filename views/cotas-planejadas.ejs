@@ -115,14 +115,14 @@
   </div>
 
   <% if (cotasUpload === 'ok') { %>
-    <p class="alert alert-ok" style="margin: 1rem 1.25rem 0;">Cotas de <strong><%= rotuloTipo(cotasUploadTipo) %></strong> importadas: <strong><%= cotasUploadLinhas %></strong> linhas.</p>
+    <p class="alert alert-ok" data-auto-dismiss style="margin: 1rem 1.25rem 0;">Cotas de <strong><%= rotuloTipo(cotasUploadTipo) %></strong> importadas: <strong><%= cotasUploadLinhas %></strong> linhas.</p>
   <% } else if (cotasUpload === 'erro') { %>
-    <p class="alert alert-erro" style="margin: 1rem 1.25rem 0;">Falha ao importar cotas<%= cotasUploadTipo ? ' de ' + rotuloTipo(cotasUploadTipo) : '' %>: <%= cotasUploadErro %></p>
+    <p class="alert alert-erro" data-auto-dismiss style="margin: 1rem 1.25rem 0;">Falha ao importar cotas<%= cotasUploadTipo ? ' de ' + rotuloTipo(cotasUploadTipo) : '' %>: <%= cotasUploadErro %></p>
   <% } %>
 
   <div class="upload-compact-grid">
     <% tiposCotas.forEach(({ tipo, label }) => { %>
-      <form class="cota-upload-item" method="post" action="/cotas/upload/<%= tipo %>" enctype="multipart/form-data">
+      <form class="cota-upload-item" method="post" action="/cotas/upload/<%= tipo %>" enctype="multipart/form-data" data-loading="Enviando e processando o arquivo…">
         <div class="cota-upload-head">
           <span class="cota-upload-tipo"><%= label %></span>
           <% if (datasCargaCotas[tipo]) { %>

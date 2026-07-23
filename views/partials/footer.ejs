@@ -2,6 +2,19 @@
   <footer class="footer">
     <p>Calculadora de Cotas - GO &middot; fonte: banco <strong>indicadores</strong>, tabelas <code>backlog_elos</code>, <code>backlog_instalacoes</code> e <code>depara_bucket</code></p>
   </footer>
+
+  <!-- Feedback visual global: barra de progresso (navegação/filtros) e overlay
+       de carregamento (upload/salvar). Controlados por public/js/ui.js. -->
+  <div class="top-progress" id="top-progress" hidden></div>
+  <div class="app-loading-overlay" id="app-loading-overlay" hidden role="status" aria-live="polite">
+    <div class="app-loading-card">
+      <div class="spinner" aria-hidden="true"></div>
+      <p class="app-loading-text" id="app-loading-text">Carregando…</p>
+      <p class="app-loading-sub">Isso pode levar alguns segundos.</p>
+    </div>
+  </div>
+
   <script src="/js/main.js"></script>
+  <script src="/js/ui.js"></script>
 </body>
 </html>

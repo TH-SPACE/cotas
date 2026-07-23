@@ -982,3 +982,193 @@ body {
   padding: 0.1rem 0.35rem;
   border-radius: 4px;
 }
+
+/* =======================================================================
+   CAMADA DE UX / FEEDBACK VISUAL (v2)
+   Adicionada no fim de propósito, pra refinar o que veio antes sem quebrar:
+   loading (overlay + barra de progresso), estados de botão, foco acessível,
+   micro-interações, alerts semânticos e respeito a "reduzir movimento".
+   ======================================================================= */
+
+:root {
+  --success-bg: #e7f6ec;
+  --success-fg: #1a7f43;
+  --danger-bg: #fdecea;
+  --danger-fg: #c0392b;
+  --aviso-bg: #fff5e0;
+  --aviso-fg: #a6690b;
+  --ring: rgba(108, 60, 224, 0.32);
+  --panel-shadow: 0 1px 2px rgba(16, 24, 40, 0.04), 0 3px 10px rgba(16, 24, 40, 0.06);
+  --overlay-bg: rgba(24, 20, 45, 0.5);
+}
+
+/* Profundidade suave nos cartões e no topo, pra dar hierarquia ao layout. */
+.panel { box-shadow: var(--panel-shadow); }
+.topbar { box-shadow: 0 1px 0 var(--border), 0 6px 18px rgba(16, 24, 40, 0.05); }
+.home-sidebar { box-shadow: var(--panel-shadow); }
+
+/* Transições suaves e foco acessível por teclado (não atrapalha o mouse). */
+a, button, .icon-btn, input, select, summary,
+.topbar-nav-item, .home-sidebar-item, .cota-upload-item {
+  transition: background-color 0.15s ease, border-color 0.15s ease,
+              color 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease;
+}
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+a:focus:not(:focus-visible),
+button:focus:not(:focus-visible) { outline: none; }
+
+/* Foco claro nos campos de formulário. */
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--ring);
+}
+
+/* Micro-interações de botão: brilho no hover, "afunda" 1px no clique. */
+.topbar-nav-item:hover { transform: translateY(-1px); }
+.btn-secundario:active, .icon-btn:active,
+.config-modal .modal-footer button:active,
+.config-page-panel .modal-footer button:active,
+.cota-upload-row button:active { transform: translateY(1px); }
+.icon-btn:hover { box-shadow: 0 0 0 3px var(--ring); }
+
+/* Item de navegação da página atual (marcado via JS em ui.js). */
+.topbar-nav-item.is-active,
+.home-sidebar-item.is-active {
+  background: var(--col-backlog-bg);
+  color: var(--accent);
+}
+
+/* Spinner reutilizável. */
+.spinner {
+  width: 2.4rem;
+  height: 2.4rem;
+  border: 3px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: girar 0.8s linear infinite;
+}
+@keyframes girar { to { transform: rotate(360deg); } }
+
+/* Overlay de carregamento — aparece ao subir arquivo ou salvar config. */
+.app-loading-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--overlay-bg);
+  backdrop-filter: blur(2px);
+  animation: aparecer 0.15s ease;
+}
+.app-loading-overlay[hidden] { display: none; }
+.app-loading-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  max-width: min(90vw, 340px);
+  padding: 1.75rem 2.25rem;
+  text-align: center;
+  background: var(--panel-bg);
+  color: var(--text);
+  border-radius: 14px;
+  box-shadow: 0 16px 48px rgba(16, 24, 40, 0.3);
+}
+.app-loading-text { margin: 0; font-weight: 600; font-size: 0.95rem; }
+.app-loading-sub { margin: 0; font-size: 0.78rem; color: var(--muted); }
+@keyframes aparecer { from { opacity: 0; } to { opacity: 1; } }
+
+/* Barra de progresso indeterminada no topo (navegação entre páginas/filtros). */
+.top-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  z-index: 1100;
+  overflow: hidden;
+  background: transparent;
+}
+.top-progress[hidden] { display: none; }
+.top-progress::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -40%;
+  height: 100%;
+  width: 40%;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  animation: progresso 0.9s ease-in-out infinite;
+}
+@keyframes progresso { to { left: 100%; } }
+
+/* Botão em estado "carregando": esconde o texto e mostra spinner, trava cliques. */
+button.is-loading {
+  position: relative;
+  color: transparent !important;
+  pointer-events: none;
+}
+button.is-loading::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 1rem;
+  height: 1rem;
+  margin: -0.5rem 0 0 -0.5rem;
+  border: 2px solid rgba(255, 255, 255, 0.55);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: girar 0.7s linear infinite;
+}
+.btn-secundario.is-loading::after {
+  border-color: var(--ring);
+  border-top-color: var(--accent);
+}
+
+/* Alerts semânticos (verde=ok, vermelho=erro, âmbar=aviso) com ícone + fechar,
+   incrementados por ui.js (ícone e botão são adicionados via JS). */
+.alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+  border-left: 3px solid var(--border);
+  animation: alertaEntra 0.25s ease;
+}
+.alert-ok { background: var(--success-bg); color: var(--success-fg); border-color: var(--success-fg); }
+.alert-erro { background: var(--danger-bg); color: var(--danger-fg); border-color: var(--danger-fg); }
+.alert-aviso { background: var(--aviso-bg); color: var(--aviso-fg); border-color: var(--aviso-fg); }
+.alert-ico { flex-shrink: 0; margin-top: 0.05rem; }
+.alert-corpo { flex: 1; min-width: 0; }
+.alert-dismiss {
+  flex-shrink: 0;
+  padding: 0 0.15rem;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font-size: 1.15rem;
+  line-height: 1;
+  opacity: 0.55;
+  cursor: pointer;
+}
+.alert-dismiss:hover { opacity: 1; }
+.alert.saindo { animation: alertaSai 0.3s ease forwards; }
+@keyframes alertaEntra { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+@keyframes alertaSai {
+  to { opacity: 0; transform: translateY(-6px); max-height: 0; margin: 0; padding-top: 0; padding-bottom: 0; }
+}
+
+/* Respeita quem pediu menos animação no sistema operacional. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}

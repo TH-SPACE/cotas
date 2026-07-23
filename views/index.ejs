@@ -97,7 +97,7 @@
 
   <% const produtosInstalacoesSemPu = calcularProdutosSemPu(puProdutos); %>
   <% if (produtosInstalacoesSemPu.length > 0) { %>
-    <p class="alert alert-erro">
+    <p class="alert alert-aviso">
       <strong>Atenção:</strong> <%= produtosInstalacoesSemPu.length %> Specification Product(s) sem PU configurado: <%= produtosInstalacoesSemPu.join(', ') %>.
       Ajuste em "PU por Specification Product" na página de Configurações — até lá, eles contam PU=0 no cálculo.
     </p>
@@ -243,7 +243,7 @@
 
   <% const produtosServicosSemPu = calcularProdutosSemPu(puProdutosServicos); %>
   <% if (produtosServicosSemPu.length > 0) { %>
-    <p class="alert alert-erro">
+    <p class="alert alert-aviso">
       <strong>Atenção:</strong> <%= produtosServicosSemPu.length %> Specification Product(s) sem PU configurado: <%= produtosServicosSemPu.join(', ') %>.
       Ajuste em "PU por Specification Product" na página de Configurações — até lá, eles contam PU=0 no cálculo.
     </p>
@@ -389,7 +389,7 @@
 
   <% const produtosMeSemPu = calcularProdutosSemPu(puProdutosMe); %>
   <% if (produtosMeSemPu.length > 0) { %>
-    <p class="alert alert-erro">
+    <p class="alert alert-aviso">
       <strong>Atenção:</strong> <%= produtosMeSemPu.length %> Specification Product(s) sem PU configurado: <%= produtosMeSemPu.join(', ') %>.
       Ajuste em "PU por Specification Product" na página de Configurações — até lá, eles contam PU=0 no cálculo.
     </p>

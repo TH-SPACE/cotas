@@ -25,18 +25,18 @@
   </div>
 
   <% if (instalacoesUpload === 'ok') { %>
-    <p class="alert alert-ok" style="margin: 1.25rem 1.25rem 0;">Arquivo de instalações importado: <strong><%= instalacoesUploadLinhas %></strong> linhas gravadas em <code>backlog_instalacoes</code>.</p>
+    <p class="alert alert-ok" data-auto-dismiss style="margin: 1.25rem 1.25rem 0;">Arquivo de instalações importado: <strong><%= instalacoesUploadLinhas %></strong> linhas gravadas em <code>backlog_instalacoes</code>.</p>
   <% } else if (instalacoesUpload === 'erro') { %>
-    <p class="alert alert-erro" style="margin: 1.25rem 1.25rem 0;">Falha ao importar instalações: <%= instalacoesUploadErro %></p>
+    <p class="alert alert-erro" data-auto-dismiss style="margin: 1.25rem 1.25rem 0;">Falha ao importar instalações: <%= instalacoesUploadErro %></p>
   <% } %>
   <% if (reparosUpload === 'ok') { %>
-    <p class="alert alert-ok" style="margin: 1.25rem 1.25rem 0;">Arquivo de reparos importado: <strong><%= reparosUploadLinhas %></strong> linhas gravadas em <code>backlog_elos</code>.</p>
+    <p class="alert alert-ok" data-auto-dismiss style="margin: 1.25rem 1.25rem 0;">Arquivo de reparos importado: <strong><%= reparosUploadLinhas %></strong> linhas gravadas em <code>backlog_elos</code>.</p>
   <% } else if (reparosUpload === 'erro') { %>
-    <p class="alert alert-erro" style="margin: 1.25rem 1.25rem 0;">Falha ao importar reparos: <%= reparosUploadErro %></p>
+    <p class="alert alert-erro" data-auto-dismiss style="margin: 1.25rem 1.25rem 0;">Falha ao importar reparos: <%= reparosUploadErro %></p>
   <% } %>
 
   <div class="upload-compact-grid">
-    <form class="cota-upload-item" method="post" action="/instalacoes/upload" enctype="multipart/form-data">
+    <form class="cota-upload-item" method="post" action="/instalacoes/upload" enctype="multipart/form-data" data-loading="Enviando e processando o arquivo…">
       <div class="cota-upload-head">
         <span class="cota-upload-tipo">Instalações / ME / Serviços</span>
         <span class="cota-upload-data" title="Última carga registrada"><%= dataCargaInstalacoes %></span>
@@ -48,7 +48,7 @@
       <p class="cota-upload-hint">CSV <code>BackLogDiario_*.csv</code> — substitui <code>backlog_instalacoes</code>.</p>
     </form>
 
-    <form class="cota-upload-item" method="post" action="/reparos/upload" enctype="multipart/form-data">
+    <form class="cota-upload-item" method="post" action="/reparos/upload" enctype="multipart/form-data" data-loading="Enviando e processando o arquivo…">
       <div class="cota-upload-head">
         <span class="cota-upload-tipo">Reparos</span>
         <span class="cota-upload-data" title="Última carga registrada"><%= dataCargaReparo %></span>
@@ -67,7 +67,7 @@
     <h3 title="Previsto de resolução, janelas de horário, Meta de PU por técnico e Carga (usada na coluna Sugestão) de cada seção">Previsto, Janelas, PU e Carga</h3>
   </div>
 
-  <form method="post" action="/config/geral" class="modal-section">
+  <form method="post" action="/config/geral" class="modal-section" data-loading="Salvando configurações…">
     <%- include('partials/hidden-config-estado', { exceto: [] }) %>
     <div class="modal-body">
       <table class="tempo-table">
@@ -160,7 +160,7 @@
     <h3 title="Tempo médio (minutos) de cada tipo de atendimento em cada bucket">Tempos por bucket (min)</h3>
   </div>
 
-  <form method="post" action="/config/tempo-bucket" class="modal-section">
+  <form method="post" action="/config/tempo-bucket" class="modal-section" data-loading="Salvando tempos…">
     <%- include('partials/hidden-config-estado', { exceto: [] }) %>
     <div class="modal-body">
       <p class="hint">
@@ -215,7 +215,7 @@
     <h3 title="Peso de PU de cada Specification Product, por seção — Instalação, Serviço e ME têm listas de produtos próprias (Reparos usa PU fixo, configurado na tabela de Previsto/Janelas/PU/Carga)">PU por Specification Product</h3>
   </div>
 
-  <form method="post" action="/config/pu-produto-todos" class="modal-section">
+  <form method="post" action="/config/pu-produto-todos" class="modal-section" data-loading="Salvando PU…">
     <%- include('partials/hidden-config-estado', { exceto: [] }) %>
 
     <div class="modal-body">
