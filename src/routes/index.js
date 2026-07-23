@@ -46,9 +46,11 @@ const {
 } = require('../services/meBucketService');
 const { importarInstalacoes, getDataCargaInstalacoes } = require('../services/instalacoesService');
 const {
-  calcularLinhasComPrevisto,
-  calcularTotais,
+  calcularPrevisto,
+  calcularTotalPrevisto,
   calcularSugestao,
+  calcularDistribuicaoPorSugestao,
+  calcularTotais,
   construirMapaCoresAliada,
 } = require('../services/calculoBacklogService');
 const { getElosCredenciais, salvarElosCredenciais } = require('../services/elosCredenciaisService');
@@ -303,64 +305,70 @@ async function carregarDadosPainel(query) {
       getElosCredenciais(),
     ]);
 
-    const linhasComPrevistoBruto = calcularLinhasComPrevisto(linhas, {
-      percentual, percentuaisJanela: [percentualJanela], pu: puReparo, metaPuTecnico,
+    const linhasComPrevistoBruto = calcularPrevisto(linhas, { percentual, campoBacklog: 'backlogReparos' });
+    const totalPrevistoReparo = calcularTotalPrevisto(totalGeral, percentual);
+    const linhasComSugestaoReparo = calcularSugestao(linhasComPrevistoBruto, totalPrevistoReparo, cargaReparo);
+    const linhasComPrevisto = calcularDistribuicaoPorSugestao(linhasComSugestaoReparo, {
+      percentuaisJanela: [percentualJanela], pu: puReparo, metaPuTecnico,
       campoBacklog: 'backlogReparos', campoTempo: 'tempoReparoMinutos',
     });
-    const totais = calcularTotais(totalGeral, linhasComPrevistoBruto, {
-      percentual, percentuaisJanela: [percentualJanela], metaPuTecnico,
+    const totais = calcularTotais(totalPrevistoReparo, cargaReparo, linhasComPrevisto, {
+      percentuaisJanela: [percentualJanela], metaPuTecnico,
     });
-    const linhasComPrevisto = calcularSugestao(linhasComPrevistoBruto, totais.totalPrevisto, cargaReparo);
-    const totalSugestao = linhasComPrevisto.reduce((acc, l) => acc + l.sugestao, 0);
 
     const percentuaisJanelaInstalacao = [percentualJanela1Instalacao, percentualJanela2Instalacao, percentualJanela3Instalacao];
-    const linhasInstalacoesComPrevistoBruto = calcularLinhasComPrevisto(linhasInstalacoes, {
-      percentual: percentualInstalacao, percentuaisJanela: percentuaisJanelaInstalacao,
-      metaPuTecnico: metaPuTecnicoInstalacao,
+    const linhasInstalacoesComPrevistoBruto = calcularPrevisto(linhasInstalacoes, {
+      percentual: percentualInstalacao, campoBacklog: 'backlogInstalacoes',
+    });
+    const totalPrevistoInstalacaoBase = calcularTotalPrevisto(totalGeralInstalacoes, percentualInstalacao);
+    const linhasInstalacoesComSugestao = calcularSugestao(linhasInstalacoesComPrevistoBruto, totalPrevistoInstalacaoBase, cargaInstalacao);
+    const linhasInstalacoesComPrevisto = calcularDistribuicaoPorSugestao(linhasInstalacoesComSugestao, {
+      percentuaisJanela: percentuaisJanelaInstalacao, metaPuTecnico: metaPuTecnicoInstalacao,
       campoBacklog: 'backlogInstalacoes', campoTempo: 'tempoInstalacaoMinutos',
       campoPuBruto: 'puBrutoTotal',
     });
-    const totaisInstalacoes = calcularTotais(totalGeralInstalacoes, linhasInstalacoesComPrevistoBruto, {
-      percentual: percentualInstalacao, percentuaisJanela: percentuaisJanelaInstalacao,
-      metaPuTecnico: metaPuTecnicoInstalacao,
+    const totaisInstalacoes = calcularTotais(totalPrevistoInstalacaoBase, cargaInstalacao, linhasInstalacoesComPrevisto, {
+      percentuaisJanela: percentuaisJanelaInstalacao, metaPuTecnico: metaPuTecnicoInstalacao,
     });
-    const linhasInstalacoesComPrevisto = calcularSugestao(linhasInstalacoesComPrevistoBruto, totaisInstalacoes.totalPrevisto, cargaInstalacao);
-    const totalSugestaoInstalacoes = linhasInstalacoesComPrevisto.reduce((acc, l) => acc + l.sugestao, 0);
+    const totalSugestaoInstalacoes = totaisInstalacoes.totalSugestao;
 
     const percentuaisJanelaServico = [percentualJanela1Servico, percentualJanela2Servico, percentualJanela3Servico];
-    const linhasServicosComPrevistoBruto = calcularLinhasComPrevisto(linhasServicos, {
-      percentual: percentualServico, percentuaisJanela: percentuaisJanelaServico,
-      metaPuTecnico: metaPuTecnicoServico,
+    const linhasServicosComPrevistoBruto = calcularPrevisto(linhasServicos, {
+      percentual: percentualServico, campoBacklog: 'backlogServicos',
+    });
+    const totalPrevistoServicoBase = calcularTotalPrevisto(totalGeralServicos, percentualServico);
+    const linhasServicosComSugestao = calcularSugestao(linhasServicosComPrevistoBruto, totalPrevistoServicoBase, cargaServico);
+    const linhasServicosComPrevisto = calcularDistribuicaoPorSugestao(linhasServicosComSugestao, {
+      percentuaisJanela: percentuaisJanelaServico, metaPuTecnico: metaPuTecnicoServico,
       campoBacklog: 'backlogServicos', campoTempo: 'tempoServicoMinutos',
       campoPuBruto: 'puBrutoTotal',
     });
-    const totaisServicos = calcularTotais(totalGeralServicos, linhasServicosComPrevistoBruto, {
-      percentual: percentualServico, percentuaisJanela: percentuaisJanelaServico,
-      metaPuTecnico: metaPuTecnicoServico,
+    const totaisServicos = calcularTotais(totalPrevistoServicoBase, cargaServico, linhasServicosComPrevisto, {
+      percentuaisJanela: percentuaisJanelaServico, metaPuTecnico: metaPuTecnicoServico,
     });
-    const linhasServicosComPrevisto = calcularSugestao(linhasServicosComPrevistoBruto, totaisServicos.totalPrevisto, cargaServico);
-    const totalSugestaoServicos = linhasServicosComPrevisto.reduce((acc, l) => acc + l.sugestao, 0);
+    const totalSugestaoServicos = totaisServicos.totalSugestao;
 
     const percentuaisJanelaMe = [percentualJanela1Me, percentualJanela2Me, percentualJanela3Me];
-    const linhasMeComPrevistoBruto = calcularLinhasComPrevisto(linhasMe, {
-      percentual: percentualMe, percentuaisJanela: percentuaisJanelaMe,
-      metaPuTecnico: metaPuTecnicoMe,
+    const linhasMeComPrevistoBruto = calcularPrevisto(linhasMe, {
+      percentual: percentualMe, campoBacklog: 'backlogMe',
+    });
+    const totalPrevistoMeBase = calcularTotalPrevisto(totalGeralMe, percentualMe);
+    const linhasMeComSugestao = calcularSugestao(linhasMeComPrevistoBruto, totalPrevistoMeBase, cargaMe);
+    const linhasMeComPrevisto = calcularDistribuicaoPorSugestao(linhasMeComSugestao, {
+      percentuaisJanela: percentuaisJanelaMe, metaPuTecnico: metaPuTecnicoMe,
       campoBacklog: 'backlogMe', campoTempo: 'tempoMeMinutos',
       campoPuBruto: 'puBrutoTotal',
     });
-    const totaisMe = calcularTotais(totalGeralMe, linhasMeComPrevistoBruto, {
-      percentual: percentualMe, percentuaisJanela: percentuaisJanelaMe,
-      metaPuTecnico: metaPuTecnicoMe,
+    const totaisMe = calcularTotais(totalPrevistoMeBase, cargaMe, linhasMeComPrevisto, {
+      percentuaisJanela: percentuaisJanelaMe, metaPuTecnico: metaPuTecnicoMe,
     });
-    const linhasMeComPrevisto = calcularSugestao(linhasMeComPrevistoBruto, totaisMe.totalPrevisto, cargaMe);
-    const totalSugestaoMe = linhasMeComPrevisto.reduce((acc, l) => acc + l.sugestao, 0);
+    const totalSugestaoMe = totaisMe.totalSugestao;
 
     return {
       // Reparos
       linhas: linhasComPrevisto,
       totalGeral,
       ...totais,
-      totalSugestao,
       janelasReparoLabels: JANELAS_REPARO,
       percentual,
       percentualJanela,
