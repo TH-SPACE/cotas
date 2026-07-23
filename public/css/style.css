@@ -566,6 +566,23 @@ body {
   text-align: center;
 }
 
+/* Célula "não se aplica" na tabela de Previsto/Janelas/PU/Carga -- ex.: Reparos
+   só tem 2 janelas, então as colunas de 3ª/4ª janela ficam com um traço em vez
+   de input (usar `title` na própria célula pra explicar o motivo). */
+.celula-napplicavel {
+  color: var(--muted);
+}
+
+/* Reparos tem janelas de horário diferentes das outras 3 seções -- a legenda da
+   linha usa o horário de Instalação/Serviço/ME, então a célula de Reparos mostra
+   o próprio horário aqui embaixo do campo, pra não ficar escondido só no title. */
+.tempo-table-subcaption {
+  display: block;
+  margin-top: 0.2rem;
+  font-size: 0.68rem;
+  color: var(--muted);
+}
+
 .tempo-table input[type="number"] {
   width: 4.5rem;
   padding: 0.3rem 0.4rem;

@@ -2,8 +2,6 @@ const express = require('express');
 const multer = require('multer');
 const {
   getResumoBuckets,
-  getTemposReparo,
-  atualizarTemposReparo,
   getTecnologiasDisponiveis,
   TECNOLOGIA_PADRAO,
   getFiltrosDisponiveisReparo,
@@ -13,8 +11,6 @@ const {
 } = require('../services/bucketService');
 const {
   getResumoBucketsInstalacoes,
-  getTemposInstalacao,
-  atualizarTemposInstalacao,
   getFiltrosDisponiveisInstalacoes,
   getPuProdutos,
   atualizarPuProdutos,
@@ -24,8 +20,6 @@ const {
 } = require('../services/instalacaoBucketService');
 const {
   getResumoBucketsServicos,
-  getTemposServicos,
-  atualizarTemposServicos,
   getFiltrosDisponiveisServicos,
   getPuProdutosServicos,
   atualizarPuProdutosServicos,
@@ -35,8 +29,6 @@ const {
 } = require('../services/servicoBucketService');
 const {
   getResumoBucketsMe,
-  getTemposMe,
-  atualizarTemposMe,
   getFiltrosDisponiveisMe,
   getPuProdutosMe,
   atualizarPuProdutosMe,
@@ -45,6 +37,7 @@ const {
   TECNOLOGIA_ACESSO_PADRAO: TECNOLOGIA_ACESSO_PADRAO_ME,
 } = require('../services/meBucketService');
 const { importarInstalacoes, getDataCargaInstalacoes } = require('../services/instalacoesService');
+const { getTemposBucket, atualizarTemposBucket } = require('../services/temposBucketService');
 const {
   calcularPrevisto,
   calcularTotalPrevisto,
@@ -258,18 +251,15 @@ async function carregarDadosPainel(query) {
 
     const [
       { linhas, totalGeral },
-      temposReparo,
+      temposBucket,
       tecnologiasDisponiveis,
       dataCargaReparo,
       { linhas: linhasInstalacoes, totalGeral: totalGeralInstalacoes },
-      temposInstalacao,
       puProdutos,
       dataCargaInstalacoes,
       { linhas: linhasServicos, totalGeral: totalGeralServicos },
-      temposServicos,
       puProdutosServicos,
       { linhas: linhasMe, totalGeral: totalGeralMe },
-      temposMe,
       puProdutosMe,
       elosCredenciais,
     ] = await Promise.all([
@@ -277,7 +267,7 @@ async function carregarDadosPainel(query) {
         status: statusReparoSelecionados,
         statusReason: statusReasonReparoSelecionados,
       }),
-      getTemposReparo(),
+      getTemposBucket(),
       getTecnologiasDisponiveis(),
       getDataCargaReparo(),
       getResumoBucketsInstalacoes({
@@ -285,7 +275,6 @@ async function carregarDadosPainel(query) {
         statusReason: statusReasonInstalacaoSelecionados,
         tecnologiaAcesso: tecnologiaAcessoSelecionadas,
       }),
-      getTemposInstalacao(),
       getPuProdutos(),
       getDataCargaInstalacoes(),
       getResumoBucketsServicos({
@@ -293,14 +282,12 @@ async function carregarDadosPainel(query) {
         statusReason: statusReasonServicoSelecionados,
         tecnologiaAcesso: tecnologiaAcessoServicoSelecionadas,
       }),
-      getTemposServicos(),
       getPuProdutosServicos(),
       getResumoBucketsMe({
         status: statusMeSelecionados,
         statusReason: statusReasonMeSelecionados,
         tecnologiaAcesso: tecnologiaAcessoMeSelecionadas,
       }),
-      getTemposMe(),
       getPuProdutosMe(),
       getElosCredenciais(),
     ]);
@@ -375,8 +362,7 @@ async function carregarDadosPainel(query) {
       puReparo,
       metaPuTecnico,
       cargaReparo,
-      temposReparo,
-      aliadaCores: construirMapaCoresAliada(ALIADA_COR_QTD, linhasComPrevisto, temposReparo),
+      aliadaCores: construirMapaCoresAliada(ALIADA_COR_QTD, linhasComPrevisto, temposBucket),
       tecnologiasSelecionadas,
       tecnologiasDisponiveis,
       filtrosDisponiveisReparo,
@@ -400,9 +386,8 @@ async function carregarDadosPainel(query) {
       percentualJanela3Instalacao,
       metaPuTecnicoInstalacao,
       cargaInstalacao,
-      temposInstalacao,
       puProdutos,
-      aliadaCoresInstalacoes: construirMapaCoresAliada(ALIADA_COR_QTD, linhasInstalacoesComPrevisto, temposInstalacao),
+      aliadaCoresInstalacoes: construirMapaCoresAliada(ALIADA_COR_QTD, linhasInstalacoesComPrevisto, temposBucket),
       filtrosDisponiveisInstalacoes,
       statusInstalacaoSelecionados,
       statusReasonInstalacaoSelecionados,
@@ -425,9 +410,8 @@ async function carregarDadosPainel(query) {
       percentualJanela3Servico,
       metaPuTecnicoServico,
       cargaServico,
-      temposServicos,
       puProdutosServicos,
-      aliadaCoresServicos: construirMapaCoresAliada(ALIADA_COR_QTD, linhasServicosComPrevisto, temposServicos),
+      aliadaCoresServicos: construirMapaCoresAliada(ALIADA_COR_QTD, linhasServicosComPrevisto, temposBucket),
       filtrosDisponiveisServicos,
       statusServicoSelecionados,
       statusReasonServicoSelecionados,
@@ -450,14 +434,19 @@ async function carregarDadosPainel(query) {
       percentualJanela3Me,
       metaPuTecnicoMe,
       cargaMe,
-      temposMe,
       puProdutosMe,
-      aliadaCoresMe: construirMapaCoresAliada(ALIADA_COR_QTD, linhasMeComPrevisto, temposMe),
+      aliadaCoresMe: construirMapaCoresAliada(ALIADA_COR_QTD, linhasMeComPrevisto, temposBucket),
       filtrosDisponiveisMe,
       statusMeSelecionados,
       statusReasonMeSelecionados,
       tecnologiaAcessoMeSelecionadas,
       dataCargaMe: formatarDataCarga(dataCargaInstalacoes),
+
+      // Tempos por bucket (depara_tempo_bucket): 1 tabela só, compartilhada pelas
+      // 4 seções na página de Configurações (Instalação/Serviço/ME/Reparo são
+      // colunas da mesma linha, não tabelas separadas).
+      temposBucket,
+      aliadaCoresTemposBucket: construirMapaCoresAliada(ALIADA_COR_QTD, temposBucket),
 
       // Credenciais da raspagem automática do Elos (elos-backlog-scraper) --
       // nunca inclui a senha, só usuário + quando foi a última atualização.
@@ -569,101 +558,31 @@ router.get('/resumo-cotas', async (req, res, next) => {
   }
 });
 
-router.post('/config/tempo-reparo', async (req, res, next) => {
-  try {
-    const buckets = [].concat(req.body.bucket || []);
-    const reparos = [].concat(req.body.reparo || []);
-
-    const atualizacoes = buckets
-      .map((bucket, i) => ({ bucket, reparo: Number(reparos[i]) }))
-      .filter(item => item.bucket && Number.isFinite(item.reparo) && item.reparo >= 0);
-
-    await atualizarTemposReparo(atualizacoes);
-
-    res.redirect(`/configuracoes?${montarQueryStringEstado(req.body).toString()}`);
-  } catch (err) {
-    next(err);
-  }
-});
-
-router.post('/config/tempo-instalacao', async (req, res, next) => {
+// Um formulário só grava as 4 colunas de uma vez (INSTALACAO/SERVICO/ALTERACAO/REPARO)
+// porque é uma tabela só (depara_tempo_bucket) -- ver temposBucketService.js.
+router.post('/config/tempo-bucket', async (req, res, next) => {
   try {
     const buckets = [].concat(req.body.bucket || []);
     const instalacoes = [].concat(req.body.instalacao || []);
-
-    const atualizacoes = buckets
-      .map((bucket, i) => ({ bucket, instalacao: Number(instalacoes[i]) }))
-      .filter(item => item.bucket && Number.isFinite(item.instalacao) && item.instalacao >= 0);
-
-    await atualizarTemposInstalacao(atualizacoes);
-
-    res.redirect(`/configuracoes?${montarQueryStringEstado(req.body).toString()}`);
-  } catch (err) {
-    next(err);
-  }
-});
-
-router.post('/config/pu-produto', async (req, res, next) => {
-  try {
-    const produtos = [].concat(req.body.produto || []);
-    const pus = [].concat(req.body.pu || []);
-
-    const atualizacoes = produtos
-      .map((produto, i) => ({ produto, pu: Number(pus[i]) }))
-      .filter(item => item.produto && Number.isFinite(item.pu) && item.pu >= 0);
-
-    await atualizarPuProdutos(atualizacoes);
-
-    res.redirect(`/configuracoes?${montarQueryStringEstado(req.body).toString()}`);
-  } catch (err) {
-    next(err);
-  }
-});
-
-router.post('/config/tempo-servico', async (req, res, next) => {
-  try {
-    const buckets = [].concat(req.body.bucket || []);
     const servicos = [].concat(req.body.servico || []);
-
-    const atualizacoes = buckets
-      .map((bucket, i) => ({ bucket, servico: Number(servicos[i]) }))
-      .filter(item => item.bucket && Number.isFinite(item.servico) && item.servico >= 0);
-
-    await atualizarTemposServicos(atualizacoes);
-
-    res.redirect(`/configuracoes?${montarQueryStringEstado(req.body).toString()}`);
-  } catch (err) {
-    next(err);
-  }
-});
-
-router.post('/config/pu-produto-servico', async (req, res, next) => {
-  try {
-    const produtos = [].concat(req.body.produto || []);
-    const pus = [].concat(req.body.pu || []);
-
-    const atualizacoes = produtos
-      .map((produto, i) => ({ produto, pu: Number(pus[i]) }))
-      .filter(item => item.produto && Number.isFinite(item.pu) && item.pu >= 0);
-
-    await atualizarPuProdutosServicos(atualizacoes);
-
-    res.redirect(`/configuracoes?${montarQueryStringEstado(req.body).toString()}`);
-  } catch (err) {
-    next(err);
-  }
-});
-
-router.post('/config/tempo-me', async (req, res, next) => {
-  try {
-    const buckets = [].concat(req.body.bucket || []);
     const alteracoes = [].concat(req.body.alteracao || []);
+    const reparos = [].concat(req.body.reparo || []);
 
     const atualizacoes = buckets
-      .map((bucket, i) => ({ bucket, alteracao: Number(alteracoes[i]) }))
-      .filter(item => item.bucket && Number.isFinite(item.alteracao) && item.alteracao >= 0);
+      .map((bucket, i) => ({
+        bucket,
+        instalacao: Number(instalacoes[i]),
+        servico: Number(servicos[i]),
+        alteracao: Number(alteracoes[i]),
+        reparo: Number(reparos[i]),
+      }))
+      .filter(item => item.bucket
+        && Number.isFinite(item.instalacao) && item.instalacao >= 0
+        && Number.isFinite(item.servico) && item.servico >= 0
+        && Number.isFinite(item.alteracao) && item.alteracao >= 0
+        && Number.isFinite(item.reparo) && item.reparo >= 0);
 
-    await atualizarTemposMe(atualizacoes);
+    await atualizarTemposBucket(atualizacoes);
 
     res.redirect(`/configuracoes?${montarQueryStringEstado(req.body).toString()}`);
   } catch (err) {
@@ -671,16 +590,20 @@ router.post('/config/tempo-me', async (req, res, next) => {
   }
 });
 
-router.post('/config/pu-produto-me', async (req, res, next) => {
+// Um formulário só grava as 3 tabelas de PU por produto (Instalação/Serviço/ME) de
+// uma vez -- são tabelas diferentes (produtos não se correspondem entre seções),
+// mas a página mostra tudo numa tabela só, então o salvamento também é um só.
+router.post('/config/pu-produto-todos', async (req, res, next) => {
   try {
-    const produtos = [].concat(req.body.produto || []);
-    const pus = [].concat(req.body.pu || []);
-
-    const atualizacoes = produtos
-      .map((produto, i) => ({ produto, pu: Number(pus[i]) }))
+    const montarAtualizacoes = (produtos, pus) => [].concat(produtos || [])
+      .map((produto, i) => ({ produto, pu: Number([].concat(pus || [])[i]) }))
       .filter(item => item.produto && Number.isFinite(item.pu) && item.pu >= 0);
 
-    await atualizarPuProdutosMe(atualizacoes);
+    await Promise.all([
+      atualizarPuProdutos(montarAtualizacoes(req.body.produtoInstalacao, req.body.puInstalacao)),
+      atualizarPuProdutosServicos(montarAtualizacoes(req.body.produtoServico, req.body.puServico)),
+      atualizarPuProdutosMe(montarAtualizacoes(req.body.produtoMe, req.body.puMe)),
+    ]);
 
     res.redirect(`/configuracoes?${montarQueryStringEstado(req.body).toString()}`);
   } catch (err) {

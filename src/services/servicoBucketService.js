@@ -145,39 +145,8 @@ async function atualizarPuProdutosServicos(atualizacoes) {
   }
 }
 
-async function getTemposServicos() {
-  const [rows] = await pool.query(
-    `SELECT ALIADA AS aliada, BUCKET AS bucket, SERVICO AS servico
-     FROM depara_tempo_bucket
-     ORDER BY ALIADA, BUCKET`
-  );
-
-  return rows;
-}
-
-async function atualizarTemposServicos(atualizacoes) {
-  const conn = await pool.getConnection();
-  try {
-    await conn.beginTransaction();
-    for (const { bucket, servico } of atualizacoes) {
-      await conn.query(
-        `UPDATE depara_tempo_bucket SET SERVICO = ? WHERE BUCKET = ?`,
-        [servico, bucket]
-      );
-    }
-    await conn.commit();
-  } catch (err) {
-    await conn.rollback();
-    throw err;
-  } finally {
-    conn.release();
-  }
-}
-
 module.exports = {
   getResumoBucketsServicos,
-  getTemposServicos,
-  atualizarTemposServicos,
   getFiltrosDisponiveisServicos,
   getPuProdutosServicos,
   atualizarPuProdutosServicos,

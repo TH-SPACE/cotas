@@ -8,7 +8,7 @@
         Configurações
       </h2>
       <p class="hint">
-        Previsto de resolução, janelas de horário, Carga (usada na coluna Sugestão), PU por Specification Product e tempos por bucket — de Instalações, Serviços, ME e Reparos, tudo em uma página só, sem precisar abrir um modal de cada vez.
+        Previsto/Janelas/PU/Carga e Tempos por bucket em tabelas únicas (coluna por seção) + PU por Specification Product de cada seção, clique no título para abrir.
       </p>
     </div>
     <div class="panel-header-actions">
@@ -19,548 +19,234 @@
   </div>
 </section>
 
-<section class="panel config-page-panel" id="config-instalacoes">
+<section class="panel config-page-panel" id="config-previsto">
   <div class="modal-header">
-    <h3 title="Ajustes usados nos cálculos do Resumo de Backlog de Instalações por Bucket">Configurações de Instalações</h3>
+    <h3 title="Previsto de resolução, janelas de horário, Meta de PU por técnico e Carga (usada na coluna Sugestão) de cada seção">Previsto, Janelas, PU e Carga</h3>
   </div>
 
   <form method="get" action="/configuracoes" class="modal-section">
-    <%- include('partials/hidden-config-estado', { exceto: ['percentualInstalacao', 'percentualJanela1Instalacao', 'percentualJanela2Instalacao', 'percentualJanela3Instalacao', 'metaPuTecnicoInstalacao', 'cargaInstalacao'] }) %>
+    <%- include('partials/hidden-config-estado', { exceto: [
+      'percentual', 'percentualJanela', 'puReparo', 'metaPuTecnico', 'cargaReparo',
+      'percentualInstalacao', 'percentualJanela1Instalacao', 'percentualJanela2Instalacao', 'percentualJanela3Instalacao', 'metaPuTecnicoInstalacao', 'cargaInstalacao',
+      'percentualServico', 'percentualJanela1Servico', 'percentualJanela2Servico', 'percentualJanela3Servico', 'metaPuTecnicoServico', 'cargaServico',
+      'percentualMe', 'percentualJanela1Me', 'percentualJanela2Me', 'percentualJanela3Me', 'metaPuTecnicoMe', 'cargaMe'
+    ] }) %>
     <div class="modal-body">
-      <div class="field-row">
-        <label for="percentualInstalacao" title="Percentual do Backlog Instalações que vira meta de resolução (coluna Previsto)">Previsto de resolução</label>
-        <div class="field-input">
-          <input type="number" id="percentualInstalacao" name="percentualInstalacao" min="0" max="100" step="1" value="<%= percentualInstalacao %>" title="Percentual do backlog considerado resolvível" />
-          <span>%</span>
-        </div>
-      </div>
-
-      <div class="field-row">
-        <label for="percentualJanela1Instalacao" title="Percentual do Previsto alocado para a janela 08:30 - 10:30">08:30 - 10:30</label>
-        <div class="field-input">
-          <input type="number" id="percentualJanela1Instalacao" name="percentualJanela1Instalacao" min="0" max="100" step="1" value="<%= percentualJanela1Instalacao %>" title="Percentual do Previsto na janela 08:30-10:30" />
-          <span>%</span>
-        </div>
-      </div>
-
-      <div class="field-row">
-        <label for="percentualJanela2Instalacao" title="Percentual do Previsto alocado para a janela 10:30 - 12:30">10:30 - 12:30</label>
-        <div class="field-input">
-          <input type="number" id="percentualJanela2Instalacao" name="percentualJanela2Instalacao" min="0" max="100" step="1" value="<%= percentualJanela2Instalacao %>" title="Percentual do Previsto na janela 10:30-12:30" />
-          <span>%</span>
-        </div>
-      </div>
-
-      <div class="field-row">
-        <label for="percentualJanela3Instalacao" title="Percentual do Previsto alocado para a janela 14:00 - 16:00">14:00 - 16:00</label>
-        <div class="field-input">
-          <input type="number" id="percentualJanela3Instalacao" name="percentualJanela3Instalacao" min="0" max="100" step="1" value="<%= percentualJanela3Instalacao %>" title="Percentual do Previsto na janela 14:00-16:00" />
-          <span>%</span>
-        </div>
-      </div>
-
-      <div class="field-row">
-        <label for="percentualJanela4Instalacao" title="Calculado automaticamente como 100% menos as outras três janelas">16:00 - 18:00</label>
-        <div class="field-input">
-          <input type="number" id="percentualJanela4Instalacao" min="0" max="100" step="1" value="<%= Math.max(0, 100 - percentualJanela1Instalacao - percentualJanela2Instalacao - percentualJanela3Instalacao) %>" title="Preenchido automaticamente: 100% - as outras três janelas" readonly tabindex="-1" />
-          <span>%</span>
-        </div>
-      </div>
-
-      <p class="hint">As 4 janelas sempre somam 100% — as 3 primeiras são editáveis, a última (16:00-18:00) é sempre o restante.</p>
-
-      <div class="field-row">
-        <label for="metaPuTecnicoInstalacao" title="Quantidade de PU que 1 técnico consegue entregar, usada para estimar quantos técnicos são necessários">Meta de PU por técnico</label>
-        <div class="field-input">
-          <input type="number" id="metaPuTecnicoInstalacao" name="metaPuTecnicoInstalacao" min="0.1" step="0.1" value="<%= metaPuTecnicoInstalacao %>" title="PU que 1 técnico entrega" />
-        </div>
-      </div>
-
-      <p class="hint">PU = soma do peso de PU de cada Specification Product em aberto × percentual de Previsto (cada produto tem seu próprio peso — ver "PU por produto" abaixo). Técnicos = PU ÷ Meta de PU por técnico, arredondado para cima.</p>
-
-      <div class="field-row">
-        <label for="cargaInstalacao" title="Valor total distribuído entre os buckets, proporcional à fatia de Previsto de cada um — gera a coluna Sugestão">Carga (coluna Sugestão)</label>
-        <div class="field-input">
-          <input type="number" id="cargaInstalacao" name="cargaInstalacao" min="0" step="0.01" value="<%= cargaInstalacao %>" title="Total a distribuir entre os buckets na coluna Sugestão" />
-        </div>
-      </div>
-
-      <p class="hint">Sugestão (por bucket) = (Previsto do bucket ÷ Previsto total de Instalações) × Carga.</p>
+      <table class="tempo-table">
+        <thead>
+          <tr>
+            <th>Configuração</th>
+            <th class="num">Instalação</th>
+            <th class="num">Serviço</th>
+            <th class="num">ME</th>
+            <th class="num">Reparos</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Previsto de resolução (%)</td>
+            <td class="num"><input type="number" id="percentualInstalacao" name="percentualInstalacao" min="0" max="100" step="1" value="<%= percentualInstalacao %>" title="Percentual do backlog de Instalações considerado resolvível" /></td>
+            <td class="num"><input type="number" id="percentualServico" name="percentualServico" min="0" max="100" step="1" value="<%= percentualServico %>" title="Percentual do backlog de Serviços considerado resolvível" /></td>
+            <td class="num"><input type="number" id="percentualMe" name="percentualMe" min="0" max="100" step="1" value="<%= percentualMe %>" title="Percentual do backlog de ME considerado resolvível" /></td>
+            <td class="num"><input type="number" id="percentual" name="percentual" min="0" max="100" step="1" value="<%= percentual %>" title="Percentual do backlog de Reparos considerado resolvível" /></td>
+          </tr>
+          <tr>
+            <td>08:30 - 10:30 (%)</td>
+            <td class="num"><input type="number" id="percentualJanela1Instalacao" name="percentualJanela1Instalacao" min="0" max="100" step="1" value="<%= percentualJanela1Instalacao %>" title="Instalação: janela 08:30 - 10:30" /></td>
+            <td class="num"><input type="number" id="percentualJanela1Servico" name="percentualJanela1Servico" min="0" max="100" step="1" value="<%= percentualJanela1Servico %>" title="Serviço: janela 08:30 - 10:30" /></td>
+            <td class="num"><input type="number" id="percentualJanela1Me" name="percentualJanela1Me" min="0" max="100" step="1" value="<%= percentualJanela1Me %>" title="ME: janela 08:30 - 10:30" /></td>
+            <td class="num">
+              <input type="number" id="percentualJanela" name="percentualJanela" min="0" max="100" step="1" value="<%= percentualJanela %>" title="Reparos: janela 08:30 - 12:30" />
+              <span class="tempo-table-subcaption">08:30-12:30</span>
+            </td>
+          </tr>
+          <tr>
+            <td>10:30 - 12:30 (%)</td>
+            <td class="num"><input type="number" id="percentualJanela2Instalacao" name="percentualJanela2Instalacao" min="0" max="100" step="1" value="<%= percentualJanela2Instalacao %>" title="Instalação: janela 10:30 - 12:30" /></td>
+            <td class="num"><input type="number" id="percentualJanela2Servico" name="percentualJanela2Servico" min="0" max="100" step="1" value="<%= percentualJanela2Servico %>" title="Serviço: janela 10:30 - 12:30" /></td>
+            <td class="num"><input type="number" id="percentualJanela2Me" name="percentualJanela2Me" min="0" max="100" step="1" value="<%= percentualJanela2Me %>" title="ME: janela 10:30 - 12:30" /></td>
+            <td class="num">
+              <input type="number" id="percentualJanelaTarde" min="0" max="100" step="1" value="<%= 100 - percentualJanela %>" title="Reparos: janela 12:30 - 18:00 — calculada (100% menos a janela 08:30-12:30)" readonly tabindex="-1" />
+              <span class="tempo-table-subcaption">12:30-18:00, calculada</span>
+            </td>
+          </tr>
+          <tr>
+            <td>14:00 - 16:00 (%)</td>
+            <td class="num"><input type="number" id="percentualJanela3Instalacao" name="percentualJanela3Instalacao" min="0" max="100" step="1" value="<%= percentualJanela3Instalacao %>" title="Instalação: janela 14:00 - 16:00" /></td>
+            <td class="num"><input type="number" id="percentualJanela3Servico" name="percentualJanela3Servico" min="0" max="100" step="1" value="<%= percentualJanela3Servico %>" title="Serviço: janela 14:00 - 16:00" /></td>
+            <td class="num"><input type="number" id="percentualJanela3Me" name="percentualJanela3Me" min="0" max="100" step="1" value="<%= percentualJanela3Me %>" title="ME: janela 14:00 - 16:00" /></td>
+            <td class="num celula-napplicavel" title="Reparos só tem 2 janelas (08:30-12:30 e 12:30-18:00)">—</td>
+          </tr>
+          <tr>
+            <td>16:00 - 18:00 (%, calculada)</td>
+            <td class="num"><input type="number" id="percentualJanela4Instalacao" min="0" max="100" step="1" value="<%= Math.max(0, 100 - percentualJanela1Instalacao - percentualJanela2Instalacao - percentualJanela3Instalacao) %>" title="Instalação: janela 16:00 - 18:00 — calculada" readonly tabindex="-1" /></td>
+            <td class="num"><input type="number" id="percentualJanela4Servico" min="0" max="100" step="1" value="<%= Math.max(0, 100 - percentualJanela1Servico - percentualJanela2Servico - percentualJanela3Servico) %>" title="Serviço: janela 16:00 - 18:00 — calculada" readonly tabindex="-1" /></td>
+            <td class="num"><input type="number" id="percentualJanela4Me" min="0" max="100" step="1" value="<%= Math.max(0, 100 - percentualJanela1Me - percentualJanela2Me - percentualJanela3Me) %>" title="ME: janela 16:00 - 18:00 — calculada" readonly tabindex="-1" /></td>
+            <td class="num celula-napplicavel" title="Reparos só tem 2 janelas (08:30-12:30 e 12:30-18:00)">—</td>
+          </tr>
+          <tr>
+            <td>Meta de PU por técnico</td>
+            <td class="num"><input type="number" id="metaPuTecnicoInstalacao" name="metaPuTecnicoInstalacao" min="0.1" step="0.1" value="<%= metaPuTecnicoInstalacao %>" title="PU que 1 técnico de Instalações entrega" /></td>
+            <td class="num"><input type="number" id="metaPuTecnicoServico" name="metaPuTecnicoServico" min="0.1" step="0.1" value="<%= metaPuTecnicoServico %>" title="PU que 1 técnico de Serviços entrega" /></td>
+            <td class="num"><input type="number" id="metaPuTecnicoMe" name="metaPuTecnicoMe" min="0.1" step="0.1" value="<%= metaPuTecnicoMe %>" title="PU que 1 técnico de ME entrega" /></td>
+            <td class="num"><input type="number" id="metaPuTecnico" name="metaPuTecnico" min="0.1" step="0.1" value="<%= metaPuTecnico %>" title="PU que 1 técnico de Reparos entrega" /></td>
+          </tr>
+          <tr>
+            <td>Carga (coluna Sugestão)</td>
+            <td class="num"><input type="number" id="cargaInstalacao" name="cargaInstalacao" min="0" step="0.01" value="<%= cargaInstalacao %>" title="Carga a distribuir entre os buckets de Instalação" /></td>
+            <td class="num"><input type="number" id="cargaServico" name="cargaServico" min="0" step="0.01" value="<%= cargaServico %>" title="Carga a distribuir entre os buckets de Serviço" /></td>
+            <td class="num"><input type="number" id="cargaMe" name="cargaMe" min="0" step="0.01" value="<%= cargaMe %>" title="Carga a distribuir entre os buckets de ME" /></td>
+            <td class="num"><input type="number" id="cargaReparo" name="cargaReparo" min="0" step="0.01" value="<%= cargaReparo %>" title="Carga a distribuir entre os buckets de Reparos" /></td>
+          </tr>
+          <tr>
+            <td>PU do reparo (peso fixo)</td>
+            <td class="num celula-napplicavel" title="Instalação usa PU por Specification Product (tabela própria abaixo)">—</td>
+            <td class="num celula-napplicavel" title="Serviço usa PU por Specification Product (tabela própria abaixo)">—</td>
+            <td class="num celula-napplicavel" title="ME usa PU por Specification Product (tabela própria abaixo)">—</td>
+            <td class="num"><input type="number" id="puReparo" name="puReparo" min="0" step="0.01" value="<%= puReparo %>" title="PU gerado por cada reparo sugerido" /></td>
+          </tr>
+        </tbody>
+      </table>
+      <p class="hint">Instalação/Serviço/ME usam as 4 janelas do rótulo da linha (somam 100% — as 3 primeiras editáveis, a última calculada). Reparos tem horários diferentes e só 2 janelas (08:30-12:30 e 12:30-18:00, indicadas embaixo do campo, também somando 100% entre si) — por isso não usa as linhas de 14:00-16:00 e 16:00-18:00.</p>
+      <p class="hint">Sugestão (por bucket, em cada seção) = (Previsto do bucket ÷ Previsto total da seção) × Carga. Ordens, Cotas(min), PU e Técnicos são todos calculados a partir da Sugestão — Previsto é só a referência usada para ratear a Carga.</p>
     </div>
 
     <div class="modal-footer">
       <button type="submit" title="Recarrega a página aplicando estes valores">Aplicar</button>
     </div>
   </form>
+</section>
 
-  <form method="post" action="/config/tempo-instalacao" class="modal-section modal-section-divider">
+<section class="panel config-page-panel" id="config-tempos">
+  <div class="modal-header">
+    <h3 title="Tempo médio (minutos) de cada tipo de atendimento em cada bucket">Tempos por bucket (min)</h3>
+  </div>
+
+  <form method="post" action="/config/tempo-bucket" class="modal-section">
     <%- include('partials/hidden-config-estado', { exceto: [] }) %>
-
     <div class="modal-body">
-      <h4 class="modal-subtitle" title="Tempo médio de uma instalação em cada bucket, usado na coluna MINUTOS">Tempo de instalação por bucket (min)</h4>
+      <p class="hint">
+        Uma linha por bucket (tabela <code>depara_tempo_bucket</code>) — Instalação, Serviço, ME e Reparo são colunas da
+        mesma linha, não tabelas separadas, então ficam juntas aqui também.
+      </p>
       <table class="tempo-table">
         <thead>
           <tr>
             <th title="Empresa aliada dona do bucket">Aliada</th>
             <th title="Nome do bucket em depara_tempo_bucket">Bucket</th>
             <th class="num" title="Minutos que uma instalação leva neste bucket">Instalação (min)</th>
+            <th class="num" title="Minutos que um serviço leva neste bucket">Serviço (min)</th>
+            <th class="num" title="Minutos que uma ME leva neste bucket">ME (min)</th>
+            <th class="num" title="Minutos que um reparo leva neste bucket">Reparo (min)</th>
           </tr>
         </thead>
         <tbody>
-          <% let aliadaTempoInstalacaoAtual = null; %>
-          <% temposInstalacao.forEach(t => { %>
-            <% const novaAliadaTempoInstalacao = t.aliada !== aliadaTempoInstalacaoAtual; aliadaTempoInstalacaoAtual = t.aliada; %>
-            <tr class="<%= novaAliadaTempoInstalacao ? 'group-start' : '' %>">
-              <td><span class="aliada-badge aliada-color-<%= aliadaCoresInstalacoes[t.aliada] %>"><%= t.aliada %></span></td>
+          <% let aliadaTempoBucketAtual = null; %>
+          <% temposBucket.forEach(t => { %>
+            <% const novaAliadaTempoBucket = t.aliada !== aliadaTempoBucketAtual; aliadaTempoBucketAtual = t.aliada; %>
+            <tr class="<%= novaAliadaTempoBucket ? 'group-start' : '' %>">
+              <td><span class="aliada-badge aliada-color-<%= aliadaCoresTemposBucket[t.aliada] %>"><%= t.aliada %></span></td>
               <td class="celula-truncada" title="<%= t.bucket %>"><%= t.bucket %></td>
               <td class="num">
                 <input type="hidden" name="bucket[]" value="<%= t.bucket %>" />
                 <input type="number" name="instalacao[]" min="0" step="1" value="<%= t.instalacao %>" aria-label="Tempo de instalação (min) para <%= t.bucket %>" title="Minutos de uma instalação em <%= t.bucket %>" />
               </td>
-            </tr>
-          <% }) %>
-        </tbody>
-      </table>
-      <p class="hint">Atualiza a tabela <code>depara_tempo_bucket</code> (coluna INSTALACAO).</p>
-    </div>
-
-    <div class="modal-footer">
-      <button type="submit" title="Grava estes tempos em depara_tempo_bucket">Salvar tempos</button>
-    </div>
-  </form>
-
-  <form method="post" action="/config/pu-produto" class="modal-section modal-section-divider">
-    <%- include('partials/hidden-config-estado', { exceto: [] }) %>
-
-    <div class="modal-body">
-      <h4 class="modal-subtitle" title="Peso de PU de cada Specification Product encontrado em backlog_instalacoes">PU por Specification Product</h4>
-      <table class="tempo-table">
-        <thead>
-          <tr>
-            <th title="Valor da coluna SPECIFICATION_PRODUCT no CSV do ELOS">Specification Product</th>
-            <th class="num" title="Quantas PU cada instalação deste produto representa">PU</th>
-          </tr>
-        </thead>
-        <tbody>
-          <% puProdutos.forEach(p => { %>
-            <tr class="<%= p.pu == 0 ? 'linha-alerta' : '' %>">
-              <td>
-                <%= p.produto %>
-                <% if (p.pu == 0) { %>
-                  <span class="badge-alerta" title="Este produto ainda não tem PU configurado — está contando 0 no cálculo">sem PU</span>
-                <% } %>
-              </td>
               <td class="num">
-                <input type="hidden" name="produto[]" value="<%= p.produto %>" />
-                <input type="number" name="pu[]" min="0" step="0.01" value="<%= p.pu %>" aria-label="PU para <%= p.produto %>" title="PU de uma instalação do produto <%= p.produto %>" />
-              </td>
-            </tr>
-          <% }) %>
-        </tbody>
-      </table>
-      <p class="hint">Atualiza a tabela <code>depara_pu_produto</code>. Produtos novos aparecem aqui automaticamente ao subir um CSV (com PU=0 até serem configurados).</p>
-    </div>
-
-    <div class="modal-footer">
-      <button type="submit" title="Grava estes pesos em depara_pu_produto">Salvar PU</button>
-    </div>
-  </form>
-</section>
-
-<section class="panel config-page-panel" id="config-servicos">
-  <div class="modal-header">
-    <h3 title="Ajustes usados nos cálculos do Resumo de Backlog de Serviços por Bucket">Configurações de Serviços</h3>
-  </div>
-
-  <form method="get" action="/configuracoes" class="modal-section">
-    <%- include('partials/hidden-config-estado', { exceto: ['percentualServico', 'percentualJanela1Servico', 'percentualJanela2Servico', 'percentualJanela3Servico', 'metaPuTecnicoServico', 'cargaServico'] }) %>
-    <div class="modal-body">
-      <div class="field-row">
-        <label for="percentualServico" title="Percentual do Backlog Serviços que vira meta de resolução (coluna Previsto)">Previsto de resolução</label>
-        <div class="field-input">
-          <input type="number" id="percentualServico" name="percentualServico" min="0" max="100" step="1" value="<%= percentualServico %>" title="Percentual do backlog considerado resolvível" />
-          <span>%</span>
-        </div>
-      </div>
-
-      <div class="field-row">
-        <label for="percentualJanela1Servico" title="Percentual do Previsto alocado para a janela 08:30 - 10:30">08:30 - 10:30</label>
-        <div class="field-input">
-          <input type="number" id="percentualJanela1Servico" name="percentualJanela1Servico" min="0" max="100" step="1" value="<%= percentualJanela1Servico %>" title="Percentual do Previsto na janela 08:30-10:30" />
-          <span>%</span>
-        </div>
-      </div>
-
-      <div class="field-row">
-        <label for="percentualJanela2Servico" title="Percentual do Previsto alocado para a janela 10:30 - 12:30">10:30 - 12:30</label>
-        <div class="field-input">
-          <input type="number" id="percentualJanela2Servico" name="percentualJanela2Servico" min="0" max="100" step="1" value="<%= percentualJanela2Servico %>" title="Percentual do Previsto na janela 10:30-12:30" />
-          <span>%</span>
-        </div>
-      </div>
-
-      <div class="field-row">
-        <label for="percentualJanela3Servico" title="Percentual do Previsto alocado para a janela 14:00 - 16:00">14:00 - 16:00</label>
-        <div class="field-input">
-          <input type="number" id="percentualJanela3Servico" name="percentualJanela3Servico" min="0" max="100" step="1" value="<%= percentualJanela3Servico %>" title="Percentual do Previsto na janela 14:00-16:00" />
-          <span>%</span>
-        </div>
-      </div>
-
-      <div class="field-row">
-        <label for="percentualJanela4Servico" title="Calculado automaticamente como 100% menos as outras três janelas">16:00 - 18:00</label>
-        <div class="field-input">
-          <input type="number" id="percentualJanela4Servico" min="0" max="100" step="1" value="<%= Math.max(0, 100 - percentualJanela1Servico - percentualJanela2Servico - percentualJanela3Servico) %>" title="Preenchido automaticamente: 100% - as outras três janelas" readonly tabindex="-1" />
-          <span>%</span>
-        </div>
-      </div>
-
-      <p class="hint">As 4 janelas sempre somam 100% — as 3 primeiras são editáveis, a última (16:00-18:00) é sempre o restante.</p>
-
-      <div class="field-row">
-        <label for="metaPuTecnicoServico" title="Quantidade de PU que 1 técnico consegue entregar, usada para estimar quantos técnicos são necessários">Meta de PU por técnico</label>
-        <div class="field-input">
-          <input type="number" id="metaPuTecnicoServico" name="metaPuTecnicoServico" min="0.1" step="0.1" value="<%= metaPuTecnicoServico %>" title="PU que 1 técnico entrega" />
-        </div>
-      </div>
-
-      <p class="hint">PU = soma do peso de PU de cada Specification Product em aberto × percentual de Previsto (cada produto tem seu próprio peso — ver "PU por produto" abaixo). Técnicos = PU ÷ Meta de PU por técnico, arredondado para cima.</p>
-
-      <div class="field-row">
-        <label for="cargaServico" title="Valor total distribuído entre os buckets, proporcional à fatia de Previsto de cada um — gera a coluna Sugestão">Carga (coluna Sugestão)</label>
-        <div class="field-input">
-          <input type="number" id="cargaServico" name="cargaServico" min="0" step="0.01" value="<%= cargaServico %>" title="Total a distribuir entre os buckets na coluna Sugestão" />
-        </div>
-      </div>
-
-      <p class="hint">Sugestão (por bucket) = (Previsto do bucket ÷ Previsto total de Serviços) × Carga.</p>
-    </div>
-
-    <div class="modal-footer">
-      <button type="submit" title="Recarrega a página aplicando estes valores">Aplicar</button>
-    </div>
-  </form>
-
-  <form method="post" action="/config/tempo-servico" class="modal-section modal-section-divider">
-    <%- include('partials/hidden-config-estado', { exceto: [] }) %>
-
-    <div class="modal-body">
-      <h4 class="modal-subtitle" title="Tempo médio de um serviço em cada bucket, usado na coluna MINUTOS">Tempo de serviço por bucket (min)</h4>
-      <table class="tempo-table">
-        <thead>
-          <tr>
-            <th title="Empresa aliada dona do bucket">Aliada</th>
-            <th title="Nome do bucket em depara_tempo_bucket">Bucket</th>
-            <th class="num" title="Minutos que um serviço leva neste bucket">Serviço (min)</th>
-          </tr>
-        </thead>
-        <tbody>
-          <% let aliadaTempoServicoAtual = null; %>
-          <% temposServicos.forEach(t => { %>
-            <% const novaAliadaTempoServico = t.aliada !== aliadaTempoServicoAtual; aliadaTempoServicoAtual = t.aliada; %>
-            <tr class="<%= novaAliadaTempoServico ? 'group-start' : '' %>">
-              <td><span class="aliada-badge aliada-color-<%= aliadaCoresServicos[t.aliada] %>"><%= t.aliada %></span></td>
-              <td class="celula-truncada" title="<%= t.bucket %>"><%= t.bucket %></td>
-              <td class="num">
-                <input type="hidden" name="bucket[]" value="<%= t.bucket %>" />
                 <input type="number" name="servico[]" min="0" step="1" value="<%= t.servico %>" aria-label="Tempo de serviço (min) para <%= t.bucket %>" title="Minutos de um serviço em <%= t.bucket %>" />
               </td>
-            </tr>
-          <% }) %>
-        </tbody>
-      </table>
-      <p class="hint">Atualiza a tabela <code>depara_tempo_bucket</code> (coluna SERVICO).</p>
-    </div>
-
-    <div class="modal-footer">
-      <button type="submit" title="Grava estes tempos em depara_tempo_bucket">Salvar tempos</button>
-    </div>
-  </form>
-
-  <form method="post" action="/config/pu-produto-servico" class="modal-section modal-section-divider">
-    <%- include('partials/hidden-config-estado', { exceto: [] }) %>
-
-    <div class="modal-body">
-      <h4 class="modal-subtitle" title="Peso de PU de cada Specification Product encontrado em backlog_instalacoes (escopo Serviços)">PU por Specification Product</h4>
-      <table class="tempo-table">
-        <thead>
-          <tr>
-            <th title="Valor da coluna SPECIFICATION_PRODUCT no CSV do ELOS">Specification Product</th>
-            <th class="num" title="Quantas PU cada serviço deste produto representa">PU</th>
-          </tr>
-        </thead>
-        <tbody>
-          <% puProdutosServicos.forEach(p => { %>
-            <tr class="<%= p.pu == 0 ? 'linha-alerta' : '' %>">
-              <td>
-                <%= p.produto %>
-                <% if (p.pu == 0) { %>
-                  <span class="badge-alerta" title="Este produto ainda não tem PU configurado — está contando 0 no cálculo">sem PU</span>
-                <% } %>
-              </td>
               <td class="num">
-                <input type="hidden" name="produto[]" value="<%= p.produto %>" />
-                <input type="number" name="pu[]" min="0" step="0.01" value="<%= p.pu %>" aria-label="PU para <%= p.produto %>" title="PU de um serviço do produto <%= p.produto %>" />
-              </td>
-            </tr>
-          <% }) %>
-        </tbody>
-      </table>
-      <p class="hint">Atualiza a tabela <code>depara_pu_produto_servico</code>. Produtos novos aparecem aqui automaticamente ao subir um CSV (com PU=0 até serem configurados).</p>
-    </div>
-
-    <div class="modal-footer">
-      <button type="submit" title="Grava estes pesos em depara_pu_produto_servico">Salvar PU</button>
-    </div>
-  </form>
-</section>
-
-<section class="panel config-page-panel" id="config-me">
-  <div class="modal-header">
-    <h3 title="Ajustes usados nos cálculos do Resumo de Backlog de ME por Bucket">Configurações de ME</h3>
-  </div>
-
-  <form method="get" action="/configuracoes" class="modal-section">
-    <%- include('partials/hidden-config-estado', { exceto: ['percentualMe', 'percentualJanela1Me', 'percentualJanela2Me', 'percentualJanela3Me', 'metaPuTecnicoMe', 'cargaMe'] }) %>
-    <div class="modal-body">
-      <div class="field-row">
-        <label for="percentualMe" title="Percentual do Backlog ME que vira meta de resolução (coluna Previsto)">Previsto de resolução</label>
-        <div class="field-input">
-          <input type="number" id="percentualMe" name="percentualMe" min="0" max="100" step="1" value="<%= percentualMe %>" title="Percentual do backlog considerado resolvível" />
-          <span>%</span>
-        </div>
-      </div>
-
-      <div class="field-row">
-        <label for="percentualJanela1Me" title="Percentual do Previsto alocado para a janela 08:30 - 10:30">08:30 - 10:30</label>
-        <div class="field-input">
-          <input type="number" id="percentualJanela1Me" name="percentualJanela1Me" min="0" max="100" step="1" value="<%= percentualJanela1Me %>" title="Percentual do Previsto na janela 08:30-10:30" />
-          <span>%</span>
-        </div>
-      </div>
-
-      <div class="field-row">
-        <label for="percentualJanela2Me" title="Percentual do Previsto alocado para a janela 10:30 - 12:30">10:30 - 12:30</label>
-        <div class="field-input">
-          <input type="number" id="percentualJanela2Me" name="percentualJanela2Me" min="0" max="100" step="1" value="<%= percentualJanela2Me %>" title="Percentual do Previsto na janela 10:30-12:30" />
-          <span>%</span>
-        </div>
-      </div>
-
-      <div class="field-row">
-        <label for="percentualJanela3Me" title="Percentual do Previsto alocado para a janela 14:00 - 16:00">14:00 - 16:00</label>
-        <div class="field-input">
-          <input type="number" id="percentualJanela3Me" name="percentualJanela3Me" min="0" max="100" step="1" value="<%= percentualJanela3Me %>" title="Percentual do Previsto na janela 14:00-16:00" />
-          <span>%</span>
-        </div>
-      </div>
-
-      <div class="field-row">
-        <label for="percentualJanela4Me" title="Calculado automaticamente como 100% menos as outras três janelas">16:00 - 18:00</label>
-        <div class="field-input">
-          <input type="number" id="percentualJanela4Me" min="0" max="100" step="1" value="<%= Math.max(0, 100 - percentualJanela1Me - percentualJanela2Me - percentualJanela3Me) %>" title="Preenchido automaticamente: 100% - as outras três janelas" readonly tabindex="-1" />
-          <span>%</span>
-        </div>
-      </div>
-
-      <p class="hint">As 4 janelas sempre somam 100% — as 3 primeiras são editáveis, a última (16:00-18:00) é sempre o restante.</p>
-
-      <div class="field-row">
-        <label for="metaPuTecnicoMe" title="Quantidade de PU que 1 técnico consegue entregar, usada para estimar quantos técnicos são necessários">Meta de PU por técnico</label>
-        <div class="field-input">
-          <input type="number" id="metaPuTecnicoMe" name="metaPuTecnicoMe" min="0.1" step="0.1" value="<%= metaPuTecnicoMe %>" title="PU que 1 técnico entrega" />
-        </div>
-      </div>
-
-      <p class="hint">PU = soma do peso de PU de cada Specification Product em aberto × percentual de Previsto (cada produto tem seu próprio peso — ver "PU por produto" abaixo). Técnicos = PU ÷ Meta de PU por técnico, arredondado para cima.</p>
-
-      <div class="field-row">
-        <label for="cargaMe" title="Valor total distribuído entre os buckets, proporcional à fatia de Previsto de cada um — gera a coluna Sugestão">Carga (coluna Sugestão)</label>
-        <div class="field-input">
-          <input type="number" id="cargaMe" name="cargaMe" min="0" step="0.01" value="<%= cargaMe %>" title="Total a distribuir entre os buckets na coluna Sugestão" />
-        </div>
-      </div>
-
-      <p class="hint">Sugestão (por bucket) = (Previsto do bucket ÷ Previsto total de ME) × Carga.</p>
-    </div>
-
-    <div class="modal-footer">
-      <button type="submit" title="Recarrega a página aplicando estes valores">Aplicar</button>
-    </div>
-  </form>
-
-  <form method="post" action="/config/tempo-me" class="modal-section modal-section-divider">
-    <%- include('partials/hidden-config-estado', { exceto: [] }) %>
-
-    <div class="modal-body">
-      <h4 class="modal-subtitle" title="Tempo médio de uma ME em cada bucket, usado na coluna MINUTOS">Tempo de ME por bucket (min)</h4>
-      <table class="tempo-table">
-        <thead>
-          <tr>
-            <th title="Empresa aliada dona do bucket">Aliada</th>
-            <th title="Nome do bucket em depara_tempo_bucket">Bucket</th>
-            <th class="num" title="Minutos que uma ME leva neste bucket">ME (min)</th>
-          </tr>
-        </thead>
-        <tbody>
-          <% let aliadaTempoMeAtual = null; %>
-          <% temposMe.forEach(t => { %>
-            <% const novaAliadaTempoMe = t.aliada !== aliadaTempoMeAtual; aliadaTempoMeAtual = t.aliada; %>
-            <tr class="<%= novaAliadaTempoMe ? 'group-start' : '' %>">
-              <td><span class="aliada-badge aliada-color-<%= aliadaCoresMe[t.aliada] %>"><%= t.aliada %></span></td>
-              <td class="celula-truncada" title="<%= t.bucket %>"><%= t.bucket %></td>
-              <td class="num">
-                <input type="hidden" name="bucket[]" value="<%= t.bucket %>" />
                 <input type="number" name="alteracao[]" min="0" step="1" value="<%= t.alteracao %>" aria-label="Tempo de ME (min) para <%= t.bucket %>" title="Minutos de uma ME em <%= t.bucket %>" />
               </td>
-            </tr>
-          <% }) %>
-        </tbody>
-      </table>
-      <p class="hint">Atualiza a tabela <code>depara_tempo_bucket</code> (coluna ALTERACAO).</p>
-    </div>
-
-    <div class="modal-footer">
-      <button type="submit" title="Grava estes tempos em depara_tempo_bucket">Salvar tempos</button>
-    </div>
-  </form>
-
-  <form method="post" action="/config/pu-produto-me" class="modal-section modal-section-divider">
-    <%- include('partials/hidden-config-estado', { exceto: [] }) %>
-
-    <div class="modal-body">
-      <h4 class="modal-subtitle" title="Peso de PU de cada Specification Product encontrado em backlog_instalacoes (escopo ME)">PU por Specification Product</h4>
-      <table class="tempo-table">
-        <thead>
-          <tr>
-            <th title="Valor da coluna SPECIFICATION_PRODUCT no CSV do ELOS">Specification Product</th>
-            <th class="num" title="Quantas PU cada ME deste produto representa">PU</th>
-          </tr>
-        </thead>
-        <tbody>
-          <% puProdutosMe.forEach(p => { %>
-            <tr class="<%= p.pu == 0 ? 'linha-alerta' : '' %>">
-              <td>
-                <%= p.produto %>
-                <% if (p.pu == 0) { %>
-                  <span class="badge-alerta" title="Este produto ainda não tem PU configurado — está contando 0 no cálculo">sem PU</span>
-                <% } %>
-              </td>
               <td class="num">
-                <input type="hidden" name="produto[]" value="<%= p.produto %>" />
-                <input type="number" name="pu[]" min="0" step="0.01" value="<%= p.pu %>" aria-label="PU para <%= p.produto %>" title="PU de uma ME do produto <%= p.produto %>" />
-              </td>
-            </tr>
-          <% }) %>
-        </tbody>
-      </table>
-      <p class="hint">Atualiza a tabela <code>depara_pu_produto_me</code>. Produtos novos aparecem aqui automaticamente ao subir um CSV (com PU=0 até serem configurados).</p>
-    </div>
-
-    <div class="modal-footer">
-      <button type="submit" title="Grava estes pesos em depara_pu_produto_me">Salvar PU</button>
-    </div>
-  </form>
-</section>
-
-<section class="panel config-page-panel" id="config-reparos">
-  <div class="modal-header">
-    <h3 title="Ajustes usados nos cálculos do Resumo de Backlog de Reparos por Bucket">Configurações de Reparos</h3>
-  </div>
-
-  <form method="get" action="/configuracoes" class="modal-section">
-    <%- include('partials/hidden-config-estado', { exceto: ['percentual', 'percentualJanela', 'puReparo', 'metaPuTecnico', 'cargaReparo'] }) %>
-    <div class="modal-body">
-      <div class="field-row">
-        <label for="percentual" title="Percentual do Backlog Reparos que vira meta de resolução (coluna Previsto)">Previsto de resolução</label>
-        <div class="field-input">
-          <input type="number" id="percentual" name="percentual" min="0" max="100" step="1" value="<%= percentual %>" title="Percentual do backlog considerado resolvível" />
-          <span>%</span>
-        </div>
-      </div>
-
-      <div class="field-row">
-        <label for="percentualJanela" title="Percentual do Previsto alocado para a janela da manhã (08:30-12:30)">08:30 - 12:30</label>
-        <div class="field-input">
-          <input type="number" id="percentualJanela" name="percentualJanela" min="0" max="100" step="1" value="<%= percentualJanela %>" title="Percentual do Previsto na janela 08:30-12:30" />
-          <span>%</span>
-        </div>
-      </div>
-
-      <div class="field-row">
-        <label for="percentualJanelaTarde" title="Calculado automaticamente como 100% menos a janela da manhã">12:30 - 18:00</label>
-        <div class="field-input">
-          <input type="number" id="percentualJanelaTarde" min="0" max="100" step="1" value="<%= 100 - percentualJanela %>" title="Preenchido automaticamente: 100% - janela da manhã" />
-          <span>%</span>
-        </div>
-      </div>
-
-      <p class="hint">As janelas 08:30-12:30 e 12:30-18:00 sempre somam 100%.</p>
-
-      <div class="field-row">
-        <label for="puReparo" title="Quantidade de PU que cada reparo previsto representa">PU do reparo</label>
-        <div class="field-input">
-          <input type="number" id="puReparo" name="puReparo" min="0" step="0.01" value="<%= puReparo %>" title="PU gerado por cada reparo previsto (hoje 0,80)" />
-        </div>
-      </div>
-
-      <div class="field-row">
-        <label for="metaPuTecnico" title="Quantidade de PU que 1 técnico consegue entregar, usada para estimar quantos técnicos são necessários">Meta de PU por técnico</label>
-        <div class="field-input">
-          <input type="number" id="metaPuTecnico" name="metaPuTecnico" min="0.1" step="0.1" value="<%= metaPuTecnico %>" title="PU que 1 técnico entrega (hoje 2,9)" />
-        </div>
-      </div>
-
-      <p class="hint">PU = Previsto × PU do reparo. Técnicos = PU ÷ Meta de PU por técnico, arredondado para cima (não existe fração de técnico).</p>
-
-      <div class="field-row">
-        <label for="cargaReparo" title="Valor total distribuído entre os buckets, proporcional à fatia de Previsto de cada um — gera a coluna Sugestão">Carga (coluna Sugestão)</label>
-        <div class="field-input">
-          <input type="number" id="cargaReparo" name="cargaReparo" min="0" step="0.01" value="<%= cargaReparo %>" title="Total a distribuir entre os buckets na coluna Sugestão" />
-        </div>
-      </div>
-
-      <p class="hint">Sugestão (por bucket) = (Previsto do bucket ÷ Previsto total de Reparos) × Carga.</p>
-    </div>
-
-    <div class="modal-footer">
-      <button type="submit" title="Recarrega a página aplicando estes valores">Aplicar</button>
-    </div>
-  </form>
-
-  <form method="post" action="/config/tempo-reparo" class="modal-section modal-section-divider">
-    <%- include('partials/hidden-config-estado', { exceto: [] }) %>
-
-    <div class="modal-body">
-      <h4 class="modal-subtitle" title="Tempo médio de um reparo em cada bucket, usado na coluna MINUTOS">Tempo de reparo por bucket (min)</h4>
-      <table class="tempo-table">
-        <thead>
-          <tr>
-            <th title="Empresa aliada dona do bucket">Aliada</th>
-            <th title="Nome do bucket em depara_tempo_bucket">Bucket</th>
-            <th class="num" title="Minutos que um reparo leva neste bucket">Reparo (min)</th>
-          </tr>
-        </thead>
-        <tbody>
-          <% let aliadaTempoAtual = null; %>
-          <% temposReparo.forEach(t => { %>
-            <% const novaAliadaTempo = t.aliada !== aliadaTempoAtual; aliadaTempoAtual = t.aliada; %>
-            <tr class="<%= novaAliadaTempo ? 'group-start' : '' %>">
-              <td><span class="aliada-badge aliada-color-<%= aliadaCores[t.aliada] %>"><%= t.aliada %></span></td>
-              <td class="celula-truncada" title="<%= t.bucket %>"><%= t.bucket %></td>
-              <td class="num">
-                <input type="hidden" name="bucket[]" value="<%= t.bucket %>" />
                 <input type="number" name="reparo[]" min="0" step="1" value="<%= t.reparo %>" aria-label="Tempo de reparo (min) para <%= t.bucket %>" title="Minutos de um reparo em <%= t.bucket %>" />
               </td>
             </tr>
           <% }) %>
         </tbody>
       </table>
-      <p class="hint">Atualiza a tabela <code>depara_tempo_bucket</code> (coluna REPARO).</p>
     </div>
 
     <div class="modal-footer">
       <button type="submit" title="Grava estes tempos em depara_tempo_bucket">Salvar tempos</button>
+    </div>
+  </form>
+</section>
+
+<section class="panel config-page-panel" id="config-pu-produto">
+  <div class="modal-header">
+    <h3 title="Peso de PU de cada Specification Product, por seção — Instalação, Serviço e ME têm listas de produtos próprias (Reparos usa PU fixo, configurado na tabela de Previsto/Janelas/PU/Carga)">PU por Specification Product</h3>
+  </div>
+
+  <form method="post" action="/config/pu-produto-todos" class="modal-section">
+    <%- include('partials/hidden-config-estado', { exceto: [] }) %>
+
+    <div class="modal-body">
+      <p class="hint">
+        Instalação, Serviço e ME têm produtos diferentes (tabelas <code>depara_pu_produto</code>,
+        <code>depara_pu_produto_servico</code> e <code>depara_pu_produto_me</code>) — por isso não dá pra juntar linha a
+        linha como em Tempos por bucket, mas ficam todas na mesma tabela, agrupadas por seção.
+      </p>
+      <table class="tempo-table">
+        <thead>
+          <tr>
+            <th title="A qual seção este produto pertence">Seção</th>
+            <th title="Valor da coluna SPECIFICATION_PRODUCT no CSV do ELOS">Specification Product</th>
+            <th class="num" title="Quantas PU cada ocorrência deste produto representa">PU</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% puProdutos.forEach((p, i) => { %>
+            <tr class="<%= (i === 0 ? 'group-start ' : '') + (p.pu == 0 ? 'linha-alerta' : '') %>">
+              <td>Instalação</td>
+              <td>
+                <%= p.produto %>
+                <% if (p.pu == 0) { %>
+                  <span class="badge-alerta" title="Este produto ainda não tem PU configurado — está contando 0 no cálculo">sem PU</span>
+                <% } %>
+              </td>
+              <td class="num">
+                <input type="hidden" name="produtoInstalacao[]" value="<%= p.produto %>" />
+                <input type="number" name="puInstalacao[]" min="0" step="0.01" value="<%= p.pu %>" aria-label="PU para <%= p.produto %> (Instalação)" title="PU de uma instalação do produto <%= p.produto %>" />
+              </td>
+            </tr>
+          <% }) %>
+          <% puProdutosServicos.forEach((p, i) => { %>
+            <tr class="<%= (i === 0 ? 'group-start ' : '') + (p.pu == 0 ? 'linha-alerta' : '') %>">
+              <td>Serviço</td>
+              <td>
+                <%= p.produto %>
+                <% if (p.pu == 0) { %>
+                  <span class="badge-alerta" title="Este produto ainda não tem PU configurado — está contando 0 no cálculo">sem PU</span>
+                <% } %>
+              </td>
+              <td class="num">
+                <input type="hidden" name="produtoServico[]" value="<%= p.produto %>" />
+                <input type="number" name="puServico[]" min="0" step="0.01" value="<%= p.pu %>" aria-label="PU para <%= p.produto %> (Serviço)" title="PU de um serviço do produto <%= p.produto %>" />
+              </td>
+            </tr>
+          <% }) %>
+          <% puProdutosMe.forEach((p, i) => { %>
+            <tr class="<%= (i === 0 ? 'group-start ' : '') + (p.pu == 0 ? 'linha-alerta' : '') %>">
+              <td>ME</td>
+              <td>
+                <%= p.produto %>
+                <% if (p.pu == 0) { %>
+                  <span class="badge-alerta" title="Este produto ainda não tem PU configurado — está contando 0 no cálculo">sem PU</span>
+                <% } %>
+              </td>
+              <td class="num">
+                <input type="hidden" name="produtoMe[]" value="<%= p.produto %>" />
+                <input type="number" name="puMe[]" min="0" step="0.01" value="<%= p.pu %>" aria-label="PU para <%= p.produto %> (ME)" title="PU de uma ME do produto <%= p.produto %>" />
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+      <p class="hint">Produtos novos aparecem aqui automaticamente ao subir um CSV (com PU=0 até serem configurados).</p>
+    </div>
+
+    <div class="modal-footer">
+      <button type="submit" title="Grava estes pesos em depara_pu_produto, depara_pu_produto_servico e depara_pu_produto_me">Salvar PU</button>
     </div>
   </form>
 </section>

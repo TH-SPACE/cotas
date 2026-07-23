@@ -135,40 +135,8 @@ async function atualizarPuProdutos(atualizacoes) {
   }
 }
 
-async function getTemposInstalacao() {
-  const [rows] = await pool.query(
-    `SELECT ALIADA AS aliada, BUCKET AS bucket, INSTALACAO AS instalacao
-     FROM depara_tempo_bucket
-     ORDER BY ALIADA, BUCKET`
-  );
-
-  return rows;
-}
-
-// Mesma lógica do bucketService: atualiza por BUCKET (chave já é única na tabela).
-async function atualizarTemposInstalacao(atualizacoes) {
-  const conn = await pool.getConnection();
-  try {
-    await conn.beginTransaction();
-    for (const { bucket, instalacao } of atualizacoes) {
-      await conn.query(
-        `UPDATE depara_tempo_bucket SET INSTALACAO = ? WHERE BUCKET = ?`,
-        [instalacao, bucket]
-      );
-    }
-    await conn.commit();
-  } catch (err) {
-    await conn.rollback();
-    throw err;
-  } finally {
-    conn.release();
-  }
-}
-
 module.exports = {
   getResumoBucketsInstalacoes,
-  getTemposInstalacao,
-  atualizarTemposInstalacao,
   getFiltrosDisponiveisInstalacoes,
   getPuProdutos,
   atualizarPuProdutos,

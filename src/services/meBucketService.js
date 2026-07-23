@@ -139,39 +139,8 @@ async function atualizarPuProdutosMe(atualizacoes) {
   }
 }
 
-async function getTemposMe() {
-  const [rows] = await pool.query(
-    `SELECT ALIADA AS aliada, BUCKET AS bucket, ALTERACAO AS alteracao
-     FROM depara_tempo_bucket
-     ORDER BY ALIADA, BUCKET`
-  );
-
-  return rows;
-}
-
-async function atualizarTemposMe(atualizacoes) {
-  const conn = await pool.getConnection();
-  try {
-    await conn.beginTransaction();
-    for (const { bucket, alteracao } of atualizacoes) {
-      await conn.query(
-        `UPDATE depara_tempo_bucket SET ALTERACAO = ? WHERE BUCKET = ?`,
-        [alteracao, bucket]
-      );
-    }
-    await conn.commit();
-  } catch (err) {
-    await conn.rollback();
-    throw err;
-  } finally {
-    conn.release();
-  }
-}
-
 module.exports = {
   getResumoBucketsMe,
-  getTemposMe,
-  atualizarTemposMe,
   getFiltrosDisponiveisMe,
   getPuProdutosMe,
   atualizarPuProdutosMe,
