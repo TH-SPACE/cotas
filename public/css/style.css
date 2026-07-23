@@ -155,6 +155,88 @@ body {
   padding: 1.5rem;
 }
 
+/* Layout da página inicial: barra lateral fixa à esquerda (atalhos das seções +
+   Configurações) + conteúdo à direita. A navbar do topo só tem as 3 páginas. */
+.home-layout {
+  display: flex;
+  align-items: flex-start;
+  gap: 1.25rem;
+}
+.home-content {
+  flex: 1;
+  min-width: 0;              /* deixa as tabelas encolherem/rolarem em vez de estourar */
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+.home-sidebar {
+  position: sticky;
+  top: 5rem;
+  flex-shrink: 0;
+  width: 190px;
+  background: var(--panel-bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+.home-sidebar-titulo {
+  padding: 0.25rem 0.7rem 0.4rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+.home-sidebar-item {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.55rem 0.7rem;
+  border-radius: 8px;
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 0.88rem;
+  font-weight: 600;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.home-sidebar-item:hover {
+  background: var(--bg);
+  color: var(--accent);
+}
+.home-sidebar-item svg { flex-shrink: 0; }
+.home-sidebar-sep {
+  height: 1px;
+  margin: 0.4rem;
+  background: var(--border);
+}
+
+/* Âncoras das seções (clicadas na barra lateral) não ficam escondidas sob o
+   cabeçalho fixo. */
+[id^="secao-"] { scroll-margin-top: 5rem; }
+
+/* Tabelas da home um pouco mais compactas pra abrir espaço pra barra lateral. */
+.home-content .cotas-table { font-size: 0.82rem; }
+.home-content .cotas-table th,
+.home-content .cotas-table td { padding: 0.4rem 0.45rem; }
+.home-content .cotas-table thead th { font-size: 0.68rem; }
+
+/* Telas estreitas: a barra lateral vira uma faixa horizontal no topo do conteúdo. */
+@media (max-width: 900px) {
+  .home-layout { flex-direction: column; }
+  .home-sidebar {
+    position: static;
+    width: auto;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .home-sidebar-titulo { padding: 0.25rem 0.5rem; }
+  .home-sidebar-sep { display: none; }
+}
+
 .panel-header h2 {
   margin: 0 0 0.25rem;
   font-size: 1.05rem;
@@ -229,6 +311,16 @@ body {
 
 .linha-alerta {
   background: var(--aliada-0-bg);
+}
+
+/* Status da cota do dia (D0) na página de Cotas Planejadas: "Fechado" destacado
+   (é o que precisa de atenção), "Aberto" discreto. */
+.status-fechado {
+  color: var(--aliada-0-fg);
+  font-weight: 600;
+}
+.status-aberto {
+  color: var(--muted);
 }
 
 .badge-alerta {
@@ -700,6 +792,126 @@ body {
 
 .cotas-table .col-divider {
   border-left: 1px solid var(--col-divider);
+}
+
+/* Variante compacta da página /cotas-planejadas: as 4 janelas de horário lado a
+   lado numa tabela só (18 colunas). Seletor composto (.cotas-table.cotas-table-compact)
+   pra ter mais especificidade que as media queries de .cotas-table e sempre vencer,
+   mantendo a tabela compacta em qualquer largura. */
+.cotas-table.cotas-table-compact {
+  font-size: 0.72rem;
+}
+.cotas-table.cotas-table-compact th,
+.cotas-table.cotas-table-compact td {
+  padding: 0.26rem 0.3rem;
+}
+.cotas-table.cotas-table-compact thead th {
+  font-size: 0.56rem;
+  letter-spacing: 0.01em;
+  padding: 0.32rem 0.25rem;
+}
+.cotas-table-compact .colw-aliada { width: 5em; }
+.cotas-table-compact .colw-bucket { width: 9em; }
+.cotas-table-compact .colw-num { width: 3.6em; }
+.cotas-table-compact .celula-truncada { max-width: 120px; }
+.cotas-table-compact .aliada-badge {
+  padding: 0.05rem 0.3rem;
+  font-size: 0.62rem;
+}
+
+/* Cabeçalho enxuto pra tabela aparecer logo no topo da página (sem folga grande). */
+.panel.panel-slim {
+  padding-top: 0.85rem;
+  padding-bottom: 0.85rem;
+}
+.panel.panel-slim .hint {
+  margin-bottom: 0;
+}
+
+/* Grade de upload compacto (reutilizada em /cotas-planejadas e no upload de backlog
+   da /configuracoes): itens lado a lado, cada um com sua última atualização.
+   auto-fit já quebra pra 2/1 colunas em telas menores, sem media query. */
+.upload-compact-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 0.75rem;
+  padding: 1rem 1.25rem 0.75rem;
+}
+.cota-upload-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.6rem 0.7rem;
+  min-width: 0;
+}
+.cota-upload-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+.cota-upload-tipo {
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+.cota-upload-data {
+  font-size: 0.66rem;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cota-upload-nunca {
+  font-style: italic;
+}
+.cota-upload-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.cota-upload-row input[type="file"] {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.72rem;
+}
+.cota-upload-row button {
+  flex-shrink: 0;
+  background: var(--accent);
+  color: var(--accent-contrast);
+  border: none;
+  border-radius: 8px;
+  padding: 0.4rem 0.75rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.cota-upload-row button:hover {
+  filter: brightness(1.08);
+}
+.cota-upload-hint {
+  margin: 0;
+  font-size: 0.66rem;
+  color: var(--muted);
+  line-height: 1.35;
+}
+.cota-upload-hint-warn {
+  color: var(--aliada-0-fg);
+}
+/* Botão com ícone + texto (ex.: "Upload de cotas" que abre o modal). */
+.btn-com-icone {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+/* Dentro do modal (mais estreito que a página), 2 colunas fixas ficam melhores
+   que o auto-fit da grade geral. */
+#cotas-upload-modal .upload-compact-grid {
+  grid-template-columns: repeat(2, 1fr);
+}
+@media (max-width: 520px) {
+  #cotas-upload-modal .upload-compact-grid { grid-template-columns: 1fr; }
 }
 
 /* Encolhe progressivamente conforme a tela fica mais estreita, pra empurrar o

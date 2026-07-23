@@ -15,38 +15,23 @@
         Calculadora de Cotas <span class="badge" title="Cluster GOIANIA">GO</span>
       </a>
     </h1>
-    <% // Nas seções (#secao-*) só existem no HTML da página principal (index). Quando
-       // este header é renderizado em outra página (ex.: /resumo-cotas), um href
-       // relativo tipo "#secao-instalacoes" ficaria tentando rolar a página atual,
-       // que não tem esse id, e não navegaria a lugar nenhum. `linkVoltar` só é
-       // passado pelas páginas que NÃO são a index (ver rota /resumo-cotas), então
-       // serve de sinal: se existir, prefixa o link de volta pra index (preservando
-       // filtros) antes do "#", forçando a navegação completa até lá. %>
-    <% const prefixoSecao = typeof linkVoltar !== 'undefined' ? linkVoltar : ''; %>
-    <nav class="topbar-nav" aria-label="Atalhos de navegação">
-      <a href="<%= prefixoSecao %>#secao-instalacoes" class="topbar-nav-item" title="Ir para Resumo de Backlog de Instalações">
-        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94z"/></svg>
-        <span>Instalações</span>
-      </a>
-      <a href="<%= prefixoSecao %>#secao-servicos" class="topbar-nav-item" title="Ir para Resumo de Backlog de Serviços">
-        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/><circle cx="12" cy="12" r="3"/></svg>
-        <span>Serviços</span>
-      </a>
-      <a href="<%= prefixoSecao %>#secao-me" class="topbar-nav-item" title="Ir para Resumo de Backlog de ME (Mudança de Endereço)">
-        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
-        <span>ME</span>
-      </a>
-      <a href="<%= prefixoSecao %>#secao-reparos" class="topbar-nav-item" title="Ir para Resumo de Backlog de Reparos">
-        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/></svg>
-        <span>Reparos</span>
+    <% // Navbar = só as 3 páginas do sistema (Início / Resumo COTAS / Cotas
+       // Planejadas). Os atalhos das seções (Instalações/Serviços/ME/Reparos) e o
+       // link de Configurações saíram daqui e foram pra barra lateral da página
+       // inicial (ver index.ejs .home-sidebar). `linkVoltar` preserva os filtros ao
+       // voltar pra index a partir das outras páginas. %>
+    <nav class="topbar-nav" aria-label="Navegação principal">
+      <a href="<%= typeof linkVoltar !== 'undefined' ? linkVoltar : '/' %>" class="topbar-nav-item" title="Página inicial — backlog de Instalações, Serviços, ME e Reparos">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/><path d="M9 21v-6h6v6"/></svg>
+        <span>Início</span>
       </a>
       <a href="<%= typeof linkResumoCotas !== 'undefined' ? linkResumoCotas : '/resumo-cotas' %>" class="topbar-nav-item" title="Ver resumo consolidado de COTAS(min) de Instalação, ME, Serviços e Reparos, um por bucket">
         <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
         <span>Resumo COTAS</span>
       </a>
-      <a href="<%= typeof linkConfiguracoes !== 'undefined' ? linkConfiguracoes : '/configuracoes' %>" class="topbar-nav-item" title="Ver e editar em uma única página todas as configurações (previsto, janelas, Carga, PU e tempos) de Instalações, Serviços, ME e Reparos">
-        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.65 1.65 0 0 0-1.8-.3 1.65 1.65 0 0 0-1 1.5V21a2 2 0 0 1-4 0v-.1A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.65 1.65 0 0 0 .3-1.8 1.65 1.65 0 0 0-1.5-1H3a2 2 0 0 1 0-4h.1A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.65 1.65 0 0 0 1.8.3H9a1.65 1.65 0 0 0 1-1.5V3a2 2 0 0 1 4 0v.1a1.65 1.65 0 0 0 1 1.5 1.65 1.65 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.65 1.65 0 0 0-.3 1.8V9a1.65 1.65 0 0 0 1.5 1H21a2 2 0 0 1 0 4h-.1a1.65 1.65 0 0 0-1.5 1z"/></svg>
-        <span>Configurações</span>
+      <a href="<%= typeof linkCotasPlanejadas !== 'undefined' ? linkCotasPlanejadas : '/cotas-planejadas' %>" class="topbar-nav-item" title="Cotas planejadas por bucket em cada janela, comparadas com as cotas do dia (D0) do Elos">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6a1 1 0 0 1 1 1v1a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M8 4H6a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-2"/><path d="m9 14 2 2 4-4"/></svg>
+        <span>Cotas Planejadas</span>
       </a>
     </nav>
     <button type="button" class="icon-btn" id="config-elos-open-btn" aria-haspopup="dialog" aria-controls="config-elos-modal" title="Credenciais de login da raspagem automática do Elos">

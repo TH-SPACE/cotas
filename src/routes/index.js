@@ -38,6 +38,12 @@ const {
 } = require('../services/meBucketService');
 const { importarInstalacoes, getDataCargaInstalacoes } = require('../services/instalacoesService');
 const { importarReparos } = require('../services/reparosUploadService');
+const {
+  importarCotas,
+  getCotasD0,
+  getDatasCargaCotas,
+  TIPOS: TIPOS_COTAS,
+} = require('../services/cotasService');
 const { getTemposBucket, atualizarTemposBucket } = require('../services/temposBucketService');
 const {
   calcularPrevisto,
@@ -443,11 +449,13 @@ router.get('/', async (req, res, next) => {
     const dados = await carregarDadosPainel(req.query);
     const linkResumoCotas = `/resumo-cotas?${montarQueryStringEstado(req.query).toString()}`;
     const linkConfiguracoes = `/configuracoes?${montarQueryStringEstado(req.query).toString()}`;
+    const linkCotasPlanejadas = `/cotas-planejadas?${montarQueryStringEstado(req.query).toString()}`;
 
     res.render('index', {
       ...dados,
       linkResumoCotas,
       linkConfiguracoes,
+      linkCotasPlanejadas,
     });
   } catch (err) {
     next(err);
@@ -464,12 +472,14 @@ router.get('/configuracoes', async (req, res, next) => {
     const linkVoltar = `/?${montarQueryStringEstado(req.query).toString()}`;
     const linkResumoCotas = `/resumo-cotas?${montarQueryStringEstado(req.query).toString()}`;
     const linkConfiguracoes = `/configuracoes?${montarQueryStringEstado(req.query).toString()}`;
+    const linkCotasPlanejadas = `/cotas-planejadas?${montarQueryStringEstado(req.query).toString()}`;
 
     res.render('configuracoes', {
       ...dados,
       linkVoltar,
       linkResumoCotas,
       linkConfiguracoes,
+      linkCotasPlanejadas,
       instalacoesUpload: req.query.instalacoesUpload,
       instalacoesUploadLinhas: req.query.instalacoesUploadLinhas,
       instalacoesUploadErro: req.query.instalacoesUploadErro,
@@ -491,6 +501,7 @@ router.get('/resumo-cotas', async (req, res, next) => {
     const linkVoltar = `/?${montarQueryStringEstado(req.query).toString()}`;
     const linkResumoCotas = `/resumo-cotas?${montarQueryStringEstado(req.query).toString()}`;
     const linkConfiguracoes = `/configuracoes?${montarQueryStringEstado(req.query).toString()}`;
+    const linkCotasPlanejadas = `/cotas-planejadas?${montarQueryStringEstado(req.query).toString()}`;
 
     const qtdJanelasInstalacao = dados.janelasInstalacaoLabels.length;
     const qtdJanelasMe = dados.janelasMeLabels.length;
@@ -526,6 +537,7 @@ router.get('/resumo-cotas', async (req, res, next) => {
       linkVoltar,
       linkResumoCotas,
       linkConfiguracoes,
+      linkCotasPlanejadas,
       linhasResumo,
       janelasInstalacaoLabels: dados.janelasInstalacaoLabels,
       janelasMeLabels: dados.janelasMeLabels,
@@ -540,6 +552,82 @@ router.get('/resumo-cotas', async (req, res, next) => {
     });
   } catch (err) {
     next(err);
+  }
+});
+
+// Página nova de Cotas Planejadas (por enquanto só Instalação): uma tabela por
+// janela de horário, uma linha por bucket. "Cotas Planejadas" reaproveita as ORDENS
+// já calculadas pela Sugestão (linha.janelas do painel de Instalações, mesmo cálculo
+// da página principal). "Status" e "COTAS D0" vêm do upload do Excel de cotas do ELOS
+// (tabela cotas_instalacao, linha Age=D0 de cada bucket+janela).
+router.get('/cotas-planejadas', async (req, res, next) => {
+  try {
+    const dados = await carregarDadosPainel(req.query);
+    const linkVoltar = `/?${montarQueryStringEstado(req.query).toString()}`;
+    const linkResumoCotas = `/resumo-cotas?${montarQueryStringEstado(req.query).toString()}`;
+    const linkConfiguracoes = `/configuracoes?${montarQueryStringEstado(req.query).toString()}`;
+    const linkCotasPlanejadas = `/cotas-planejadas?${montarQueryStringEstado(req.query).toString()}`;
+
+    // bucket -> janela (sem espaços) -> { status, cotaAberta, cotaUsada } do D0.
+    // Normaliza o rótulo da janela tirando espaços porque o Excel usa "08:30-10:30"
+    // e os labels do painel usam "08:30 - 10:30". A tabela por enquanto é só de
+    // Instalação; os outros 3 tipos só têm upload (última atualização) por ora.
+    const cotasD0 = await getCotasD0('instalacao');
+    const mapaCotasD0 = {};
+    cotasD0.forEach(r => {
+      const janela = String(r.timeSlot || '').replace(/\s/g, '');
+      (mapaCotasD0[r.bucket] || (mapaCotasD0[r.bucket] = {}))[janela] = {
+        status: r.status,
+        cotaAberta: r.cotaAberta,
+        cotaUsada: r.cotaUsada,
+      };
+    });
+
+    const datasCargaBrutas = await getDatasCargaCotas();
+    const datasCargaCotas = {};
+    Object.entries(datasCargaBrutas).forEach(([tipo, data]) => {
+      datasCargaCotas[tipo] = data ? formatarDataCarga(data) : null;
+    });
+
+    res.render('cotas-planejadas', {
+      linkVoltar,
+      linkResumoCotas,
+      linkConfiguracoes,
+      linkCotasPlanejadas,
+      linhasInstalacoes: dados.linhasInstalacoes,
+      janelasInstalacaoLabels: dados.janelasInstalacaoLabels,
+      aliadaCoresInstalacoes: dados.aliadaCoresInstalacoes,
+      mapaCotasD0,
+      datasCargaCotas,
+      cotasUpload: req.query.cotasUpload,
+      cotasUploadTipo: req.query.cotasUploadTipo,
+      cotasUploadLinhas: req.query.cotasUploadLinhas,
+      cotasUploadErro: req.query.cotasUploadErro,
+      elosCredenciais: dados.elosCredenciais,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Upload manual do Excel de cotas do ELOS (data (*).xlsx) por tipo (instalacao/
+// servico/me/reparo) -> tabela própria daquele tipo (banco cotas, não compartilhada),
+// TRUNCATE + INSERT substitui tudo. Um botão por tipo na página.
+router.post('/cotas/upload/:tipo', upload.single('arquivo'), async (req, res, next) => {
+  const tipo = req.params.tipo;
+  try {
+    if (!TIPOS_COTAS.includes(tipo)) {
+      return res.redirect('/cotas-planejadas?cotasUpload=erro&cotasUploadErro=' + encodeURIComponent('Tipo de cotas inválido.'));
+    }
+    if (!req.file) {
+      return res.redirect(`/cotas-planejadas?cotasUpload=erro&cotasUploadTipo=${tipo}&cotasUploadErro=` + encodeURIComponent('Nenhum arquivo selecionado.'));
+    }
+
+    const { totalLinhas } = await importarCotas(req.file.buffer, tipo);
+
+    res.redirect(`/cotas-planejadas?cotasUpload=ok&cotasUploadTipo=${tipo}&cotasUploadLinhas=${totalLinhas}`);
+  } catch (err) {
+    res.redirect(`/cotas-planejadas?cotasUpload=erro&cotasUploadTipo=${tipo}&cotasUploadErro=` + encodeURIComponent(err.message));
   }
 });
 

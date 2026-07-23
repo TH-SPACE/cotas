@@ -32,6 +32,7 @@ document.querySelectorAll('form').forEach((form) => {
 document.addEventListener('DOMContentLoaded', () => {
   const modais = [
     { modalId: 'config-elos-modal', openId: 'config-elos-open-btn', closeId: 'config-elos-close-btn' },
+    { modalId: 'cotas-upload-modal', openId: 'cotas-upload-open-btn', closeId: 'cotas-upload-close-btn' },
   ];
 
   modais.forEach(({ modalId, openId, closeId }) => {
@@ -49,6 +50,11 @@ document.addEventListener('DOMContentLoaded', () => {
       modal.addEventListener('click', (event) => {
         if (event.target === modal) modal.close();
       });
+      // Reabre sozinho depois de um upload (o POST redireciona com ?cotasUpload=...),
+      // pra mostrar o resultado e deixar seguir enviando os outros tipos sem reabrir.
+      if (modal.dataset.abrirAutomatico === 'true') {
+        modal.showModal();
+      }
     }
   });
 

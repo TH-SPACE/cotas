@@ -8,6 +8,33 @@
    // existir produto com PU=0, não só logo depois do upload. %>
 <% const calcularProdutosSemPu = (lista) => lista.filter(p => p.pu == 0).map(p => p.produto); %>
 
+<div class="home-layout">
+  <aside class="home-sidebar" aria-label="Seções e configurações">
+    <span class="home-sidebar-titulo">Seções</span>
+    <a href="#secao-instalacoes" class="home-sidebar-item" title="Ir para o backlog de Instalações">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94z"/></svg>
+      <span>Instalações</span>
+    </a>
+    <a href="#secao-servicos" class="home-sidebar-item" title="Ir para o backlog de Serviços">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/><circle cx="12" cy="12" r="3"/></svg>
+      <span>Serviços</span>
+    </a>
+    <a href="#secao-me" class="home-sidebar-item" title="Ir para o backlog de ME (Mudança de Endereço)">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+      <span>ME</span>
+    </a>
+    <a href="#secao-reparos" class="home-sidebar-item" title="Ir para o backlog de Reparos">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/></svg>
+      <span>Reparos</span>
+    </a>
+    <div class="home-sidebar-sep"></div>
+    <a href="<%= linkConfiguracoes %>" class="home-sidebar-item" title="Configurações: previsto, janelas, Carga, PU, tempos e upload de backlog">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.65 1.65 0 0 0-1.8-.3 1.65 1.65 0 0 0-1 1.5V21a2 2 0 0 1-4 0v-.1A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.65 1.65 0 0 0 .3-1.8 1.65 1.65 0 0 0-1.5-1H3a2 2 0 0 1 0-4h.1A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.65 1.65 0 0 0 1.8.3H9a1.65 1.65 0 0 0 1-1.5V3a2 2 0 0 1 4 0v.1a1.65 1.65 0 0 0 1 1.5 1.65 1.65 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.65 1.65 0 0 0-.3 1.8V9a1.65 1.65 0 0 0 1.5 1H21a2 2 0 0 1 0 4h-.1a1.65 1.65 0 0 0-1.5 1z"/></svg>
+      <span>Configurações</span>
+    </a>
+  </aside>
+  <div class="home-content">
+
 <section class="panel" id="secao-instalacoes">
   <div class="panel-header panel-header-row">
     <div>
@@ -577,5 +604,7 @@
     </table>
   </div>
 </section>
+  </div>
+</div>
 
 <%- include('partials/footer') %>

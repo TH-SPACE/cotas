@@ -35,31 +35,31 @@
     <p class="alert alert-erro" style="margin: 1.25rem 1.25rem 0;">Falha ao importar reparos: <%= reparosUploadErro %></p>
   <% } %>
 
-  <form method="post" action="/instalacoes/upload" enctype="multipart/form-data" class="modal-section">
-    <div class="modal-body">
-      <div class="field-row">
-        <label for="instalacoes-arquivo">Instalações / ME / Serviços — CSV (BackLogDiario_*.csv)</label>
-        <input type="file" id="instalacoes-arquivo" name="arquivo" accept=".csv,.txt" required />
+  <div class="upload-compact-grid">
+    <form class="cota-upload-item" method="post" action="/instalacoes/upload" enctype="multipart/form-data">
+      <div class="cota-upload-head">
+        <span class="cota-upload-tipo">Instalações / ME / Serviços</span>
+        <span class="cota-upload-data" title="Última carga registrada"><%= dataCargaInstalacoes %></span>
       </div>
-      <p class="hint">Cada envio <strong>substitui</strong> todo o conteúdo atual de <code>backlog_instalacoes</code> pelo arquivo enviado.</p>
-    </div>
-    <div class="modal-footer">
-      <button type="submit" title="Envia e substitui os dados de backlog_instalacoes">Enviar</button>
-    </div>
-  </form>
+      <div class="cota-upload-row">
+        <input type="file" name="arquivo" accept=".csv,.txt" required aria-label="CSV de Instalações / ME / Serviços" />
+        <button type="submit" title="Envia e substitui os dados de backlog_instalacoes">Enviar</button>
+      </div>
+      <p class="cota-upload-hint">CSV <code>BackLogDiario_*.csv</code> — substitui <code>backlog_instalacoes</code>.</p>
+    </form>
 
-  <form method="post" action="/reparos/upload" enctype="multipart/form-data" class="modal-section modal-section-divider">
-    <div class="modal-body">
-      <div class="field-row">
-        <label for="reparos-arquivo">Reparos — CSV (export de Reparos do ELOS)</label>
-        <input type="file" id="reparos-arquivo" name="arquivo" accept=".csv,.txt" required />
+    <form class="cota-upload-item" method="post" action="/reparos/upload" enctype="multipart/form-data">
+      <div class="cota-upload-head">
+        <span class="cota-upload-tipo">Reparos</span>
+        <span class="cota-upload-data" title="Última carga registrada"><%= dataCargaReparo %></span>
       </div>
-      <p class="hint">Cada envio <strong>substitui</strong> todo o conteúdo atual de <code>backlog_elos</code> pelo arquivo enviado — atenção: essa tabela é compartilhada com outro sistema, um arquivo errado ou de outro escopo apaga dados que não são deste app.</p>
-    </div>
-    <div class="modal-footer">
-      <button type="submit" title="Envia e substitui os dados de backlog_elos">Enviar</button>
-    </div>
-  </form>
+      <div class="cota-upload-row">
+        <input type="file" name="arquivo" accept=".csv,.txt" required aria-label="CSV de Reparos" />
+        <button type="submit" title="Envia e substitui os dados de backlog_elos">Enviar</button>
+      </div>
+      <p class="cota-upload-hint cota-upload-hint-warn">⚠ Substitui <code>backlog_elos</code> — tabela compartilhada com outro sistema: arquivo errado apaga dados que não são deste app.</p>
+    </form>
+  </div>
 </section>
 
 <section class="panel config-page-panel" id="config-previsto">
