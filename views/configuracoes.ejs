@@ -67,13 +67,8 @@
     <h3 title="Previsto de resolução, janelas de horário, Meta de PU por técnico e Carga (usada na coluna Sugestão) de cada seção">Previsto, Janelas, PU e Carga</h3>
   </div>
 
-  <form method="get" action="/configuracoes" class="modal-section">
-    <%- include('partials/hidden-config-estado', { exceto: [
-      'percentual', 'percentualJanela', 'puReparo', 'metaPuTecnico', 'cargaReparo',
-      'percentualInstalacao', 'percentualJanela1Instalacao', 'percentualJanela2Instalacao', 'percentualJanela3Instalacao', 'metaPuTecnicoInstalacao', 'cargaInstalacao',
-      'percentualServico', 'percentualJanela1Servico', 'percentualJanela2Servico', 'percentualJanela3Servico', 'metaPuTecnicoServico', 'cargaServico',
-      'percentualMe', 'percentualJanela1Me', 'percentualJanela2Me', 'percentualJanela3Me', 'metaPuTecnicoMe', 'cargaMe'
-    ] }) %>
+  <form method="post" action="/config/geral" class="modal-section">
+    <%- include('partials/hidden-config-estado', { exceto: [] }) %>
     <div class="modal-body">
       <table class="tempo-table">
         <thead>
@@ -155,7 +150,7 @@
     </div>
 
     <div class="modal-footer">
-      <button type="submit" title="Recarrega a página aplicando estes valores">Aplicar</button>
+      <button type="submit" title="Grava estes valores em configuracoes_gerais">Aplicar</button>
     </div>
   </form>
 </section>

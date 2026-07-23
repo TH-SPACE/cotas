@@ -47,6 +47,7 @@ const {
   calcularTotais,
   construirMapaCoresAliada,
 } = require('../services/calculoBacklogService');
+const { getConfiguracoesGerais, salvarConfiguracoesGerais } = require('../services/configGeralService');
 const { getElosCredenciais, salvarElosCredenciais } = require('../services/elosCredenciaisService');
 const { getStatusRaspagem, solicitarExecucaoManual } = require('../services/raspagemStatusService');
 
@@ -129,33 +130,12 @@ function normalizarListaComPadrao(valor, padrao) {
   return lista.length > 0 ? lista : padrao;
 }
 
-// Reconstrói a query string de estado (filtros + configs dos quatro painéis) para os
-// redirects de POST /config/*, que não mexem no valor enviado, só no que originou o post.
+// Reconstrói a query string de estado (só os FILTROS dos quatro painéis) para os
+// redirects de POST /config/*, que não mexem no valor enviado, só no que originou o
+// post. Previsto/Janelas/Meta de PU/Carga não entram mais aqui -- persistem em
+// configuracoes_gerais (ver configGeralService.js), não na URL.
 function montarQueryStringEstado(body) {
   const params = new URLSearchParams();
-  if (body.percentual) params.set('percentual', body.percentual);
-  if (body.percentualJanela) params.set('percentualJanela', body.percentualJanela);
-  if (body.puReparo) params.set('puReparo', body.puReparo);
-  if (body.metaPuTecnico) params.set('metaPuTecnico', body.metaPuTecnico);
-  if (body.cargaReparo) params.set('cargaReparo', body.cargaReparo);
-  if (body.percentualInstalacao) params.set('percentualInstalacao', body.percentualInstalacao);
-  if (body.percentualJanela1Instalacao) params.set('percentualJanela1Instalacao', body.percentualJanela1Instalacao);
-  if (body.percentualJanela2Instalacao) params.set('percentualJanela2Instalacao', body.percentualJanela2Instalacao);
-  if (body.percentualJanela3Instalacao) params.set('percentualJanela3Instalacao', body.percentualJanela3Instalacao);
-  if (body.metaPuTecnicoInstalacao) params.set('metaPuTecnicoInstalacao', body.metaPuTecnicoInstalacao);
-  if (body.cargaInstalacao) params.set('cargaInstalacao', body.cargaInstalacao);
-  if (body.percentualServico) params.set('percentualServico', body.percentualServico);
-  if (body.percentualJanela1Servico) params.set('percentualJanela1Servico', body.percentualJanela1Servico);
-  if (body.percentualJanela2Servico) params.set('percentualJanela2Servico', body.percentualJanela2Servico);
-  if (body.percentualJanela3Servico) params.set('percentualJanela3Servico', body.percentualJanela3Servico);
-  if (body.metaPuTecnicoServico) params.set('metaPuTecnicoServico', body.metaPuTecnicoServico);
-  if (body.cargaServico) params.set('cargaServico', body.cargaServico);
-  if (body.percentualMe) params.set('percentualMe', body.percentualMe);
-  if (body.percentualJanela1Me) params.set('percentualJanela1Me', body.percentualJanela1Me);
-  if (body.percentualJanela2Me) params.set('percentualJanela2Me', body.percentualJanela2Me);
-  if (body.percentualJanela3Me) params.set('percentualJanela3Me', body.percentualJanela3Me);
-  if (body.metaPuTecnicoMe) params.set('metaPuTecnicoMe', body.metaPuTecnicoMe);
-  if (body.cargaMe) params.set('cargaMe', body.cargaMe);
   normalizarTecnologias(body.tecnologia).forEach(t => params.append('tecnologia', t));
   [].concat(body.statusReparo || []).forEach(v => params.append('statusReparo', v));
   [].concat(body.statusReasonReparo || []).forEach(v => params.append('statusReasonReparo', v));
@@ -175,11 +155,12 @@ function montarQueryStringEstado(body) {
 // objeto de query string — usado tanto pela página principal quanto pela página de
 // resumo consolidado (/resumo-cotas), pra nunca fazer as duas divergirem.
 async function carregarDadosPainel(query) {
-  const percentual = normalizarPercentual(query.percentual, PERCENTUAL_PADRAO);
-    const percentualJanela = normalizarPercentual(query.percentualJanela, PERCENTUAL_JANELA_PADRAO);
-    const puReparo = normalizarPu(query.puReparo, PU_REPARO_PADRAO);
-    const metaPuTecnico = normalizarMetaPuTecnico(query.metaPuTecnico, META_PU_TECNICO_PADRAO);
-    const cargaReparo = normalizarPu(query.cargaReparo, CARGA_REPARO_PADRAO);
+  const configGeral = await getConfiguracoesGerais();
+  const percentual = normalizarPercentual(configGeral.percentual, PERCENTUAL_PADRAO);
+    const percentualJanela = normalizarPercentual(configGeral.percentualJanela, PERCENTUAL_JANELA_PADRAO);
+    const puReparo = normalizarPu(configGeral.puReparo, PU_REPARO_PADRAO);
+    const metaPuTecnico = normalizarMetaPuTecnico(configGeral.metaPuTecnico, META_PU_TECNICO_PADRAO);
+    const cargaReparo = normalizarPu(configGeral.cargaReparo, CARGA_REPARO_PADRAO);
     const tecnologiasSelecionadas = normalizarTecnologias(query.tecnologia);
 
     // Mesmo raciocínio do bloco de Instalações: os valores disponíveis (e o padrão
@@ -194,12 +175,12 @@ async function carregarDadosPainel(query) {
       filtrosDisponiveisReparo.statusReason.filter(v => !STATUS_REASON_EXCLUIDOS_PADRAO_REPARO.includes(v))
     );
 
-    const percentualInstalacao = normalizarPercentual(query.percentualInstalacao, PERCENTUAL_INSTALACAO_PADRAO);
-    const percentualJanela1Instalacao = normalizarPercentual(query.percentualJanela1Instalacao, PERCENTUAL_JANELA1_INSTALACAO_PADRAO);
-    const percentualJanela2Instalacao = normalizarPercentual(query.percentualJanela2Instalacao, PERCENTUAL_JANELA2_INSTALACAO_PADRAO);
-    const percentualJanela3Instalacao = normalizarPercentual(query.percentualJanela3Instalacao, PERCENTUAL_JANELA3_INSTALACAO_PADRAO);
-    const metaPuTecnicoInstalacao = normalizarMetaPuTecnico(query.metaPuTecnicoInstalacao, META_PU_TECNICO_INSTALACAO_PADRAO);
-    const cargaInstalacao = normalizarPu(query.cargaInstalacao, CARGA_INSTALACAO_PADRAO);
+    const percentualInstalacao = normalizarPercentual(configGeral.percentualInstalacao, PERCENTUAL_INSTALACAO_PADRAO);
+    const percentualJanela1Instalacao = normalizarPercentual(configGeral.percentualJanela1Instalacao, PERCENTUAL_JANELA1_INSTALACAO_PADRAO);
+    const percentualJanela2Instalacao = normalizarPercentual(configGeral.percentualJanela2Instalacao, PERCENTUAL_JANELA2_INSTALACAO_PADRAO);
+    const percentualJanela3Instalacao = normalizarPercentual(configGeral.percentualJanela3Instalacao, PERCENTUAL_JANELA3_INSTALACAO_PADRAO);
+    const metaPuTecnicoInstalacao = normalizarMetaPuTecnico(configGeral.metaPuTecnicoInstalacao, META_PU_TECNICO_INSTALACAO_PADRAO);
+    const cargaInstalacao = normalizarPu(configGeral.cargaInstalacao, CARGA_INSTALACAO_PADRAO);
 
     // Os valores disponíveis (e, por tabela, o padrão pré-marcado) dependem do que
     // existe hoje em backlog_instalacoes, então precisam vir antes de montar a seleção.
@@ -214,12 +195,12 @@ async function carregarDadosPainel(query) {
     );
     const tecnologiaAcessoSelecionadas = normalizarListaComPadrao(query.tecnologiaAcesso, TECNOLOGIA_ACESSO_PADRAO);
 
-    const percentualServico = normalizarPercentual(query.percentualServico, PERCENTUAL_SERVICO_PADRAO);
-    const percentualJanela1Servico = normalizarPercentual(query.percentualJanela1Servico, PERCENTUAL_JANELA1_SERVICO_PADRAO);
-    const percentualJanela2Servico = normalizarPercentual(query.percentualJanela2Servico, PERCENTUAL_JANELA2_SERVICO_PADRAO);
-    const percentualJanela3Servico = normalizarPercentual(query.percentualJanela3Servico, PERCENTUAL_JANELA3_SERVICO_PADRAO);
-    const metaPuTecnicoServico = normalizarMetaPuTecnico(query.metaPuTecnicoServico, META_PU_TECNICO_SERVICO_PADRAO);
-    const cargaServico = normalizarPu(query.cargaServico, CARGA_SERVICO_PADRAO);
+    const percentualServico = normalizarPercentual(configGeral.percentualServico, PERCENTUAL_SERVICO_PADRAO);
+    const percentualJanela1Servico = normalizarPercentual(configGeral.percentualJanela1Servico, PERCENTUAL_JANELA1_SERVICO_PADRAO);
+    const percentualJanela2Servico = normalizarPercentual(configGeral.percentualJanela2Servico, PERCENTUAL_JANELA2_SERVICO_PADRAO);
+    const percentualJanela3Servico = normalizarPercentual(configGeral.percentualJanela3Servico, PERCENTUAL_JANELA3_SERVICO_PADRAO);
+    const metaPuTecnicoServico = normalizarMetaPuTecnico(configGeral.metaPuTecnicoServico, META_PU_TECNICO_SERVICO_PADRAO);
+    const cargaServico = normalizarPu(configGeral.cargaServico, CARGA_SERVICO_PADRAO);
 
     const filtrosDisponiveisServicos = await getFiltrosDisponiveisServicos();
     const statusServicoSelecionados = normalizarListaComPadrao(
@@ -232,12 +213,12 @@ async function carregarDadosPainel(query) {
     );
     const tecnologiaAcessoServicoSelecionadas = normalizarListaComPadrao(query.tecnologiaAcessoServico, TECNOLOGIA_ACESSO_PADRAO_SERVICO);
 
-    const percentualMe = normalizarPercentual(query.percentualMe, PERCENTUAL_ME_PADRAO);
-    const percentualJanela1Me = normalizarPercentual(query.percentualJanela1Me, PERCENTUAL_JANELA1_ME_PADRAO);
-    const percentualJanela2Me = normalizarPercentual(query.percentualJanela2Me, PERCENTUAL_JANELA2_ME_PADRAO);
-    const percentualJanela3Me = normalizarPercentual(query.percentualJanela3Me, PERCENTUAL_JANELA3_ME_PADRAO);
-    const metaPuTecnicoMe = normalizarMetaPuTecnico(query.metaPuTecnicoMe, META_PU_TECNICO_ME_PADRAO);
-    const cargaMe = normalizarPu(query.cargaMe, CARGA_ME_PADRAO);
+    const percentualMe = normalizarPercentual(configGeral.percentualMe, PERCENTUAL_ME_PADRAO);
+    const percentualJanela1Me = normalizarPercentual(configGeral.percentualJanela1Me, PERCENTUAL_JANELA1_ME_PADRAO);
+    const percentualJanela2Me = normalizarPercentual(configGeral.percentualJanela2Me, PERCENTUAL_JANELA2_ME_PADRAO);
+    const percentualJanela3Me = normalizarPercentual(configGeral.percentualJanela3Me, PERCENTUAL_JANELA3_ME_PADRAO);
+    const metaPuTecnicoMe = normalizarMetaPuTecnico(configGeral.metaPuTecnicoMe, META_PU_TECNICO_ME_PADRAO);
+    const cargaMe = normalizarPu(configGeral.cargaMe, CARGA_ME_PADRAO);
 
     const filtrosDisponiveisMe = await getFiltrosDisponiveisMe();
     const statusMeSelecionados = normalizarListaComPadrao(
@@ -557,6 +538,45 @@ router.get('/resumo-cotas', async (req, res, next) => {
       aliadaCores: construirMapaCoresAliada(ALIADA_COR_QTD, linhasResumo),
       elosCredenciais: dados.elosCredenciais,
     });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Previsto/Janelas/Meta de PU/Carga das 4 seções, um formulário só -- persiste em
+// configuracoes_gerais (ver configGeralService.js) em vez de só na URL, então
+// sobrevive a um link "limpo" ou reinício do servidor.
+router.post('/config/geral', async (req, res, next) => {
+  try {
+    const valores = {
+      percentual: normalizarPercentual(req.body.percentual, PERCENTUAL_PADRAO),
+      percentualJanela: normalizarPercentual(req.body.percentualJanela, PERCENTUAL_JANELA_PADRAO),
+      puReparo: normalizarPu(req.body.puReparo, PU_REPARO_PADRAO),
+      metaPuTecnico: normalizarMetaPuTecnico(req.body.metaPuTecnico, META_PU_TECNICO_PADRAO),
+      cargaReparo: normalizarPu(req.body.cargaReparo, CARGA_REPARO_PADRAO),
+      percentualInstalacao: normalizarPercentual(req.body.percentualInstalacao, PERCENTUAL_INSTALACAO_PADRAO),
+      percentualJanela1Instalacao: normalizarPercentual(req.body.percentualJanela1Instalacao, PERCENTUAL_JANELA1_INSTALACAO_PADRAO),
+      percentualJanela2Instalacao: normalizarPercentual(req.body.percentualJanela2Instalacao, PERCENTUAL_JANELA2_INSTALACAO_PADRAO),
+      percentualJanela3Instalacao: normalizarPercentual(req.body.percentualJanela3Instalacao, PERCENTUAL_JANELA3_INSTALACAO_PADRAO),
+      metaPuTecnicoInstalacao: normalizarMetaPuTecnico(req.body.metaPuTecnicoInstalacao, META_PU_TECNICO_INSTALACAO_PADRAO),
+      cargaInstalacao: normalizarPu(req.body.cargaInstalacao, CARGA_INSTALACAO_PADRAO),
+      percentualServico: normalizarPercentual(req.body.percentualServico, PERCENTUAL_SERVICO_PADRAO),
+      percentualJanela1Servico: normalizarPercentual(req.body.percentualJanela1Servico, PERCENTUAL_JANELA1_SERVICO_PADRAO),
+      percentualJanela2Servico: normalizarPercentual(req.body.percentualJanela2Servico, PERCENTUAL_JANELA2_SERVICO_PADRAO),
+      percentualJanela3Servico: normalizarPercentual(req.body.percentualJanela3Servico, PERCENTUAL_JANELA3_SERVICO_PADRAO),
+      metaPuTecnicoServico: normalizarMetaPuTecnico(req.body.metaPuTecnicoServico, META_PU_TECNICO_SERVICO_PADRAO),
+      cargaServico: normalizarPu(req.body.cargaServico, CARGA_SERVICO_PADRAO),
+      percentualMe: normalizarPercentual(req.body.percentualMe, PERCENTUAL_ME_PADRAO),
+      percentualJanela1Me: normalizarPercentual(req.body.percentualJanela1Me, PERCENTUAL_JANELA1_ME_PADRAO),
+      percentualJanela2Me: normalizarPercentual(req.body.percentualJanela2Me, PERCENTUAL_JANELA2_ME_PADRAO),
+      percentualJanela3Me: normalizarPercentual(req.body.percentualJanela3Me, PERCENTUAL_JANELA3_ME_PADRAO),
+      metaPuTecnicoMe: normalizarMetaPuTecnico(req.body.metaPuTecnicoMe, META_PU_TECNICO_ME_PADRAO),
+      cargaMe: normalizarPu(req.body.cargaMe, CARGA_ME_PADRAO),
+    };
+
+    await salvarConfiguracoesGerais(valores);
+
+    res.redirect(`/configuracoes?${montarQueryStringEstado(req.body).toString()}`);
   } catch (err) {
     next(err);
   }
