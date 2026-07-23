@@ -349,7 +349,8 @@ body {
   background: rgba(0, 0, 0, 0.4);
 }
 
-.config-modal .modal-header {
+.config-modal .modal-header,
+.config-page-panel .modal-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -357,7 +358,8 @@ body {
   border-bottom: 1px solid var(--border);
 }
 
-.config-modal .modal-header h3 {
+.config-modal .modal-header h3,
+.config-page-panel .modal-header h3 {
   margin: 0;
   font-size: 1rem;
 }
@@ -369,11 +371,20 @@ body {
   line-height: 1;
 }
 
-.config-modal .modal-body {
+.config-modal .modal-body,
+.config-page-panel .modal-body {
   padding: 1.25rem;
   display: flex;
   flex-direction: column;
   gap: 0.9rem;
+}
+
+/* Página /configuracoes: reaproveita o miolo dos antigos modais (header/body/
+   footer/campos) dentro de um <section class="panel"> normal em vez de <dialog>
+   -- sem largura/altura travadas, porque agora é conteúdo de página, não popup. */
+.config-page-panel {
+  padding: 0;
+  overflow: hidden;
 }
 
 .field-row {
@@ -415,14 +426,16 @@ body {
   cursor: not-allowed;
 }
 
-.config-modal .modal-footer {
+.config-modal .modal-footer,
+.config-page-panel .modal-footer {
   padding: 1rem 1.25rem;
   border-top: 1px solid var(--border);
   display: flex;
   justify-content: flex-end;
 }
 
-.config-modal .modal-footer button {
+.config-modal .modal-footer button,
+.config-page-panel .modal-footer button {
   padding: 0.45rem 1rem;
   border: none;
   border-radius: 6px;
@@ -433,7 +446,8 @@ body {
   cursor: pointer;
 }
 
-.config-modal .modal-footer button:hover {
+.config-modal .modal-footer button:hover,
+.config-page-panel .modal-footer button:hover {
   opacity: 0.9;
 }
 

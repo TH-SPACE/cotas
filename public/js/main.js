@@ -31,11 +31,7 @@ document.querySelectorAll('form').forEach((form) => {
 
 document.addEventListener('DOMContentLoaded', () => {
   const modais = [
-    { modalId: 'config-modal', openId: 'config-open-btn', closeId: 'config-close-btn' },
     { modalId: 'instalacoes-upload-modal', openId: 'instalacoes-upload-open-btn', closeId: 'instalacoes-upload-close-btn' },
-    { modalId: 'config-instalacoes-modal', openId: 'config-instalacoes-open-btn', closeId: 'config-instalacoes-close-btn' },
-    { modalId: 'config-servicos-modal', openId: 'config-servicos-open-btn', closeId: 'config-servicos-close-btn' },
-    { modalId: 'config-me-modal', openId: 'config-me-open-btn', closeId: 'config-me-close-btn' },
     { modalId: 'config-elos-modal', openId: 'config-elos-open-btn', closeId: 'config-elos-close-btn' },
   ];
 

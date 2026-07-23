@@ -77,6 +77,17 @@ function calcularTotais(totalGeral, linhasComPrevisto, config) {
   };
 }
 
+// Coluna "Sugestão": distribui `carga` (configurada por tipo na página de
+// Configurações) entre os buckets proporcionalmente à fatia de Previsto de cada
+// um sobre o Previsto total do tipo -- não tem relação com PU/técnicos, é só uma
+// segunda forma de repartir um número-alvo (a "carga") pelos buckets.
+function calcularSugestao(linhasComPrevisto, totalPrevisto, carga) {
+  return linhasComPrevisto.map(linha => ({
+    ...linha,
+    sugestao: totalPrevisto > 0 ? Math.round(linha.previstoResolucao / totalPrevisto * carga) : 0,
+  }));
+}
+
 // Mapa aliada -> índice de cor (0..qtd-1), na ordem em que cada aliada aparece,
 // para reaproveitar as mesmas cores entre a tabela principal e a do modal de config.
 function construirMapaCoresAliada(qtdCores, ...listas) {
@@ -91,4 +102,4 @@ function construirMapaCoresAliada(qtdCores, ...listas) {
   return mapa;
 }
 
-module.exports = { calcularLinhasComPrevisto, calcularTotais, construirMapaCoresAliada };
+module.exports = { calcularLinhasComPrevisto, calcularTotais, calcularSugestao, construirMapaCoresAliada };

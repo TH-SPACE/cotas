@@ -48,6 +48,7 @@ const { importarInstalacoes, getDataCargaInstalacoes } = require('../services/in
 const {
   calcularLinhasComPrevisto,
   calcularTotais,
+  calcularSugestao,
   construirMapaCoresAliada,
 } = require('../services/calculoBacklogService');
 const { getElosCredenciais, salvarElosCredenciais } = require('../services/elosCredenciaisService');
@@ -60,6 +61,7 @@ const PERCENTUAL_PADRAO = 70;
 const PERCENTUAL_JANELA_PADRAO = 70;
 const PU_REPARO_PADRAO = 0.80;
 const META_PU_TECNICO_PADRAO = 2.9;
+const CARGA_REPARO_PADRAO = 0;
 // Reparos tem 2 janelas: a 1ª é configurável (percentualJanela), a 2ª é o restante.
 const JANELAS_REPARO = ['08:30 - 12:30', '12:30 - 18:00'];
 
@@ -68,6 +70,7 @@ const PERCENTUAL_JANELA1_INSTALACAO_PADRAO = 25;
 const PERCENTUAL_JANELA2_INSTALACAO_PADRAO = 25;
 const PERCENTUAL_JANELA3_INSTALACAO_PADRAO = 25;
 const META_PU_TECNICO_INSTALACAO_PADRAO = 2.9;
+const CARGA_INSTALACAO_PADRAO = 0;
 // Instalações, Serviços e ME têm 4 janelas: as 3 primeiras são configuráveis, a 4ª é o restante.
 const JANELAS_INSTALACAO = ['08:30 - 10:30', '10:30 - 12:30', '14:00 - 16:00', '16:00 - 18:00'];
 
@@ -76,6 +79,7 @@ const PERCENTUAL_JANELA1_SERVICO_PADRAO = 25;
 const PERCENTUAL_JANELA2_SERVICO_PADRAO = 25;
 const PERCENTUAL_JANELA3_SERVICO_PADRAO = 25;
 const META_PU_TECNICO_SERVICO_PADRAO = 2.9;
+const CARGA_SERVICO_PADRAO = 0;
 const JANELAS_SERVICO = ['08:30 - 10:30', '10:30 - 12:30', '14:00 - 16:00', '16:00 - 18:00'];
 
 const PERCENTUAL_ME_PADRAO = 70;
@@ -83,6 +87,7 @@ const PERCENTUAL_JANELA1_ME_PADRAO = 25;
 const PERCENTUAL_JANELA2_ME_PADRAO = 25;
 const PERCENTUAL_JANELA3_ME_PADRAO = 25;
 const META_PU_TECNICO_ME_PADRAO = 2.9;
+const CARGA_ME_PADRAO = 0;
 const JANELAS_ME = ['08:30 - 10:30', '10:30 - 12:30', '14:00 - 16:00', '16:00 - 18:00'];
 
 const ALIADA_COR_QTD = 4;
@@ -136,21 +141,25 @@ function montarQueryStringEstado(body) {
   if (body.percentualJanela) params.set('percentualJanela', body.percentualJanela);
   if (body.puReparo) params.set('puReparo', body.puReparo);
   if (body.metaPuTecnico) params.set('metaPuTecnico', body.metaPuTecnico);
+  if (body.cargaReparo) params.set('cargaReparo', body.cargaReparo);
   if (body.percentualInstalacao) params.set('percentualInstalacao', body.percentualInstalacao);
   if (body.percentualJanela1Instalacao) params.set('percentualJanela1Instalacao', body.percentualJanela1Instalacao);
   if (body.percentualJanela2Instalacao) params.set('percentualJanela2Instalacao', body.percentualJanela2Instalacao);
   if (body.percentualJanela3Instalacao) params.set('percentualJanela3Instalacao', body.percentualJanela3Instalacao);
   if (body.metaPuTecnicoInstalacao) params.set('metaPuTecnicoInstalacao', body.metaPuTecnicoInstalacao);
+  if (body.cargaInstalacao) params.set('cargaInstalacao', body.cargaInstalacao);
   if (body.percentualServico) params.set('percentualServico', body.percentualServico);
   if (body.percentualJanela1Servico) params.set('percentualJanela1Servico', body.percentualJanela1Servico);
   if (body.percentualJanela2Servico) params.set('percentualJanela2Servico', body.percentualJanela2Servico);
   if (body.percentualJanela3Servico) params.set('percentualJanela3Servico', body.percentualJanela3Servico);
   if (body.metaPuTecnicoServico) params.set('metaPuTecnicoServico', body.metaPuTecnicoServico);
+  if (body.cargaServico) params.set('cargaServico', body.cargaServico);
   if (body.percentualMe) params.set('percentualMe', body.percentualMe);
   if (body.percentualJanela1Me) params.set('percentualJanela1Me', body.percentualJanela1Me);
   if (body.percentualJanela2Me) params.set('percentualJanela2Me', body.percentualJanela2Me);
   if (body.percentualJanela3Me) params.set('percentualJanela3Me', body.percentualJanela3Me);
   if (body.metaPuTecnicoMe) params.set('metaPuTecnicoMe', body.metaPuTecnicoMe);
+  if (body.cargaMe) params.set('cargaMe', body.cargaMe);
   normalizarTecnologias(body.tecnologia).forEach(t => params.append('tecnologia', t));
   [].concat(body.statusReparo || []).forEach(v => params.append('statusReparo', v));
   [].concat(body.statusReasonReparo || []).forEach(v => params.append('statusReasonReparo', v));
@@ -174,6 +183,7 @@ async function carregarDadosPainel(query) {
     const percentualJanela = normalizarPercentual(query.percentualJanela, PERCENTUAL_JANELA_PADRAO);
     const puReparo = normalizarPu(query.puReparo, PU_REPARO_PADRAO);
     const metaPuTecnico = normalizarMetaPuTecnico(query.metaPuTecnico, META_PU_TECNICO_PADRAO);
+    const cargaReparo = normalizarPu(query.cargaReparo, CARGA_REPARO_PADRAO);
     const tecnologiasSelecionadas = normalizarTecnologias(query.tecnologia);
 
     // Mesmo raciocínio do bloco de Instalações: os valores disponíveis (e o padrão
@@ -193,6 +203,7 @@ async function carregarDadosPainel(query) {
     const percentualJanela2Instalacao = normalizarPercentual(query.percentualJanela2Instalacao, PERCENTUAL_JANELA2_INSTALACAO_PADRAO);
     const percentualJanela3Instalacao = normalizarPercentual(query.percentualJanela3Instalacao, PERCENTUAL_JANELA3_INSTALACAO_PADRAO);
     const metaPuTecnicoInstalacao = normalizarMetaPuTecnico(query.metaPuTecnicoInstalacao, META_PU_TECNICO_INSTALACAO_PADRAO);
+    const cargaInstalacao = normalizarPu(query.cargaInstalacao, CARGA_INSTALACAO_PADRAO);
 
     // Os valores disponíveis (e, por tabela, o padrão pré-marcado) dependem do que
     // existe hoje em backlog_instalacoes, então precisam vir antes de montar a seleção.
@@ -212,6 +223,7 @@ async function carregarDadosPainel(query) {
     const percentualJanela2Servico = normalizarPercentual(query.percentualJanela2Servico, PERCENTUAL_JANELA2_SERVICO_PADRAO);
     const percentualJanela3Servico = normalizarPercentual(query.percentualJanela3Servico, PERCENTUAL_JANELA3_SERVICO_PADRAO);
     const metaPuTecnicoServico = normalizarMetaPuTecnico(query.metaPuTecnicoServico, META_PU_TECNICO_SERVICO_PADRAO);
+    const cargaServico = normalizarPu(query.cargaServico, CARGA_SERVICO_PADRAO);
 
     const filtrosDisponiveisServicos = await getFiltrosDisponiveisServicos();
     const statusServicoSelecionados = normalizarListaComPadrao(
@@ -229,6 +241,7 @@ async function carregarDadosPainel(query) {
     const percentualJanela2Me = normalizarPercentual(query.percentualJanela2Me, PERCENTUAL_JANELA2_ME_PADRAO);
     const percentualJanela3Me = normalizarPercentual(query.percentualJanela3Me, PERCENTUAL_JANELA3_ME_PADRAO);
     const metaPuTecnicoMe = normalizarMetaPuTecnico(query.metaPuTecnicoMe, META_PU_TECNICO_ME_PADRAO);
+    const cargaMe = normalizarPu(query.cargaMe, CARGA_ME_PADRAO);
 
     const filtrosDisponiveisMe = await getFiltrosDisponiveisMe();
     const statusMeSelecionados = normalizarListaComPadrao(
@@ -290,60 +303,70 @@ async function carregarDadosPainel(query) {
       getElosCredenciais(),
     ]);
 
-    const linhasComPrevisto = calcularLinhasComPrevisto(linhas, {
+    const linhasComPrevistoBruto = calcularLinhasComPrevisto(linhas, {
       percentual, percentuaisJanela: [percentualJanela], pu: puReparo, metaPuTecnico,
       campoBacklog: 'backlogReparos', campoTempo: 'tempoReparoMinutos',
     });
-    const totais = calcularTotais(totalGeral, linhasComPrevisto, {
+    const totais = calcularTotais(totalGeral, linhasComPrevistoBruto, {
       percentual, percentuaisJanela: [percentualJanela], metaPuTecnico,
     });
+    const linhasComPrevisto = calcularSugestao(linhasComPrevistoBruto, totais.totalPrevisto, cargaReparo);
+    const totalSugestao = linhasComPrevisto.reduce((acc, l) => acc + l.sugestao, 0);
 
     const percentuaisJanelaInstalacao = [percentualJanela1Instalacao, percentualJanela2Instalacao, percentualJanela3Instalacao];
-    const linhasInstalacoesComPrevisto = calcularLinhasComPrevisto(linhasInstalacoes, {
+    const linhasInstalacoesComPrevistoBruto = calcularLinhasComPrevisto(linhasInstalacoes, {
       percentual: percentualInstalacao, percentuaisJanela: percentuaisJanelaInstalacao,
       metaPuTecnico: metaPuTecnicoInstalacao,
       campoBacklog: 'backlogInstalacoes', campoTempo: 'tempoInstalacaoMinutos',
       campoPuBruto: 'puBrutoTotal',
     });
-    const totaisInstalacoes = calcularTotais(totalGeralInstalacoes, linhasInstalacoesComPrevisto, {
+    const totaisInstalacoes = calcularTotais(totalGeralInstalacoes, linhasInstalacoesComPrevistoBruto, {
       percentual: percentualInstalacao, percentuaisJanela: percentuaisJanelaInstalacao,
       metaPuTecnico: metaPuTecnicoInstalacao,
     });
+    const linhasInstalacoesComPrevisto = calcularSugestao(linhasInstalacoesComPrevistoBruto, totaisInstalacoes.totalPrevisto, cargaInstalacao);
+    const totalSugestaoInstalacoes = linhasInstalacoesComPrevisto.reduce((acc, l) => acc + l.sugestao, 0);
 
     const percentuaisJanelaServico = [percentualJanela1Servico, percentualJanela2Servico, percentualJanela3Servico];
-    const linhasServicosComPrevisto = calcularLinhasComPrevisto(linhasServicos, {
+    const linhasServicosComPrevistoBruto = calcularLinhasComPrevisto(linhasServicos, {
       percentual: percentualServico, percentuaisJanela: percentuaisJanelaServico,
       metaPuTecnico: metaPuTecnicoServico,
       campoBacklog: 'backlogServicos', campoTempo: 'tempoServicoMinutos',
       campoPuBruto: 'puBrutoTotal',
     });
-    const totaisServicos = calcularTotais(totalGeralServicos, linhasServicosComPrevisto, {
+    const totaisServicos = calcularTotais(totalGeralServicos, linhasServicosComPrevistoBruto, {
       percentual: percentualServico, percentuaisJanela: percentuaisJanelaServico,
       metaPuTecnico: metaPuTecnicoServico,
     });
+    const linhasServicosComPrevisto = calcularSugestao(linhasServicosComPrevistoBruto, totaisServicos.totalPrevisto, cargaServico);
+    const totalSugestaoServicos = linhasServicosComPrevisto.reduce((acc, l) => acc + l.sugestao, 0);
 
     const percentuaisJanelaMe = [percentualJanela1Me, percentualJanela2Me, percentualJanela3Me];
-    const linhasMeComPrevisto = calcularLinhasComPrevisto(linhasMe, {
+    const linhasMeComPrevistoBruto = calcularLinhasComPrevisto(linhasMe, {
       percentual: percentualMe, percentuaisJanela: percentuaisJanelaMe,
       metaPuTecnico: metaPuTecnicoMe,
       campoBacklog: 'backlogMe', campoTempo: 'tempoMeMinutos',
       campoPuBruto: 'puBrutoTotal',
     });
-    const totaisMe = calcularTotais(totalGeralMe, linhasMeComPrevisto, {
+    const totaisMe = calcularTotais(totalGeralMe, linhasMeComPrevistoBruto, {
       percentual: percentualMe, percentuaisJanela: percentuaisJanelaMe,
       metaPuTecnico: metaPuTecnicoMe,
     });
+    const linhasMeComPrevisto = calcularSugestao(linhasMeComPrevistoBruto, totaisMe.totalPrevisto, cargaMe);
+    const totalSugestaoMe = linhasMeComPrevisto.reduce((acc, l) => acc + l.sugestao, 0);
 
     return {
       // Reparos
       linhas: linhasComPrevisto,
       totalGeral,
       ...totais,
+      totalSugestao,
       janelasReparoLabels: JANELAS_REPARO,
       percentual,
       percentualJanela,
       puReparo,
       metaPuTecnico,
+      cargaReparo,
       temposReparo,
       aliadaCores: construirMapaCoresAliada(ALIADA_COR_QTD, linhasComPrevisto, temposReparo),
       tecnologiasSelecionadas,
@@ -361,12 +384,14 @@ async function carregarDadosPainel(query) {
       totalMinutosInstalacoes: totaisInstalacoes.totalMinutos,
       totalPuInstalacoes: totaisInstalacoes.totalPu,
       totalTecnicosInstalacoes: totaisInstalacoes.totalTecnicos,
+      totalSugestaoInstalacoes,
       janelasInstalacaoLabels: JANELAS_INSTALACAO,
       percentualInstalacao,
       percentualJanela1Instalacao,
       percentualJanela2Instalacao,
       percentualJanela3Instalacao,
       metaPuTecnicoInstalacao,
+      cargaInstalacao,
       temposInstalacao,
       puProdutos,
       aliadaCoresInstalacoes: construirMapaCoresAliada(ALIADA_COR_QTD, linhasInstalacoesComPrevisto, temposInstalacao),
@@ -384,12 +409,14 @@ async function carregarDadosPainel(query) {
       totalMinutosServicos: totaisServicos.totalMinutos,
       totalPuServicos: totaisServicos.totalPu,
       totalTecnicosServicos: totaisServicos.totalTecnicos,
+      totalSugestaoServicos,
       janelasServicoLabels: JANELAS_SERVICO,
       percentualServico,
       percentualJanela1Servico,
       percentualJanela2Servico,
       percentualJanela3Servico,
       metaPuTecnicoServico,
+      cargaServico,
       temposServicos,
       puProdutosServicos,
       aliadaCoresServicos: construirMapaCoresAliada(ALIADA_COR_QTD, linhasServicosComPrevisto, temposServicos),
@@ -407,12 +434,14 @@ async function carregarDadosPainel(query) {
       totalMinutosMe: totaisMe.totalMinutos,
       totalPuMe: totaisMe.totalPu,
       totalTecnicosMe: totaisMe.totalTecnicos,
+      totalSugestaoMe,
       janelasMeLabels: JANELAS_ME,
       percentualMe,
       percentualJanela1Me,
       percentualJanela2Me,
       percentualJanela3Me,
       metaPuTecnicoMe,
+      cargaMe,
       temposMe,
       puProdutosMe,
       aliadaCoresMe: construirMapaCoresAliada(ALIADA_COR_QTD, linhasMeComPrevisto, temposMe),
@@ -434,13 +463,37 @@ router.get('/', async (req, res, next) => {
   try {
     const dados = await carregarDadosPainel(req.query);
     const linkResumoCotas = `/resumo-cotas?${montarQueryStringEstado(req.query).toString()}`;
+    const linkConfiguracoes = `/configuracoes?${montarQueryStringEstado(req.query).toString()}`;
 
     res.render('index', {
       ...dados,
       linkResumoCotas,
+      linkConfiguracoes,
       instalacoesUpload: req.query.instalacoesUpload,
       instalacoesUploadLinhas: req.query.instalacoesUploadLinhas,
       instalacoesUploadErro: req.query.instalacoesUploadErro,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Página única de configurações: reúne os ajustes que antes ficavam espalhados
+// em 4 modais (Instalações/Serviços/ME/Reparos), pra não precisar abrir um de
+// cada vez -- reaproveita o mesmo carregarDadosPainel da index, então os valores
+// mostrados aqui (inclusive as tabelas de tempo/PU) nunca divergem da tela principal.
+router.get('/configuracoes', async (req, res, next) => {
+  try {
+    const dados = await carregarDadosPainel(req.query);
+    const linkVoltar = `/?${montarQueryStringEstado(req.query).toString()}`;
+    const linkResumoCotas = `/resumo-cotas?${montarQueryStringEstado(req.query).toString()}`;
+    const linkConfiguracoes = `/configuracoes?${montarQueryStringEstado(req.query).toString()}`;
+
+    res.render('configuracoes', {
+      ...dados,
+      linkVoltar,
+      linkResumoCotas,
+      linkConfiguracoes,
     });
   } catch (err) {
     next(err);
@@ -455,6 +508,7 @@ router.get('/resumo-cotas', async (req, res, next) => {
     const dados = await carregarDadosPainel(req.query);
     const linkVoltar = `/?${montarQueryStringEstado(req.query).toString()}`;
     const linkResumoCotas = `/resumo-cotas?${montarQueryStringEstado(req.query).toString()}`;
+    const linkConfiguracoes = `/configuracoes?${montarQueryStringEstado(req.query).toString()}`;
 
     const qtdJanelasInstalacao = dados.janelasInstalacaoLabels.length;
     const qtdJanelasMe = dados.janelasMeLabels.length;
@@ -489,6 +543,7 @@ router.get('/resumo-cotas', async (req, res, next) => {
     res.render('resumo-cotas', {
       linkVoltar,
       linkResumoCotas,
+      linkConfiguracoes,
       linhasResumo,
       janelasInstalacaoLabels: dados.janelasInstalacaoLabels,
       janelasMeLabels: dados.janelasMeLabels,
@@ -517,7 +572,7 @@ router.post('/config/tempo-reparo', async (req, res, next) => {
 
     await atualizarTemposReparo(atualizacoes);
 
-    res.redirect(`/?${montarQueryStringEstado(req.body).toString()}`);
+    res.redirect(`/configuracoes?${montarQueryStringEstado(req.body).toString()}`);
   } catch (err) {
     next(err);
   }
@@ -534,7 +589,7 @@ router.post('/config/tempo-instalacao', async (req, res, next) => {
 
     await atualizarTemposInstalacao(atualizacoes);
 
-    res.redirect(`/?${montarQueryStringEstado(req.body).toString()}`);
+    res.redirect(`/configuracoes?${montarQueryStringEstado(req.body).toString()}`);
   } catch (err) {
     next(err);
   }
@@ -551,7 +606,7 @@ router.post('/config/pu-produto', async (req, res, next) => {
 
     await atualizarPuProdutos(atualizacoes);
 
-    res.redirect(`/?${montarQueryStringEstado(req.body).toString()}`);
+    res.redirect(`/configuracoes?${montarQueryStringEstado(req.body).toString()}`);
   } catch (err) {
     next(err);
   }
@@ -568,7 +623,7 @@ router.post('/config/tempo-servico', async (req, res, next) => {
 
     await atualizarTemposServicos(atualizacoes);
 
-    res.redirect(`/?${montarQueryStringEstado(req.body).toString()}`);
+    res.redirect(`/configuracoes?${montarQueryStringEstado(req.body).toString()}`);
   } catch (err) {
     next(err);
   }
@@ -585,7 +640,7 @@ router.post('/config/pu-produto-servico', async (req, res, next) => {
 
     await atualizarPuProdutosServicos(atualizacoes);
 
-    res.redirect(`/?${montarQueryStringEstado(req.body).toString()}`);
+    res.redirect(`/configuracoes?${montarQueryStringEstado(req.body).toString()}`);
   } catch (err) {
     next(err);
   }
@@ -602,7 +657,7 @@ router.post('/config/tempo-me', async (req, res, next) => {
 
     await atualizarTemposMe(atualizacoes);
 
-    res.redirect(`/?${montarQueryStringEstado(req.body).toString()}`);
+    res.redirect(`/configuracoes?${montarQueryStringEstado(req.body).toString()}`);
   } catch (err) {
     next(err);
   }
@@ -619,7 +674,7 @@ router.post('/config/pu-produto-me', async (req, res, next) => {
 
     await atualizarPuProdutosMe(atualizacoes);
 
-    res.redirect(`/?${montarQueryStringEstado(req.body).toString()}`);
+    res.redirect(`/configuracoes?${montarQueryStringEstado(req.body).toString()}`);
   } catch (err) {
     next(err);
   }

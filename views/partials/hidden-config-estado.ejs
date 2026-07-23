@@ -21,11 +21,13 @@ const _exceto = typeof exceto !== 'undefined' ? exceto : [];
 <% if (!_exceto.includes('percentualJanela')) { %><input type="hidden" name="percentualJanela" value="<%= percentualJanela %>" /><% } %>
 <% if (!_exceto.includes('puReparo')) { %><input type="hidden" name="puReparo" value="<%= puReparo %>" /><% } %>
 <% if (!_exceto.includes('metaPuTecnico')) { %><input type="hidden" name="metaPuTecnico" value="<%= metaPuTecnico %>" /><% } %>
+<% if (!_exceto.includes('cargaReparo')) { %><input type="hidden" name="cargaReparo" value="<%= cargaReparo %>" /><% } %>
 <% if (!_exceto.includes('percentualInstalacao')) { %><input type="hidden" name="percentualInstalacao" value="<%= percentualInstalacao %>" /><% } %>
 <% if (!_exceto.includes('percentualJanela1Instalacao')) { %><input type="hidden" name="percentualJanela1Instalacao" value="<%= percentualJanela1Instalacao %>" /><% } %>
 <% if (!_exceto.includes('percentualJanela2Instalacao')) { %><input type="hidden" name="percentualJanela2Instalacao" value="<%= percentualJanela2Instalacao %>" /><% } %>
 <% if (!_exceto.includes('percentualJanela3Instalacao')) { %><input type="hidden" name="percentualJanela3Instalacao" value="<%= percentualJanela3Instalacao %>" /><% } %>
 <% if (!_exceto.includes('metaPuTecnicoInstalacao')) { %><input type="hidden" name="metaPuTecnicoInstalacao" value="<%= metaPuTecnicoInstalacao %>" /><% } %>
+<% if (!_exceto.includes('cargaInstalacao')) { %><input type="hidden" name="cargaInstalacao" value="<%= cargaInstalacao %>" /><% } %>
 <% if (!_exceto.includes('statusInstalacao')) { %>
   <% statusInstalacaoSelecionados.forEach(v => { %><input type="hidden" name="statusInstalacao" value="<%= v %>" /><% }) %>
 <% } %>
@@ -40,6 +42,7 @@ const _exceto = typeof exceto !== 'undefined' ? exceto : [];
 <% if (!_exceto.includes('percentualJanela2Servico')) { %><input type="hidden" name="percentualJanela2Servico" value="<%= percentualJanela2Servico %>" /><% } %>
 <% if (!_exceto.includes('percentualJanela3Servico')) { %><input type="hidden" name="percentualJanela3Servico" value="<%= percentualJanela3Servico %>" /><% } %>
 <% if (!_exceto.includes('metaPuTecnicoServico')) { %><input type="hidden" name="metaPuTecnicoServico" value="<%= metaPuTecnicoServico %>" /><% } %>
+<% if (!_exceto.includes('cargaServico')) { %><input type="hidden" name="cargaServico" value="<%= cargaServico %>" /><% } %>
 <% if (!_exceto.includes('statusServico')) { %>
   <% statusServicoSelecionados.forEach(v => { %><input type="hidden" name="statusServico" value="<%= v %>" /><% }) %>
 <% } %>
@@ -54,6 +57,7 @@ const _exceto = typeof exceto !== 'undefined' ? exceto : [];
 <% if (!_exceto.includes('percentualJanela2Me')) { %><input type="hidden" name="percentualJanela2Me" value="<%= percentualJanela2Me %>" /><% } %>
 <% if (!_exceto.includes('percentualJanela3Me')) { %><input type="hidden" name="percentualJanela3Me" value="<%= percentualJanela3Me %>" /><% } %>
 <% if (!_exceto.includes('metaPuTecnicoMe')) { %><input type="hidden" name="metaPuTecnicoMe" value="<%= metaPuTecnicoMe %>" /><% } %>
+<% if (!_exceto.includes('cargaMe')) { %><input type="hidden" name="cargaMe" value="<%= cargaMe %>" /><% } %>
 <% if (!_exceto.includes('statusMe')) { %>
   <% statusMeSelecionados.forEach(v => { %><input type="hidden" name="statusMe" value="<%= v %>" /><% }) %>
 <% } %>

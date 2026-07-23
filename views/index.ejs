@@ -28,9 +28,9 @@
       <button type="button" class="icon-btn" id="instalacoes-upload-open-btn" aria-haspopup="dialog" aria-controls="instalacoes-upload-modal" title="Enviar CSV diário de instalações (tabela backlog_instalacoes)">
         <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M12 4l4 4M12 4 8 8"/><path d="M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></svg>
       </button>
-      <button type="button" class="icon-btn" id="config-instalacoes-open-btn" aria-haspopup="dialog" aria-controls="config-instalacoes-modal" title="Configurações: previsto, janelas de horário, PU e tempos de instalação">
+      <a href="<%= linkConfiguracoes %>#config-instalacoes" class="icon-btn" title="Configurações: previsto, janelas de horário, Carga, PU e tempos de instalação">
         <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.65 1.65 0 0 0-1.8-.3 1.65 1.65 0 0 0-1 1.5V21a2 2 0 0 1-4 0v-.1A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.65 1.65 0 0 0 .3-1.8 1.65 1.65 0 0 0-1.5-1H3a2 2 0 0 1 0-4h.1A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.65 1.65 0 0 0 1.8.3H9a1.65 1.65 0 0 0 1-1.5V3a2 2 0 0 1 4 0v.1a1.65 1.65 0 0 0 1 1.5 1.65 1.65 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.65 1.65 0 0 0-.3 1.8V9a1.65 1.65 0 0 0 1.5 1H21a2 2 0 0 1 0 4h-.1a1.65 1.65 0 0 0-1.5 1z"/></svg>
-      </button>
+      </a>
     </div>
   </div>
 
@@ -110,152 +110,12 @@
     </form>
   </dialog>
 
-  <dialog id="config-instalacoes-modal" class="config-modal">
-    <div class="modal-header">
-      <h3 title="Ajustes usados nos cálculos do Resumo de Backlog de Instalações por Bucket">Configurações de Instalações</h3>
-      <button type="button" class="icon-btn" id="config-instalacoes-close-btn" aria-label="Fechar" title="Fechar">&times;</button>
-    </div>
-
-    <form method="get" action="/" class="modal-section">
-      <%- include('partials/hidden-config-estado', { exceto: ['percentualInstalacao', 'percentualJanela1Instalacao', 'percentualJanela2Instalacao', 'percentualJanela3Instalacao', 'metaPuTecnicoInstalacao'] }) %>
-      <div class="modal-body">
-        <div class="field-row">
-          <label for="percentualInstalacao" title="Percentual do Backlog Instalações que vira meta de resolução (coluna Previsto)">Previsto de resolução</label>
-          <div class="field-input">
-            <input type="number" id="percentualInstalacao" name="percentualInstalacao" min="0" max="100" step="1" value="<%= percentualInstalacao %>" title="Percentual do backlog considerado resolvível" />
-            <span>%</span>
-          </div>
-        </div>
-
-        <div class="field-row">
-          <label for="percentualJanela1Instalacao" title="Percentual do Previsto alocado para a janela 08:30 - 10:30">08:30 - 10:30</label>
-          <div class="field-input">
-            <input type="number" id="percentualJanela1Instalacao" name="percentualJanela1Instalacao" min="0" max="100" step="1" value="<%= percentualJanela1Instalacao %>" title="Percentual do Previsto na janela 08:30-10:30" />
-            <span>%</span>
-          </div>
-        </div>
-
-        <div class="field-row">
-          <label for="percentualJanela2Instalacao" title="Percentual do Previsto alocado para a janela 10:30 - 12:30">10:30 - 12:30</label>
-          <div class="field-input">
-            <input type="number" id="percentualJanela2Instalacao" name="percentualJanela2Instalacao" min="0" max="100" step="1" value="<%= percentualJanela2Instalacao %>" title="Percentual do Previsto na janela 10:30-12:30" />
-            <span>%</span>
-          </div>
-        </div>
-
-        <div class="field-row">
-          <label for="percentualJanela3Instalacao" title="Percentual do Previsto alocado para a janela 14:00 - 16:00">14:00 - 16:00</label>
-          <div class="field-input">
-            <input type="number" id="percentualJanela3Instalacao" name="percentualJanela3Instalacao" min="0" max="100" step="1" value="<%= percentualJanela3Instalacao %>" title="Percentual do Previsto na janela 14:00-16:00" />
-            <span>%</span>
-          </div>
-        </div>
-
-        <div class="field-row">
-          <label for="percentualJanela4Instalacao" title="Calculado automaticamente como 100% menos as outras três janelas">16:00 - 18:00</label>
-          <div class="field-input">
-            <input type="number" id="percentualJanela4Instalacao" min="0" max="100" step="1" value="<%= Math.max(0, 100 - percentualJanela1Instalacao - percentualJanela2Instalacao - percentualJanela3Instalacao) %>" title="Preenchido automaticamente: 100% - as outras três janelas" readonly tabindex="-1" />
-            <span>%</span>
-          </div>
-        </div>
-
-        <p class="hint">As 4 janelas sempre somam 100% — as 3 primeiras são editáveis, a última (16:00-18:00) é sempre o restante.</p>
-
-        <div class="field-row">
-          <label for="metaPuTecnicoInstalacao" title="Quantidade de PU que 1 técnico consegue entregar, usada para estimar quantos técnicos são necessários">Meta de PU por técnico</label>
-          <div class="field-input">
-            <input type="number" id="metaPuTecnicoInstalacao" name="metaPuTecnicoInstalacao" min="0.1" step="0.1" value="<%= metaPuTecnicoInstalacao %>" title="PU que 1 técnico entrega" />
-          </div>
-        </div>
-
-        <p class="hint">PU = soma do peso de PU de cada Specification Product em aberto × percentual de Previsto (cada produto tem seu próprio peso — ver "PU por produto" abaixo). Técnicos = PU ÷ Meta de PU por técnico, arredondado para cima.</p>
-      </div>
-
-      <div class="modal-footer">
-        <button type="submit" title="Recarrega a página aplicando estes valores">Aplicar</button>
-      </div>
-    </form>
-
-    <form method="post" action="/config/tempo-instalacao" class="modal-section modal-section-divider">
-      <%- include('partials/hidden-config-estado', { exceto: [] }) %>
-
-      <div class="modal-body">
-        <h4 class="modal-subtitle" title="Tempo médio de uma instalação em cada bucket, usado na coluna MINUTOS">Tempo de instalação por bucket (min)</h4>
-        <table class="tempo-table">
-          <thead>
-            <tr>
-              <th title="Empresa aliada dona do bucket">Aliada</th>
-              <th title="Nome do bucket em depara_tempo_bucket">Bucket</th>
-              <th class="num" title="Minutos que uma instalação leva neste bucket">Instalação (min)</th>
-            </tr>
-          </thead>
-          <tbody>
-            <% let aliadaTempoInstalacaoAtual = null; %>
-            <% temposInstalacao.forEach(t => { %>
-              <% const novaAliadaTempoInstalacao = t.aliada !== aliadaTempoInstalacaoAtual; aliadaTempoInstalacaoAtual = t.aliada; %>
-              <tr class="<%= novaAliadaTempoInstalacao ? 'group-start' : '' %>">
-                <td><span class="aliada-badge aliada-color-<%= aliadaCoresInstalacoes[t.aliada] %>"><%= t.aliada %></span></td>
-                <td class="celula-truncada" title="<%= t.bucket %>"><%= t.bucket %></td>
-                <td class="num">
-                  <input type="hidden" name="bucket[]" value="<%= t.bucket %>" />
-                  <input type="number" name="instalacao[]" min="0" step="1" value="<%= t.instalacao %>" aria-label="Tempo de instalação (min) para <%= t.bucket %>" title="Minutos de uma instalação em <%= t.bucket %>" />
-                </td>
-              </tr>
-            <% }) %>
-          </tbody>
-        </table>
-        <p class="hint">Atualiza a tabela <code>depara_tempo_bucket</code> (coluna INSTALACAO).</p>
-      </div>
-
-      <div class="modal-footer">
-        <button type="submit" title="Grava estes tempos em depara_tempo_bucket">Salvar tempos</button>
-      </div>
-    </form>
-
-    <form method="post" action="/config/pu-produto" class="modal-section modal-section-divider">
-      <%- include('partials/hidden-config-estado', { exceto: [] }) %>
-
-      <div class="modal-body">
-        <h4 class="modal-subtitle" title="Peso de PU de cada Specification Product encontrado em backlog_instalacoes">PU por Specification Product</h4>
-        <table class="tempo-table">
-          <thead>
-            <tr>
-              <th title="Valor da coluna SPECIFICATION_PRODUCT no CSV do ELOS">Specification Product</th>
-              <th class="num" title="Quantas PU cada instalação deste produto representa">PU</th>
-            </tr>
-          </thead>
-          <tbody>
-            <% puProdutos.forEach(p => { %>
-              <tr class="<%= p.pu == 0 ? 'linha-alerta' : '' %>">
-                <td>
-                  <%= p.produto %>
-                  <% if (p.pu == 0) { %>
-                    <span class="badge-alerta" title="Este produto ainda não tem PU configurado — está contando 0 no cálculo">sem PU</span>
-                  <% } %>
-                </td>
-                <td class="num">
-                  <input type="hidden" name="produto[]" value="<%= p.produto %>" />
-                  <input type="number" name="pu[]" min="0" step="0.01" value="<%= p.pu %>" aria-label="PU para <%= p.produto %>" title="PU de uma instalação do produto <%= p.produto %>" />
-                </td>
-              </tr>
-            <% }) %>
-          </tbody>
-        </table>
-        <p class="hint">Atualiza a tabela <code>depara_pu_produto</code>. Produtos novos aparecem aqui automaticamente ao subir um CSV (com PU=0 até serem configurados).</p>
-      </div>
-
-      <div class="modal-footer">
-        <button type="submit" title="Grava estes pesos em depara_pu_produto">Salvar PU</button>
-      </div>
-    </form>
-  </dialog>
-
   <div class="table-scroll">
     <table class="cotas-table">
       <colgroup>
         <col class="colw-aliada" />
         <col class="colw-bucket" />
-        <col class="colw-num" /><col class="colw-num" />
+        <col class="colw-num" /><col class="colw-num" /><col class="colw-num" />
         <% janelasInstalacaoLabels.forEach(() => { %><col class="colw-num" /><% }) %>
         <% janelasInstalacaoLabels.forEach(() => { %><col class="colw-num" /><% }) %>
         <col class="colw-num" /><col class="colw-num" />
@@ -264,7 +124,7 @@
         <tr>
           <th rowspan="2" title="Empresa aliada responsável pelo bucket">Aliada</th>
           <th rowspan="2" title="Agrupamento de ARDs (armários) mapeado em depara_bucket">Bucket</th>
-          <th colspan="2" class="group-header col-backlog col-divider" title="Quantidade de instalações em aberto e a meta calculada sobre elas">BACKLOG</th>
+          <th colspan="3" class="group-header col-backlog col-divider" title="Quantidade de instalações em aberto, a meta calculada sobre elas e a Sugestão baseada na Carga configurada">BACKLOG</th>
           <th colspan="<%= janelasInstalacaoLabels.length %>" class="group-header col-ordens col-divider" title="Previsto dividido entre as <%= janelasInstalacaoLabels.length %> janelas de horário">ORDENS</th>
           <th colspan="<%= janelasInstalacaoLabels.length %>" class="group-header col-minutos col-divider" title="Ordens de cada janela × tempo de instalação do bucket (depara_tempo_bucket)">COTAS(min)</th>
           <th rowspan="2" class="num col-divider" title="Produção Única = Previsto × PU da instalação">PU</th>
@@ -272,7 +132,8 @@
         </tr>
         <tr>
           <th class="num col-backlog col-divider" title="Total de instalações em aberto no bucket (regra de backlog no topo da página)">Backlog Instalações</th>
-          <th class="num col-backlog" title="Backlog Instalações × percentual configurado na engrenagem">Previsto (<%= percentualInstalacao %>%)</th>
+          <th class="num col-backlog" title="Backlog Instalações × percentual configurado na página de Configurações">Previsto (<%= percentualInstalacao %>%)</th>
+          <th class="num col-backlog" title="(Previsto do bucket ÷ Previsto total de Instalações) × Carga (configurada na página de Configurações)">Sugestão</th>
           <% janelasInstalacaoLabels.forEach((label, i) => { %>
             <th class="num col-ordens <%= i === 0 ? 'col-divider' : '' %>" title="Parte do Previsto alocada para a janela <%= label %>"><%- janelaDuasLinhas(label) %></th>
           <% }) %>
@@ -295,6 +156,7 @@
               <% } %>
             </td>
             <td class="<%= numCls('col-backlog', linha.previstoResolucao) %>"><%= linha.previstoResolucao %></td>
+            <td class="<%= numCls('col-backlog', linha.sugestao) %>"><%= linha.sugestao %></td>
             <% linha.janelas.forEach((qtd, i) => { %>
               <td class="<%= numCls('col-ordens', qtd) %> <%= i === 0 ? 'col-divider' : '' %>"><%= qtd %></td>
             <% }) %>
@@ -311,6 +173,7 @@
           <td colspan="2" title="Soma de todos os buckets do cluster GOIANIA">Total geral</td>
           <td class="<%= numCls('col-backlog', totalGeralInstalacoes) %> col-divider"><%= totalGeralInstalacoes %></td>
           <td class="<%= numCls('col-backlog', totalPrevistoInstalacoes) %>"><%= totalPrevistoInstalacoes %></td>
+          <td class="<%= numCls('col-backlog', totalSugestaoInstalacoes) %>"><%= totalSugestaoInstalacoes %></td>
           <% totalJanelasInstalacoes.forEach((qtd, i) => { %>
             <td class="<%= numCls('col-ordens', qtd) %> <%= i === 0 ? 'col-divider' : '' %>"><%= qtd %></td>
           <% }) %>
@@ -342,9 +205,9 @@
       </p>
     </div>
     <div class="panel-header-actions">
-      <button type="button" class="icon-btn" id="config-servicos-open-btn" aria-haspopup="dialog" aria-controls="config-servicos-modal" title="Configurações: previsto, janelas de horário, PU e tempos de serviço">
+      <a href="<%= linkConfiguracoes %>#config-servicos" class="icon-btn" title="Configurações: previsto, janelas de horário, Carga, PU e tempos de serviço">
         <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.65 1.65 0 0 0-1.8-.3 1.65 1.65 0 0 0-1 1.5V21a2 2 0 0 1-4 0v-.1A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.65 1.65 0 0 0 .3-1.8 1.65 1.65 0 0 0-1.5-1H3a2 2 0 0 1 0-4h.1A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.65 1.65 0 0 0 1.8.3H9a1.65 1.65 0 0 0 1-1.5V3a2 2 0 0 1 4 0v.1a1.65 1.65 0 0 0 1 1.5 1.65 1.65 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.65 1.65 0 0 0-.3 1.8V9a1.65 1.65 0 0 0 1.5 1H21a2 2 0 0 1 0 4h-.1a1.65 1.65 0 0 0-1.5 1z"/></svg>
-      </button>
+      </a>
     </div>
   </div>
 
@@ -398,152 +261,12 @@
     </p>
   <% } %>
 
-  <dialog id="config-servicos-modal" class="config-modal">
-    <div class="modal-header">
-      <h3 title="Ajustes usados nos cálculos do Resumo de Backlog de Serviços por Bucket">Configurações de Serviços</h3>
-      <button type="button" class="icon-btn" id="config-servicos-close-btn" aria-label="Fechar" title="Fechar">&times;</button>
-    </div>
-
-    <form method="get" action="/" class="modal-section">
-      <%- include('partials/hidden-config-estado', { exceto: ['percentualServico', 'percentualJanela1Servico', 'percentualJanela2Servico', 'percentualJanela3Servico', 'metaPuTecnicoServico'] }) %>
-      <div class="modal-body">
-        <div class="field-row">
-          <label for="percentualServico" title="Percentual do Backlog Serviços que vira meta de resolução (coluna Previsto)">Previsto de resolução</label>
-          <div class="field-input">
-            <input type="number" id="percentualServico" name="percentualServico" min="0" max="100" step="1" value="<%= percentualServico %>" title="Percentual do backlog considerado resolvível" />
-            <span>%</span>
-          </div>
-        </div>
-
-        <div class="field-row">
-          <label for="percentualJanela1Servico" title="Percentual do Previsto alocado para a janela 08:30 - 10:30">08:30 - 10:30</label>
-          <div class="field-input">
-            <input type="number" id="percentualJanela1Servico" name="percentualJanela1Servico" min="0" max="100" step="1" value="<%= percentualJanela1Servico %>" title="Percentual do Previsto na janela 08:30-10:30" />
-            <span>%</span>
-          </div>
-        </div>
-
-        <div class="field-row">
-          <label for="percentualJanela2Servico" title="Percentual do Previsto alocado para a janela 10:30 - 12:30">10:30 - 12:30</label>
-          <div class="field-input">
-            <input type="number" id="percentualJanela2Servico" name="percentualJanela2Servico" min="0" max="100" step="1" value="<%= percentualJanela2Servico %>" title="Percentual do Previsto na janela 10:30-12:30" />
-            <span>%</span>
-          </div>
-        </div>
-
-        <div class="field-row">
-          <label for="percentualJanela3Servico" title="Percentual do Previsto alocado para a janela 14:00 - 16:00">14:00 - 16:00</label>
-          <div class="field-input">
-            <input type="number" id="percentualJanela3Servico" name="percentualJanela3Servico" min="0" max="100" step="1" value="<%= percentualJanela3Servico %>" title="Percentual do Previsto na janela 14:00-16:00" />
-            <span>%</span>
-          </div>
-        </div>
-
-        <div class="field-row">
-          <label for="percentualJanela4Servico" title="Calculado automaticamente como 100% menos as outras três janelas">16:00 - 18:00</label>
-          <div class="field-input">
-            <input type="number" id="percentualJanela4Servico" min="0" max="100" step="1" value="<%= Math.max(0, 100 - percentualJanela1Servico - percentualJanela2Servico - percentualJanela3Servico) %>" title="Preenchido automaticamente: 100% - as outras três janelas" readonly tabindex="-1" />
-            <span>%</span>
-          </div>
-        </div>
-
-        <p class="hint">As 4 janelas sempre somam 100% — as 3 primeiras são editáveis, a última (16:00-18:00) é sempre o restante.</p>
-
-        <div class="field-row">
-          <label for="metaPuTecnicoServico" title="Quantidade de PU que 1 técnico consegue entregar, usada para estimar quantos técnicos são necessários">Meta de PU por técnico</label>
-          <div class="field-input">
-            <input type="number" id="metaPuTecnicoServico" name="metaPuTecnicoServico" min="0.1" step="0.1" value="<%= metaPuTecnicoServico %>" title="PU que 1 técnico entrega" />
-          </div>
-        </div>
-
-        <p class="hint">PU = soma do peso de PU de cada Specification Product em aberto × percentual de Previsto (cada produto tem seu próprio peso — ver "PU por produto" abaixo). Técnicos = PU ÷ Meta de PU por técnico, arredondado para cima.</p>
-      </div>
-
-      <div class="modal-footer">
-        <button type="submit" title="Recarrega a página aplicando estes valores">Aplicar</button>
-      </div>
-    </form>
-
-    <form method="post" action="/config/tempo-servico" class="modal-section modal-section-divider">
-      <%- include('partials/hidden-config-estado', { exceto: [] }) %>
-
-      <div class="modal-body">
-        <h4 class="modal-subtitle" title="Tempo médio de um serviço em cada bucket, usado na coluna MINUTOS">Tempo de serviço por bucket (min)</h4>
-        <table class="tempo-table">
-          <thead>
-            <tr>
-              <th title="Empresa aliada dona do bucket">Aliada</th>
-              <th title="Nome do bucket em depara_tempo_bucket">Bucket</th>
-              <th class="num" title="Minutos que um serviço leva neste bucket">Serviço (min)</th>
-            </tr>
-          </thead>
-          <tbody>
-            <% let aliadaTempoServicoAtual = null; %>
-            <% temposServicos.forEach(t => { %>
-              <% const novaAliadaTempoServico = t.aliada !== aliadaTempoServicoAtual; aliadaTempoServicoAtual = t.aliada; %>
-              <tr class="<%= novaAliadaTempoServico ? 'group-start' : '' %>">
-                <td><span class="aliada-badge aliada-color-<%= aliadaCoresServicos[t.aliada] %>"><%= t.aliada %></span></td>
-                <td class="celula-truncada" title="<%= t.bucket %>"><%= t.bucket %></td>
-                <td class="num">
-                  <input type="hidden" name="bucket[]" value="<%= t.bucket %>" />
-                  <input type="number" name="servico[]" min="0" step="1" value="<%= t.servico %>" aria-label="Tempo de serviço (min) para <%= t.bucket %>" title="Minutos de um serviço em <%= t.bucket %>" />
-                </td>
-              </tr>
-            <% }) %>
-          </tbody>
-        </table>
-        <p class="hint">Atualiza a tabela <code>depara_tempo_bucket</code> (coluna SERVICO).</p>
-      </div>
-
-      <div class="modal-footer">
-        <button type="submit" title="Grava estes tempos em depara_tempo_bucket">Salvar tempos</button>
-      </div>
-    </form>
-
-    <form method="post" action="/config/pu-produto-servico" class="modal-section modal-section-divider">
-      <%- include('partials/hidden-config-estado', { exceto: [] }) %>
-
-      <div class="modal-body">
-        <h4 class="modal-subtitle" title="Peso de PU de cada Specification Product encontrado em backlog_instalacoes (escopo Serviços)">PU por Specification Product</h4>
-        <table class="tempo-table">
-          <thead>
-            <tr>
-              <th title="Valor da coluna SPECIFICATION_PRODUCT no CSV do ELOS">Specification Product</th>
-              <th class="num" title="Quantas PU cada serviço deste produto representa">PU</th>
-            </tr>
-          </thead>
-          <tbody>
-            <% puProdutosServicos.forEach(p => { %>
-              <tr class="<%= p.pu == 0 ? 'linha-alerta' : '' %>">
-                <td>
-                  <%= p.produto %>
-                  <% if (p.pu == 0) { %>
-                    <span class="badge-alerta" title="Este produto ainda não tem PU configurado — está contando 0 no cálculo">sem PU</span>
-                  <% } %>
-                </td>
-                <td class="num">
-                  <input type="hidden" name="produto[]" value="<%= p.produto %>" />
-                  <input type="number" name="pu[]" min="0" step="0.01" value="<%= p.pu %>" aria-label="PU para <%= p.produto %>" title="PU de um serviço do produto <%= p.produto %>" />
-                </td>
-              </tr>
-            <% }) %>
-          </tbody>
-        </table>
-        <p class="hint">Atualiza a tabela <code>depara_pu_produto_servico</code>. Produtos novos aparecem aqui automaticamente ao subir um CSV (com PU=0 até serem configurados).</p>
-      </div>
-
-      <div class="modal-footer">
-        <button type="submit" title="Grava estes pesos em depara_pu_produto_servico">Salvar PU</button>
-      </div>
-    </form>
-  </dialog>
-
   <div class="table-scroll">
     <table class="cotas-table">
       <colgroup>
         <col class="colw-aliada" />
         <col class="colw-bucket" />
-        <col class="colw-num" /><col class="colw-num" />
+        <col class="colw-num" /><col class="colw-num" /><col class="colw-num" />
         <% janelasServicoLabels.forEach(() => { %><col class="colw-num" /><% }) %>
         <% janelasServicoLabels.forEach(() => { %><col class="colw-num" /><% }) %>
         <col class="colw-num" /><col class="colw-num" />
@@ -552,7 +275,7 @@
         <tr>
           <th rowspan="2" title="Empresa aliada responsável pelo bucket">Aliada</th>
           <th rowspan="2" title="Agrupamento de ARDs (armários) mapeado em depara_bucket">Bucket</th>
-          <th colspan="2" class="group-header col-backlog col-divider" title="Quantidade de serviços em aberto e a meta calculada sobre eles">BACKLOG</th>
+          <th colspan="3" class="group-header col-backlog col-divider" title="Quantidade de serviços em aberto, a meta calculada sobre eles e a Sugestão baseada na Carga configurada">BACKLOG</th>
           <th colspan="<%= janelasServicoLabels.length %>" class="group-header col-ordens col-divider" title="Previsto dividido entre as <%= janelasServicoLabels.length %> janelas de horário">ORDENS</th>
           <th colspan="<%= janelasServicoLabels.length %>" class="group-header col-minutos col-divider" title="Ordens de cada janela × tempo de serviço do bucket (depara_tempo_bucket)">COTAS(min)</th>
           <th rowspan="2" class="num col-divider" title="Produção Única = Previsto × PU do serviço">PU</th>
@@ -560,7 +283,8 @@
         </tr>
         <tr>
           <th class="num col-backlog col-divider" title="Total de serviços em aberto no bucket (regra de backlog no topo da página)">Backlog Serviços</th>
-          <th class="num col-backlog" title="Backlog Serviços × percentual configurado na engrenagem">Previsto (<%= percentualServico %>%)</th>
+          <th class="num col-backlog" title="Backlog Serviços × percentual configurado na página de Configurações">Previsto (<%= percentualServico %>%)</th>
+          <th class="num col-backlog" title="(Previsto do bucket ÷ Previsto total de Serviços) × Carga (configurada na página de Configurações)">Sugestão</th>
           <% janelasServicoLabels.forEach((label, i) => { %>
             <th class="num col-ordens <%= i === 0 ? 'col-divider' : '' %>" title="Parte do Previsto alocada para a janela <%= label %>"><%- janelaDuasLinhas(label) %></th>
           <% }) %>
@@ -583,6 +307,7 @@
               <% } %>
             </td>
             <td class="<%= numCls('col-backlog', linha.previstoResolucao) %>"><%= linha.previstoResolucao %></td>
+            <td class="<%= numCls('col-backlog', linha.sugestao) %>"><%= linha.sugestao %></td>
             <% linha.janelas.forEach((qtd, i) => { %>
               <td class="<%= numCls('col-ordens', qtd) %> <%= i === 0 ? 'col-divider' : '' %>"><%= qtd %></td>
             <% }) %>
@@ -599,6 +324,7 @@
           <td colspan="2" title="Soma de todos os buckets do cluster GOIANIA">Total geral</td>
           <td class="<%= numCls('col-backlog', totalGeralServicos) %> col-divider"><%= totalGeralServicos %></td>
           <td class="<%= numCls('col-backlog', totalPrevistoServicos) %>"><%= totalPrevistoServicos %></td>
+          <td class="<%= numCls('col-backlog', totalSugestaoServicos) %>"><%= totalSugestaoServicos %></td>
           <% totalJanelasServicos.forEach((qtd, i) => { %>
             <td class="<%= numCls('col-ordens', qtd) %> <%= i === 0 ? 'col-divider' : '' %>"><%= qtd %></td>
           <% }) %>
@@ -630,9 +356,9 @@
       </p>
     </div>
     <div class="panel-header-actions">
-      <button type="button" class="icon-btn" id="config-me-open-btn" aria-haspopup="dialog" aria-controls="config-me-modal" title="Configurações: previsto, janelas de horário, PU e tempos de ME">
+      <a href="<%= linkConfiguracoes %>#config-me" class="icon-btn" title="Configurações: previsto, janelas de horário, Carga, PU e tempos de ME">
         <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.65 1.65 0 0 0-1.8-.3 1.65 1.65 0 0 0-1 1.5V21a2 2 0 0 1-4 0v-.1A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.65 1.65 0 0 0 .3-1.8 1.65 1.65 0 0 0-1.5-1H3a2 2 0 0 1 0-4h.1A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.65 1.65 0 0 0 1.8.3H9a1.65 1.65 0 0 0 1-1.5V3a2 2 0 0 1 4 0v.1a1.65 1.65 0 0 0 1 1.5 1.65 1.65 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.65 1.65 0 0 0-.3 1.8V9a1.65 1.65 0 0 0 1.5 1H21a2 2 0 0 1 0 4h-.1a1.65 1.65 0 0 0-1.5 1z"/></svg>
-      </button>
+      </a>
     </div>
   </div>
 
@@ -686,152 +412,12 @@
     </p>
   <% } %>
 
-  <dialog id="config-me-modal" class="config-modal">
-    <div class="modal-header">
-      <h3 title="Ajustes usados nos cálculos do Resumo de Backlog de ME por Bucket">Configurações de ME</h3>
-      <button type="button" class="icon-btn" id="config-me-close-btn" aria-label="Fechar" title="Fechar">&times;</button>
-    </div>
-
-    <form method="get" action="/" class="modal-section">
-      <%- include('partials/hidden-config-estado', { exceto: ['percentualMe', 'percentualJanela1Me', 'percentualJanela2Me', 'percentualJanela3Me', 'metaPuTecnicoMe'] }) %>
-      <div class="modal-body">
-        <div class="field-row">
-          <label for="percentualMe" title="Percentual do Backlog ME que vira meta de resolução (coluna Previsto)">Previsto de resolução</label>
-          <div class="field-input">
-            <input type="number" id="percentualMe" name="percentualMe" min="0" max="100" step="1" value="<%= percentualMe %>" title="Percentual do backlog considerado resolvível" />
-            <span>%</span>
-          </div>
-        </div>
-
-        <div class="field-row">
-          <label for="percentualJanela1Me" title="Percentual do Previsto alocado para a janela 08:30 - 10:30">08:30 - 10:30</label>
-          <div class="field-input">
-            <input type="number" id="percentualJanela1Me" name="percentualJanela1Me" min="0" max="100" step="1" value="<%= percentualJanela1Me %>" title="Percentual do Previsto na janela 08:30-10:30" />
-            <span>%</span>
-          </div>
-        </div>
-
-        <div class="field-row">
-          <label for="percentualJanela2Me" title="Percentual do Previsto alocado para a janela 10:30 - 12:30">10:30 - 12:30</label>
-          <div class="field-input">
-            <input type="number" id="percentualJanela2Me" name="percentualJanela2Me" min="0" max="100" step="1" value="<%= percentualJanela2Me %>" title="Percentual do Previsto na janela 10:30-12:30" />
-            <span>%</span>
-          </div>
-        </div>
-
-        <div class="field-row">
-          <label for="percentualJanela3Me" title="Percentual do Previsto alocado para a janela 14:00 - 16:00">14:00 - 16:00</label>
-          <div class="field-input">
-            <input type="number" id="percentualJanela3Me" name="percentualJanela3Me" min="0" max="100" step="1" value="<%= percentualJanela3Me %>" title="Percentual do Previsto na janela 14:00-16:00" />
-            <span>%</span>
-          </div>
-        </div>
-
-        <div class="field-row">
-          <label for="percentualJanela4Me" title="Calculado automaticamente como 100% menos as outras três janelas">16:00 - 18:00</label>
-          <div class="field-input">
-            <input type="number" id="percentualJanela4Me" min="0" max="100" step="1" value="<%= Math.max(0, 100 - percentualJanela1Me - percentualJanela2Me - percentualJanela3Me) %>" title="Preenchido automaticamente: 100% - as outras três janelas" readonly tabindex="-1" />
-            <span>%</span>
-          </div>
-        </div>
-
-        <p class="hint">As 4 janelas sempre somam 100% — as 3 primeiras são editáveis, a última (16:00-18:00) é sempre o restante.</p>
-
-        <div class="field-row">
-          <label for="metaPuTecnicoMe" title="Quantidade de PU que 1 técnico consegue entregar, usada para estimar quantos técnicos são necessários">Meta de PU por técnico</label>
-          <div class="field-input">
-            <input type="number" id="metaPuTecnicoMe" name="metaPuTecnicoMe" min="0.1" step="0.1" value="<%= metaPuTecnicoMe %>" title="PU que 1 técnico entrega" />
-          </div>
-        </div>
-
-        <p class="hint">PU = soma do peso de PU de cada Specification Product em aberto × percentual de Previsto (cada produto tem seu próprio peso — ver "PU por produto" abaixo). Técnicos = PU ÷ Meta de PU por técnico, arredondado para cima.</p>
-      </div>
-
-      <div class="modal-footer">
-        <button type="submit" title="Recarrega a página aplicando estes valores">Aplicar</button>
-      </div>
-    </form>
-
-    <form method="post" action="/config/tempo-me" class="modal-section modal-section-divider">
-      <%- include('partials/hidden-config-estado', { exceto: [] }) %>
-
-      <div class="modal-body">
-        <h4 class="modal-subtitle" title="Tempo médio de uma ME em cada bucket, usado na coluna MINUTOS">Tempo de ME por bucket (min)</h4>
-        <table class="tempo-table">
-          <thead>
-            <tr>
-              <th title="Empresa aliada dona do bucket">Aliada</th>
-              <th title="Nome do bucket em depara_tempo_bucket">Bucket</th>
-              <th class="num" title="Minutos que uma ME leva neste bucket">ME (min)</th>
-            </tr>
-          </thead>
-          <tbody>
-            <% let aliadaTempoMeAtual = null; %>
-            <% temposMe.forEach(t => { %>
-              <% const novaAliadaTempoMe = t.aliada !== aliadaTempoMeAtual; aliadaTempoMeAtual = t.aliada; %>
-              <tr class="<%= novaAliadaTempoMe ? 'group-start' : '' %>">
-                <td><span class="aliada-badge aliada-color-<%= aliadaCoresMe[t.aliada] %>"><%= t.aliada %></span></td>
-                <td class="celula-truncada" title="<%= t.bucket %>"><%= t.bucket %></td>
-                <td class="num">
-                  <input type="hidden" name="bucket[]" value="<%= t.bucket %>" />
-                  <input type="number" name="alteracao[]" min="0" step="1" value="<%= t.alteracao %>" aria-label="Tempo de ME (min) para <%= t.bucket %>" title="Minutos de uma ME em <%= t.bucket %>" />
-                </td>
-              </tr>
-            <% }) %>
-          </tbody>
-        </table>
-        <p class="hint">Atualiza a tabela <code>depara_tempo_bucket</code> (coluna ALTERACAO).</p>
-      </div>
-
-      <div class="modal-footer">
-        <button type="submit" title="Grava estes tempos em depara_tempo_bucket">Salvar tempos</button>
-      </div>
-    </form>
-
-    <form method="post" action="/config/pu-produto-me" class="modal-section modal-section-divider">
-      <%- include('partials/hidden-config-estado', { exceto: [] }) %>
-
-      <div class="modal-body">
-        <h4 class="modal-subtitle" title="Peso de PU de cada Specification Product encontrado em backlog_instalacoes (escopo ME)">PU por Specification Product</h4>
-        <table class="tempo-table">
-          <thead>
-            <tr>
-              <th title="Valor da coluna SPECIFICATION_PRODUCT no CSV do ELOS">Specification Product</th>
-              <th class="num" title="Quantas PU cada ME deste produto representa">PU</th>
-            </tr>
-          </thead>
-          <tbody>
-            <% puProdutosMe.forEach(p => { %>
-              <tr class="<%= p.pu == 0 ? 'linha-alerta' : '' %>">
-                <td>
-                  <%= p.produto %>
-                  <% if (p.pu == 0) { %>
-                    <span class="badge-alerta" title="Este produto ainda não tem PU configurado — está contando 0 no cálculo">sem PU</span>
-                  <% } %>
-                </td>
-                <td class="num">
-                  <input type="hidden" name="produto[]" value="<%= p.produto %>" />
-                  <input type="number" name="pu[]" min="0" step="0.01" value="<%= p.pu %>" aria-label="PU para <%= p.produto %>" title="PU de uma ME do produto <%= p.produto %>" />
-                </td>
-              </tr>
-            <% }) %>
-          </tbody>
-        </table>
-        <p class="hint">Atualiza a tabela <code>depara_pu_produto_me</code>. Produtos novos aparecem aqui automaticamente ao subir um CSV (com PU=0 até serem configurados).</p>
-      </div>
-
-      <div class="modal-footer">
-        <button type="submit" title="Grava estes pesos em depara_pu_produto_me">Salvar PU</button>
-      </div>
-    </form>
-  </dialog>
-
   <div class="table-scroll">
     <table class="cotas-table">
       <colgroup>
         <col class="colw-aliada" />
         <col class="colw-bucket" />
-        <col class="colw-num" /><col class="colw-num" />
+        <col class="colw-num" /><col class="colw-num" /><col class="colw-num" />
         <% janelasMeLabels.forEach(() => { %><col class="colw-num" /><% }) %>
         <% janelasMeLabels.forEach(() => { %><col class="colw-num" /><% }) %>
         <col class="colw-num" /><col class="colw-num" />
@@ -840,7 +426,7 @@
         <tr>
           <th rowspan="2" title="Empresa aliada responsável pelo bucket">Aliada</th>
           <th rowspan="2" title="Agrupamento de ARDs (armários) mapeado em depara_bucket">Bucket</th>
-          <th colspan="2" class="group-header col-backlog col-divider" title="Quantidade de ME em aberto e a meta calculada sobre elas">BACKLOG</th>
+          <th colspan="3" class="group-header col-backlog col-divider" title="Quantidade de ME em aberto, a meta calculada sobre elas e a Sugestão baseada na Carga configurada">BACKLOG</th>
           <th colspan="<%= janelasMeLabels.length %>" class="group-header col-ordens col-divider" title="Previsto dividido entre as <%= janelasMeLabels.length %> janelas de horário">ORDENS</th>
           <th colspan="<%= janelasMeLabels.length %>" class="group-header col-minutos col-divider" title="Ordens de cada janela × tempo de ME do bucket (depara_tempo_bucket)">COTAS(min)</th>
           <th rowspan="2" class="num col-divider" title="Produção Única = Previsto × PU da ME">PU</th>
@@ -848,7 +434,8 @@
         </tr>
         <tr>
           <th class="num col-backlog col-divider" title="Total de ME em aberto no bucket (regra de backlog no topo da página)">Backlog ME</th>
-          <th class="num col-backlog" title="Backlog ME × percentual configurado na engrenagem">Previsto (<%= percentualMe %>%)</th>
+          <th class="num col-backlog" title="Backlog ME × percentual configurado na página de Configurações">Previsto (<%= percentualMe %>%)</th>
+          <th class="num col-backlog" title="(Previsto do bucket ÷ Previsto total de ME) × Carga (configurada na página de Configurações)">Sugestão</th>
           <% janelasMeLabels.forEach((label, i) => { %>
             <th class="num col-ordens <%= i === 0 ? 'col-divider' : '' %>" title="Parte do Previsto alocada para a janela <%= label %>"><%- janelaDuasLinhas(label) %></th>
           <% }) %>
@@ -871,6 +458,7 @@
               <% } %>
             </td>
             <td class="<%= numCls('col-backlog', linha.previstoResolucao) %>"><%= linha.previstoResolucao %></td>
+            <td class="<%= numCls('col-backlog', linha.sugestao) %>"><%= linha.sugestao %></td>
             <% linha.janelas.forEach((qtd, i) => { %>
               <td class="<%= numCls('col-ordens', qtd) %> <%= i === 0 ? 'col-divider' : '' %>"><%= qtd %></td>
             <% }) %>
@@ -887,6 +475,7 @@
           <td colspan="2" title="Soma de todos os buckets do cluster GOIANIA">Total geral</td>
           <td class="<%= numCls('col-backlog', totalGeralMe) %> col-divider"><%= totalGeralMe %></td>
           <td class="<%= numCls('col-backlog', totalPrevistoMe) %>"><%= totalPrevistoMe %></td>
+          <td class="<%= numCls('col-backlog', totalSugestaoMe) %>"><%= totalSugestaoMe %></td>
           <% totalJanelasMe.forEach((qtd, i) => { %>
             <td class="<%= numCls('col-ordens', qtd) %> <%= i === 0 ? 'col-divider' : '' %>"><%= qtd %></td>
           <% }) %>
@@ -918,9 +507,9 @@
       </p>
     </div>
     <div class="panel-header-actions">
-      <button type="button" class="icon-btn" id="config-open-btn" aria-haspopup="dialog" aria-controls="config-modal" title="Configurações: previsto, janelas de horário, PU e tempos de reparo">
+      <a href="<%= linkConfiguracoes %>#config-reparos" class="icon-btn" title="Configurações: previsto, janelas de horário, Carga e tempos de reparo">
         <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.65 1.65 0 0 0-1.8-.3 1.65 1.65 0 0 0-1 1.5V21a2 2 0 0 1-4 0v-.1A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.65 1.65 0 0 0 .3-1.8 1.65 1.65 0 0 0-1.5-1H3a2 2 0 0 1 0-4h.1A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.65 1.65 0 0 0 1.8.3H9a1.65 1.65 0 0 0 1-1.5V3a2 2 0 0 1 4 0v.1a1.65 1.65 0 0 0 1 1.5 1.65 1.65 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.65 1.65 0 0 0-.3 1.8V9a1.65 1.65 0 0 0 1.5 1H21a2 2 0 0 1 0 4h-.1a1.65 1.65 0 0 0-1.5 1z"/></svg>
-      </button>
+      </a>
     </div>
   </div>
 
@@ -966,106 +555,12 @@
     </form>
   </details>
 
-  <dialog id="config-modal" class="config-modal">
-    <div class="modal-header">
-      <h3 title="Ajustes usados nos cálculos do Resumo de Backlog de Reparos por Bucket">Configurações de Reparos</h3>
-      <button type="button" class="icon-btn" id="config-close-btn" aria-label="Fechar" title="Fechar">&times;</button>
-    </div>
-
-    <form method="get" action="/" class="modal-section">
-      <%- include('partials/hidden-config-estado', { exceto: ['percentual', 'percentualJanela', 'puReparo', 'metaPuTecnico'] }) %>
-      <div class="modal-body">
-        <div class="field-row">
-          <label for="percentual" title="Percentual do Backlog Reparos que vira meta de resolução (coluna Previsto)">Previsto de resolução</label>
-          <div class="field-input">
-            <input type="number" id="percentual" name="percentual" min="0" max="100" step="1" value="<%= percentual %>" title="Percentual do backlog considerado resolvível" />
-            <span>%</span>
-          </div>
-        </div>
-
-        <div class="field-row">
-          <label for="percentualJanela" title="Percentual do Previsto alocado para a janela da manhã (08:30-12:30)">08:30 - 12:30</label>
-          <div class="field-input">
-            <input type="number" id="percentualJanela" name="percentualJanela" min="0" max="100" step="1" value="<%= percentualJanela %>" title="Percentual do Previsto na janela 08:30-12:30" />
-            <span>%</span>
-          </div>
-        </div>
-
-        <div class="field-row">
-          <label for="percentualJanelaTarde" title="Calculado automaticamente como 100% menos a janela da manhã">12:30 - 18:00</label>
-          <div class="field-input">
-            <input type="number" id="percentualJanelaTarde" min="0" max="100" step="1" value="<%= 100 - percentualJanela %>" title="Preenchido automaticamente: 100% - janela da manhã" />
-            <span>%</span>
-          </div>
-        </div>
-
-        <p class="hint">As janelas 08:30-12:30 e 12:30-18:00 sempre somam 100%.</p>
-
-        <div class="field-row">
-          <label for="puReparo" title="Quantidade de PU que cada reparo previsto representa">PU do reparo</label>
-          <div class="field-input">
-            <input type="number" id="puReparo" name="puReparo" min="0" step="0.01" value="<%= puReparo %>" title="PU gerado por cada reparo previsto (hoje 0,80)" />
-          </div>
-        </div>
-
-        <div class="field-row">
-          <label for="metaPuTecnico" title="Quantidade de PU que 1 técnico consegue entregar, usada para estimar quantos técnicos são necessários">Meta de PU por técnico</label>
-          <div class="field-input">
-            <input type="number" id="metaPuTecnico" name="metaPuTecnico" min="0.1" step="0.1" value="<%= metaPuTecnico %>" title="PU que 1 técnico entrega (hoje 2,9)" />
-          </div>
-        </div>
-
-        <p class="hint">PU = Previsto × PU do reparo. Técnicos = PU ÷ Meta de PU por técnico, arredondado para cima (não existe fração de técnico).</p>
-      </div>
-
-      <div class="modal-footer">
-        <button type="submit" title="Recarrega a página aplicando estes valores">Aplicar</button>
-      </div>
-    </form>
-
-    <form method="post" action="/config/tempo-reparo" class="modal-section modal-section-divider">
-      <%- include('partials/hidden-config-estado', { exceto: [] }) %>
-
-      <div class="modal-body">
-        <h4 class="modal-subtitle" title="Tempo médio de um reparo em cada bucket, usado na coluna MINUTOS">Tempo de reparo por bucket (min)</h4>
-        <table class="tempo-table">
-          <thead>
-            <tr>
-              <th title="Empresa aliada dona do bucket">Aliada</th>
-              <th title="Nome do bucket em depara_tempo_bucket">Bucket</th>
-              <th class="num" title="Minutos que um reparo leva neste bucket">Reparo (min)</th>
-            </tr>
-          </thead>
-          <tbody>
-            <% let aliadaTempoAtual = null; %>
-            <% temposReparo.forEach(t => { %>
-              <% const novaAliadaTempo = t.aliada !== aliadaTempoAtual; aliadaTempoAtual = t.aliada; %>
-              <tr class="<%= novaAliadaTempo ? 'group-start' : '' %>">
-                <td><span class="aliada-badge aliada-color-<%= aliadaCores[t.aliada] %>"><%= t.aliada %></span></td>
-                <td class="celula-truncada" title="<%= t.bucket %>"><%= t.bucket %></td>
-                <td class="num">
-                  <input type="hidden" name="bucket[]" value="<%= t.bucket %>" />
-                  <input type="number" name="reparo[]" min="0" step="1" value="<%= t.reparo %>" aria-label="Tempo de reparo (min) para <%= t.bucket %>" title="Minutos de um reparo em <%= t.bucket %>" />
-                </td>
-              </tr>
-            <% }) %>
-          </tbody>
-        </table>
-        <p class="hint">Atualiza a tabela <code>depara_tempo_bucket</code> (coluna REPARO).</p>
-      </div>
-
-      <div class="modal-footer">
-        <button type="submit" title="Grava estes tempos em depara_tempo_bucket">Salvar tempos</button>
-      </div>
-    </form>
-  </dialog>
-
   <div class="table-scroll">
     <table class="cotas-table">
       <colgroup>
         <col class="colw-aliada" />
         <col class="colw-bucket" />
-        <col class="colw-num" /><col class="colw-num" />
+        <col class="colw-num" /><col class="colw-num" /><col class="colw-num" />
         <col class="colw-num" /><col class="colw-num" />
         <col class="colw-num" /><col class="colw-num" />
         <col class="colw-num" /><col class="colw-num" />
@@ -1074,7 +569,7 @@
         <tr>
           <th rowspan="2" title="Empresa aliada responsável pelo bucket">Aliada</th>
           <th rowspan="2" title="Agrupamento de armários (BKT) mapeado em depara_bucket">Bucket</th>
-          <th colspan="2" class="group-header col-backlog col-divider" title="Quantidade de reparos em aberto e a meta calculada sobre eles">BACKLOG</th>
+          <th colspan="3" class="group-header col-backlog col-divider" title="Quantidade de reparos em aberto, a meta calculada sobre eles e a Sugestão baseada na Carga configurada">BACKLOG</th>
           <th colspan="2" class="group-header col-ordens col-divider" title="Previsto dividido entre as duas janelas de horário">ORDENS</th>
           <th colspan="2" class="group-header col-minutos col-divider" title="Ordens de cada janela × tempo de reparo do bucket (depara_tempo_bucket)">COTAS(min)</th>
           <th rowspan="2" class="num col-divider" title="Produção Única = Previsto × PU do reparo">PU</th>
@@ -1082,7 +577,8 @@
         </tr>
         <tr>
           <th class="num col-backlog col-divider" title="Total de chamados de reparo em aberto no bucket (regra de backlog no topo da página)">Backlog Reparos</th>
-          <th class="num col-backlog" title="Backlog Reparos × percentual configurado na engrenagem">Previsto (<%= percentual %>%)</th>
+          <th class="num col-backlog" title="Backlog Reparos × percentual configurado na página de Configurações">Previsto (<%= percentual %>%)</th>
+          <th class="num col-backlog" title="(Previsto do bucket ÷ Previsto total de Reparos) × Carga (configurada na página de Configurações)">Sugestão</th>
           <th class="num col-ordens col-divider" title="Parte do Previsto alocada para a janela 08:30-12:30"><%- janelaDuasLinhas('08:30 - 12:30') %></th>
           <th class="num col-ordens" title="Restante do Previsto: janela 12:30-18:00"><%- janelaDuasLinhas('12:30 - 18:00') %></th>
           <th class="num col-minutos col-divider" title="Ordens de 08:30-12:30 × tempo de reparo do bucket"><%- janelaDuasLinhas('08:30 - 12:30') %></th>
@@ -1103,6 +599,7 @@
               <% } %>
             </td>
             <td class="<%= numCls('col-backlog', linha.previstoResolucao) %>"><%= linha.previstoResolucao %></td>
+            <td class="<%= numCls('col-backlog', linha.sugestao) %>"><%= linha.sugestao %></td>
             <td class="<%= numCls('col-ordens', linha.janelas[0]) %> col-divider"><%= linha.janelas[0] %></td>
             <td class="<%= numCls('col-ordens', linha.janelas[1]) %>"><%= linha.janelas[1] %></td>
             <td class="<%= numCls('col-minutos', linha.minutos[0]) %> col-divider"><%= linha.minutos[0] %></td>
@@ -1117,6 +614,7 @@
           <td colspan="2" title="Soma de todos os buckets do cluster GOIANIA">Total geral</td>
           <td class="<%= numCls('col-backlog', totalGeral) %> col-divider"><%= totalGeral %></td>
           <td class="<%= numCls('col-backlog', totalPrevisto) %>"><%= totalPrevisto %></td>
+          <td class="<%= numCls('col-backlog', totalSugestao) %>"><%= totalSugestao %></td>
           <td class="<%= numCls('col-ordens', totalJanelas[0]) %> col-divider"><%= totalJanelas[0] %></td>
           <td class="<%= numCls('col-ordens', totalJanelas[1]) %>"><%= totalJanelas[1] %></td>
           <td class="<%= numCls('col-minutos', totalMinutos[0]) %> col-divider"><%= totalMinutos[0] %></td>
