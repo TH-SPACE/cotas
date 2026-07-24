@@ -80,6 +80,7 @@ async function getResumoBucketsServicos(filtros) {
          AND i.STATUS IN (?)
          AND i.STATUS_REASON IN (?)
          AND i.TECNOLOGIA_ACESSO IN (?)
+         AND DATE(STR_TO_DATE(i.DATA_VENCIMENTO, '%d/%m/%Y %H:%i:%s')) != CURDATE()
        LEFT JOIN depara_pu_produto_servico p ON p.SPECIFICATION_PRODUCT = i.SPECIFICATION_PRODUCT
        LEFT JOIN depara_tempo_bucket t
          ON t.BUCKET = d.BKT
@@ -105,6 +106,7 @@ async function getResumoBucketsServicos(filtros) {
          AND i.STATUS_REASON IN (?)
          AND i.TECNOLOGIA_ACESSO IN (?)
          AND i.ARMARIO IS NOT NULL AND i.ARMARIO <> ''
+         AND DATE(STR_TO_DATE(i.DATA_VENCIMENTO, '%d/%m/%Y %H:%i:%s')) != CURDATE()
      ) resumo
      ORDER BY aliada, bucket`,
     [

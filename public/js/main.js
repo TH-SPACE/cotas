@@ -183,6 +183,57 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  // Botão "Salvar planejamento" (sidebar da index): abre modal de confirmação
+  // antes de chamar POST /api/snapshot-manual, para o usuário entender o que vai
+  // acontecer (os valores atuais serão o Planej. de amanhã em Cotas Planejadas).
+  const btnSnapshotManual = document.getElementById('snapshot-manual-btn');
+  const snapshotModal = document.getElementById('snapshot-confirm-modal');
+  const btnSnapshotConfirmOk = document.getElementById('snapshot-confirm-ok-btn');
+  const btnSnapshotConfirmClose = document.getElementById('snapshot-confirm-close-btn');
+  const btnSnapshotConfirmClose2 = document.getElementById('snapshot-confirm-close-btn-2');
+
+  if (btnSnapshotManual && snapshotModal) {
+    btnSnapshotManual.addEventListener('click', () => snapshotModal.showModal());
+
+    const fecharModal = () => snapshotModal.close();
+    if (btnSnapshotConfirmClose) btnSnapshotConfirmClose.addEventListener('click', fecharModal);
+    if (btnSnapshotConfirmClose2) btnSnapshotConfirmClose2.addEventListener('click', fecharModal);
+    snapshotModal.addEventListener('click', (e) => { if (e.target === snapshotModal) fecharModal(); });
+
+    if (btnSnapshotConfirmOk) {
+      btnSnapshotConfirmOk.addEventListener('click', async () => {
+        const textoOriginal = btnSnapshotConfirmOk.textContent.trim();
+        btnSnapshotConfirmOk.disabled = true;
+        btnSnapshotConfirmClose2 && (btnSnapshotConfirmClose2.disabled = true);
+        btnSnapshotConfirmOk.textContent = 'Salvando…';
+
+        try {
+          const resposta = await fetch('/api/snapshot-manual', { method: 'POST' });
+          const dados = await resposta.json();
+
+          if (dados.ok) {
+            btnSnapshotConfirmOk.textContent = 'Salvo!';
+            setTimeout(() => {
+              snapshotModal.close();
+              btnSnapshotConfirmOk.textContent = textoOriginal;
+              btnSnapshotConfirmOk.disabled = false;
+              btnSnapshotConfirmClose2 && (btnSnapshotConfirmClose2.disabled = false);
+            }, 1200);
+          } else {
+            throw new Error(dados.erro || 'Erro desconhecido');
+          }
+        } catch (err) {
+          btnSnapshotConfirmOk.textContent = 'Erro ao salvar';
+          setTimeout(() => {
+            btnSnapshotConfirmOk.textContent = textoOriginal;
+            btnSnapshotConfirmOk.disabled = false;
+            btnSnapshotConfirmClose2 && (btnSnapshotConfirmClose2.disabled = false);
+          }, 3000);
+        }
+      });
+    }
+  }
+
   const clamp = (valor) => {
     if (Number.isNaN(valor)) return 0;
     return Math.min(100, Math.max(0, valor));

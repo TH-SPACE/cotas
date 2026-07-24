@@ -42,6 +42,27 @@
       <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.65 1.65 0 0 0-1.8-.3 1.65 1.65 0 0 0-1 1.5V21a2 2 0 0 1-4 0v-.1A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.65 1.65 0 0 0 .3-1.8 1.65 1.65 0 0 0-1.5-1H3a2 2 0 0 1 0-4h.1A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.65 1.65 0 0 0 1.8.3H9a1.65 1.65 0 0 0 1-1.5V3a2 2 0 0 1 4 0v.1a1.65 1.65 0 0 0 1 1.5 1.65 1.65 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.65 1.65 0 0 0-.3 1.8V9a1.65 1.65 0 0 0 1.5 1H21a2 2 0 0 1 0 4h-.1a1.65 1.65 0 0 0-1.5 1z"/></svg>
       <span>Configurações</span>
     </a>
+    <button type="button" class="home-sidebar-item home-sidebar-btn" id="snapshot-manual-btn" title="Salva o planejamento atual no histórico — será usado como coluna Planej. em Cotas Planejadas amanhã">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+      <span>Salvar planejamento</span>
+    </button>
+
+    <!-- Modal de confirmação do save de planejamento -->
+    <dialog id="snapshot-confirm-modal" class="config-modal">
+      <div class="modal-header">
+        <h3>Salvar planejamento para amanhã?</h3>
+        <button type="button" class="icon-btn" id="snapshot-confirm-close-btn" aria-label="Fechar" title="Fechar">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p>Os valores de <strong>ORDENS</strong> e <strong>COTAS(min)</strong> de cada bucket e janela que estão na tela agora serão salvos no histórico.</p>
+        <p>Amanhã, esses valores aparecerão como <strong>Planej.</strong> na página de <strong>Cotas Planejadas</strong>.</p>
+        <p class="hint">Se já existe um planejamento salvo para hoje, ele será substituído.</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-secundario" id="snapshot-confirm-close-btn-2">Cancelar</button>
+        <button type="button" id="snapshot-confirm-ok-btn">Salvar</button>
+      </div>
+    </dialog>
   </aside>
   <div class="home-content">
 

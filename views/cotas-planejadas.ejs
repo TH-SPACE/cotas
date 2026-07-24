@@ -86,7 +86,7 @@
   <% }) %>
 
   <p class="tabela-nota">
-    <strong>Planej.</strong> = COTAS da Sugestão (mesmo cálculo da página inicial) ·
+    <strong>Planej.</strong> = <%= planejadoDeHistorico ? 'planejamento de D-1 (snapshot das 9h de ontem)' : '<strong style="color:var(--cor-alerta,#b45309)">sem snapshot de D-1 — valores zerados até o cron das 9h rodar</strong>' %> ·
     <strong>Status</strong> e <strong>D0</strong> = cota do dia no ETA (Age = D0) ·
     <strong>Consumo</strong> = ordens agendadas para hoje.
     Use <strong>Ver em</strong> para alternar entre minutos e quantidade de ordens — a conversão é sempre

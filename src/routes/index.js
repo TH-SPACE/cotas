@@ -556,14 +556,16 @@ router.get('/resumo-cotas', async (req, res, next) => {
   }
 });
 
-// Página nova de Cotas Planejadas (por enquanto só Instalação): uma tabela por
-// janela de horário, uma linha por bucket. "Cotas Planejadas" reaproveita as ORDENS
-// já calculadas pela Sugestão (linha.janelas do painel de Instalações, mesmo cálculo
-// da página principal). "Status" e "COTAS D0" vêm do upload do Excel de cotas do ELOS
-// (tabela cotas_instalacao, linha Age=D0 de cada bucket+janela).
+// Página nova de Cotas Planejadas: uma tabela por janela de horário, uma linha por
+// bucket. "Planej." vem do snapshot salvo em D-1 (às 9h do dia anterior via cron),
+// garantindo que o planejamento feito ontem não mude quando o backlog de hoje carregar.
+// Se não houver snapshot de D-1 (ex.: primeiro dia em uso), cai no cálculo ao vivo
+// como fallback, igual ao comportamento anterior.
+// "Status" e "COTAS D0" vêm do upload do Excel de cotas do ELOS.
 router.get('/cotas-planejadas', async (req, res, next) => {
   try {
     const dados = await carregarDadosPainel(req.query);
+    const { getSnapshotD1 } = require('../services/snapshotService');
     const linkVoltar = `/?${montarQueryStringEstado(req.query).toString()}`;
     const linkResumoCotas = `/resumo-cotas?${montarQueryStringEstado(req.query).toString()}`;
     const linkConfiguracoes = `/configuracoes?${montarQueryStringEstado(req.query).toString()}`;
@@ -598,6 +600,32 @@ router.get('/cotas-planejadas', async (req, res, next) => {
       return mapa;
     };
 
+    // Snapshot D-1: { instalacao: { bucket: [{label,minutos,ordens},...] }, ... }
+    // Se vazio (primeiro uso), linhasXxx do painel ao vivo servem de fallback.
+    const snapshotD1 = await getSnapshotD1();
+    const temSnapshotD1 = Object.keys(snapshotD1).length > 0;
+
+    // Reconstrói as linhas no mesmo formato que o partial tabela-cotas espera
+    // (linha.janelas[], linha.minutos[]), mas agora com dados do snapshot D-1.
+    // Se não houver snapshot de D-1 para aquele tipo, Planej. fica tudo zero
+    // (não usa cálculo ao vivo para não enganar).
+    const linhasDeSnapshot = (tipo, linhasVivas, labels) => {
+      const bucketSnap = temSnapshotD1 ? (snapshotD1[tipo] || {}) : {};
+      return linhasVivas.map(linha => {
+        const janSnap = bucketSnap[linha.bucket];
+        const minutos = labels.map((_, j) => (janSnap && janSnap[j] ? janSnap[j].minutos : 0));
+        const janelas = labels.map((_, j) => (janSnap && janSnap[j] ? janSnap[j].ordens : 0));
+        return { ...linha, minutos, janelas };
+      });
+    };
+
+    const linhasInstalacoesComPlanej = linhasDeSnapshot(
+      'instalacao', dados.linhasInstalacoes, dados.janelasInstalacaoLabels
+    );
+    const linhasServicosComPlanej = linhasDeSnapshot(
+      'servico', dados.linhasServicos, dados.janelasServicoLabels
+    );
+
     const [cotasD0, consumoHoje, cotasD0Servico, consumoHojeServico] = await Promise.all([
       getCotasD0('instalacao'),
       getConsumoHoje('instalacao'),
@@ -623,18 +651,20 @@ router.get('/cotas-planejadas', async (req, res, next) => {
       linkResumoCotas,
       linkConfiguracoes,
       linkCotasPlanejadas,
-      linhasInstalacoes: dados.linhasInstalacoes,
+      linhasInstalacoes: linhasInstalacoesComPlanej,
       janelasInstalacaoLabels: dados.janelasInstalacaoLabels,
       aliadaCoresInstalacoes: dados.aliadaCoresInstalacoes,
       mapaCotasD0,
       mapaConsumo,
       // Serviços: mesma estrutura, recorte/tempo próprios (depara_tempo_bucket.SERVICO).
-      linhasServicos: dados.linhasServicos,
+      linhasServicos: linhasServicosComPlanej,
       janelasServicoLabels: dados.janelasServicoLabels,
       aliadaCoresServicos: dados.aliadaCoresServicos,
       mapaCotasD0Servico,
       mapaConsumoServico,
       datasCargaCotas,
+      // Indica ao template se o Planej. vem do histórico (D-1) ou do cálculo ao vivo.
+      planejadoDeHistorico: temSnapshotD1,
       cotasUpload: req.query.cotasUpload,
       cotasUploadTipo: req.query.cotasUploadTipo,
       cotasUploadLinhas: req.query.cotasUploadLinhas,
@@ -842,4 +872,20 @@ router.post('/api/raspagem-executar-agora', async (req, res, next) => {
   }
 });
 
+// Salva o planejamento atual no histórico manualmente (mesma lógica do cron das 9h).
+// Sempre sobrescreve o snapshot de hoje (ON DUPLICATE KEY UPDATE no snapshotService),
+// então pode ser chamado mais de uma vez no mesmo dia sem duplicar.
+// Resposta JSON porque é chamado via fetch pelo botão "Salvar planejamento".
+router.post('/api/snapshot-manual', async (req, res, next) => {
+  try {
+    const { salvarSnapshot } = require('../services/snapshotService');
+    const dados = await carregarDadosPainel({});
+    await salvarSnapshot(dados, new Date());
+    res.json({ ok: true });
+  } catch (err) {
+    next(err);
+  }
+});
+
 module.exports = router;
+module.exports.carregarDadosPainel = carregarDadosPainel;

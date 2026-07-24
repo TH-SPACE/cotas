@@ -50,6 +50,7 @@ async function getResumoBuckets(tecnologias, filtros) {
          AND b.PHYSICAL_LINK_MEDIA_TYPE IN (?)
          AND b.STATUS IN (?)
          AND b.STATUS_REASON IN (?)
+         AND DATE(b.DATA_VENCIMENTO) != CURDATE()
        LEFT JOIN depara_tempo_bucket t
          ON t.BUCKET = d.BKT
        GROUP BY d.ALIADA, d.BKT, t.REPARO
@@ -71,6 +72,7 @@ async function getResumoBuckets(tecnologias, filtros) {
          AND b.STATUS IN (?)
          AND b.STATUS_REASON IN (?)
          AND b.ARMARIO IS NOT NULL AND b.ARMARIO <> ''
+         AND DATE(b.DATA_VENCIMENTO) != CURDATE()
      ) resumo
      ORDER BY aliada, bucket`,
     [
