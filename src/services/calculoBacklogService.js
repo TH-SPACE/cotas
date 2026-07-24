@@ -98,18 +98,28 @@ function calcularDistribuicaoPorSugestao(linhasComSugestao, config) {
   });
 }
 
-// Linha "Total geral": Previsto e Sugestão totais são recalculados direto do
-// total do cluster (não somam as linhas — evita deriva de arredondamento por
-// bucket); ORDENS parte da Sugestão total do mesmo jeito que cada bucket parte
-// da própria Sugestão. COTAS(min) e PU continuam somando as linhas, como antes.
-function calcularTotais(totalPrevisto, carga, linhasComTudo, config) {
+// Linha "Total geral": TODAS as colunas somam as linhas exibidas (bottom-up),
+// igual COTAS(min) e PU já faziam. Antes Previsto/Sugestão/ORDENS eram
+// recalculados direto do total do cluster (achando que "evitava deriva de
+// arredondamento"), mas o efeito colateral era pior: a linha de total podia não
+// bater com a soma da própria coluna acima dela (ex.: ORDENS de Serviços na
+// janela 16:00-18:00 somava 17 nas linhas mas mostrava 15 no total) -- confuso
+// pra quem confere a conta na mão. Bottom-up garante que o rodapé SEMPRE fecha
+// com o que está na tela.
+function calcularTotais(linhasComTudo, config) {
   const { percentuaisJanela, metaPuTecnico } = config;
-  const totalSugestao = Math.round(carga);
-  const totalJanelas = distribuirEmJanelas(totalSugestao, percentuaisJanela);
+  const qtdJanelas = percentuaisJanela.length + 1;
+  const somarCampo = (campo) => linhasComTudo.reduce((acc, l) => acc + l[campo], 0);
+
+  const totalPrevisto = somarCampo('previstoResolucao');
+  const totalSugestao = somarCampo('sugestao');
+  const totalJanelas = Array.from({ length: qtdJanelas }, (_, i) =>
+    linhasComTudo.reduce((acc, l) => acc + (l.janelas[i] || 0), 0)
+  );
   const totalMinutos = totalJanelas.map((_, i) =>
     linhasComTudo.reduce((acc, l) => acc + l.minutos[i], 0)
   );
-  const totalPu = Math.round(linhasComTudo.reduce((acc, l) => acc + l.pu, 0) * 100) / 100;
+  const totalPu = Math.round(somarCampo('pu') * 100) / 100;
 
   return {
     totalPrevisto,

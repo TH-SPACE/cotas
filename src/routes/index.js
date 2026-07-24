@@ -288,7 +288,7 @@ async function carregarDadosPainel(query) {
     percentuaisJanela: [percentualJanela], pu: puReparo, metaPuTecnico,
     campoBacklog: 'backlogReparos', campoTempo: 'tempoReparoMinutos',
   });
-  const totais = calcularTotais(totalPrevistoReparo, cargaReparo, linhasComPrevisto, {
+  const totais = calcularTotais(linhasComPrevisto, {
     percentuaisJanela: [percentualJanela], metaPuTecnico,
   });
 
@@ -303,7 +303,7 @@ async function carregarDadosPainel(query) {
     campoBacklog: 'backlogInstalacoes', campoTempo: 'tempoInstalacaoMinutos',
     campoPuBruto: 'puBrutoTotal',
   });
-  const totaisInstalacoes = calcularTotais(totalPrevistoInstalacaoBase, cargaInstalacao, linhasInstalacoesComPrevisto, {
+  const totaisInstalacoes = calcularTotais(linhasInstalacoesComPrevisto, {
     percentuaisJanela: percentuaisJanelaInstalacao, metaPuTecnico: metaPuTecnicoInstalacao,
   });
   const totalSugestaoInstalacoes = totaisInstalacoes.totalSugestao;
@@ -319,7 +319,7 @@ async function carregarDadosPainel(query) {
     campoBacklog: 'backlogServicos', campoTempo: 'tempoServicoMinutos',
     campoPuBruto: 'puBrutoTotal',
   });
-  const totaisServicos = calcularTotais(totalPrevistoServicoBase, cargaServico, linhasServicosComPrevisto, {
+  const totaisServicos = calcularTotais(linhasServicosComPrevisto, {
     percentuaisJanela: percentuaisJanelaServico, metaPuTecnico: metaPuTecnicoServico,
   });
   const totalSugestaoServicos = totaisServicos.totalSugestao;
@@ -335,7 +335,7 @@ async function carregarDadosPainel(query) {
     campoBacklog: 'backlogMe', campoTempo: 'tempoMeMinutos',
     campoPuBruto: 'puBrutoTotal',
   });
-  const totaisMe = calcularTotais(totalPrevistoMeBase, cargaMe, linhasMeComPrevisto, {
+  const totaisMe = calcularTotais(linhasMeComPrevisto, {
     percentuaisJanela: percentuaisJanelaMe, metaPuTecnico: metaPuTecnicoMe,
   });
   const totalSugestaoMe = totaisMe.totalSugestao;
@@ -569,33 +569,45 @@ router.get('/cotas-planejadas', async (req, res, next) => {
     const linkConfiguracoes = `/configuracoes?${montarQueryStringEstado(req.query).toString()}`;
     const linkCotasPlanejadas = `/cotas-planejadas?${montarQueryStringEstado(req.query).toString()}`;
 
-    // bucket -> janela (sem espaços) -> { status, cotaAberta, cotaUsada } do D0.
     // Normaliza o rótulo da janela tirando espaços porque o Excel usa "08:30-10:30"
-    // e os labels do painel usam "08:30 - 10:30". A tabela por enquanto é só de
-    // Instalação; os outros 3 tipos só têm upload (última atualização) por ora.
-    const [cotasD0, consumoHoje] = await Promise.all([
-      getCotasD0('instalacao'),
-      getConsumoHoje(),
-    ]);
-    const mapaCotasD0 = {};
-    cotasD0.forEach(r => {
-      const janela = String(r.timeSlot || '').replace(/\s/g, '');
-      (mapaCotasD0[r.bucket] || (mapaCotasD0[r.bucket] = {}))[janela] = {
-        status: r.status,
-        cotaAberta: r.cotaAberta,
-        cotaUsada: r.cotaUsada,
-      };
-    });
+    // e os labels do painel usam "08:30 - 10:30".
+    const chaveJanela = (valor) => String(valor || '').replace(/\s/g, '');
 
-    // bucket -> janela (sem espaços) -> consumo (ordens × tempo do bucket)
-    const mapaConsumo = {};
-    consumoHoje.forEach(r => {
-      const janela = String(r.timeSlot || '').replace(/\s/g, '');
-      (mapaConsumo[r.bucket] || (mapaConsumo[r.bucket] = {}))[janela] = {
-        minutos: r.consumo,
-        qtdOrdens: r.qtdOrdens,
-      };
-    });
+    // bucket -> janela -> { status, cotaAberta, cotaUsada } da linha Age=D0.
+    const montarMapaD0 = (linhas) => {
+      const mapa = {};
+      linhas.forEach(r => {
+        (mapa[r.bucket] || (mapa[r.bucket] = {}))[chaveJanela(r.timeSlot)] = {
+          status: r.status,
+          cotaAberta: r.cotaAberta,
+          cotaUsada: r.cotaUsada,
+        };
+      });
+      return mapa;
+    };
+
+    // bucket -> janela -> { minutos, qtdOrdens } das ordens agendadas para hoje.
+    const montarMapaConsumo = (linhas) => {
+      const mapa = {};
+      linhas.forEach(r => {
+        (mapa[r.bucket] || (mapa[r.bucket] = {}))[chaveJanela(r.timeSlot)] = {
+          minutos: r.consumo,
+          qtdOrdens: r.qtdOrdens,
+        };
+      });
+      return mapa;
+    };
+
+    const [cotasD0, consumoHoje, cotasD0Servico, consumoHojeServico] = await Promise.all([
+      getCotasD0('instalacao'),
+      getConsumoHoje('instalacao'),
+      getCotasD0('servico'),
+      getConsumoHoje('servico'),
+    ]);
+    const mapaCotasD0 = montarMapaD0(cotasD0);
+    const mapaConsumo = montarMapaConsumo(consumoHoje);
+    const mapaCotasD0Servico = montarMapaD0(cotasD0Servico);
+    const mapaConsumoServico = montarMapaConsumo(consumoHojeServico);
 
     const datasCargaBrutas = await getDatasCargaCotas();
     const datasCargaCotas = {};
@@ -616,6 +628,12 @@ router.get('/cotas-planejadas', async (req, res, next) => {
       aliadaCoresInstalacoes: dados.aliadaCoresInstalacoes,
       mapaCotasD0,
       mapaConsumo,
+      // Serviços: mesma estrutura, recorte/tempo próprios (depara_tempo_bucket.SERVICO).
+      linhasServicos: dados.linhasServicos,
+      janelasServicoLabels: dados.janelasServicoLabels,
+      aliadaCoresServicos: dados.aliadaCoresServicos,
+      mapaCotasD0Servico,
+      mapaConsumoServico,
       datasCargaCotas,
       cotasUpload: req.query.cotasUpload,
       cotasUploadTipo: req.query.cotasUploadTipo,

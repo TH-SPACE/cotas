@@ -1,5 +1,18 @@
 const zlib = require('zlib');
 const pool = require('../db');
+// Regras de recorte reaproveitadas dos painéis da página inicial (ver
+// CONSUMO_POR_TIPO lá embaixo): o Consumo tem que contar exatamente as mesmas
+// ordens que a seção correspondente conta.
+const {
+  CLUSTER_ESCOPO: CLUSTER_ESCOPO_CONSUMO,
+  SPECIFICATION_TYPE_INSTALACAO,
+} = require('./instalacaoBucketService');
+const {
+  SPECIFICATION_TYPE_EXCLUIDOS: SERVICO_TIPOS_EXCLUIDOS,
+  SPECIFICATION_PRODUCT_PREFIXO_EXCLUIDO: SERVICO_PRODUTO_EXCLUIDO_LIKE,
+} = require('./servicoBucketService');
+// Mesmo curinga dos painéis: ARD sem linha em depara_bucket cai em BKT_GOIANIA.
+const BUCKET_CURINGA_CONSUMO = 'BKT_GOIANIA';
 
 // Cotas do ELOS por tipo. Cada tipo tem sua própria tabela (mesmo padrão do resto do
 // app: backlog_instalacoes, depara_pu_produto/_servico/_me...), todas com o mesmo
@@ -277,16 +290,35 @@ async function getCotasD0(tipo) {
   return rows;
 }
 
+// Recorte de cada tipo no Consumo. As regras de negócio NÃO são reescritas aqui:
+// vêm dos mesmos serviços que alimentam os painéis da página inicial, senão a
+// mesma ordem contaria de um jeito lá e de outro aqui.
+const CONSUMO_POR_TIPO = {
+  instalacao: {
+    colunaTempo: 'INSTALACAO',
+    condicao: 'AND i.SPECIFICATION_TYPE = ?',
+    params: [SPECIFICATION_TYPE_INSTALACAO],
+  },
+  servico: {
+    colunaTempo: 'SERVICO',
+    condicao: 'AND i.SPECIFICATION_TYPE NOT IN (?, ?) AND i.SPECIFICATION_PRODUCT NOT LIKE ?',
+    params: [...SERVICO_TIPOS_EXCLUIDOS, SERVICO_PRODUTO_EXCLUIDO_LIKE],
+  },
+};
+
 // Consumo de hoje: soma as ordens de backlog_instalacoes AGENDADAS para hoje.
 // Atenção ao nome da coluna: apesar de se chamar DATA_VENCIMENTO, ela guarda a
 // data do AGENDAMENTO da ordem -- não é prazo/vencimento. Não descreva como
 // "vencendo hoje" na tela (já foi corrigido uma vez).
 // Filtra por DATA_VENCIMENTO começando por DD/MM/YYYY (o CSV do ELOS grava
-// "DD/MM/YYYY HH:MM:SS", então usamos LIKE),
-// multiplicadas pelo tempo de instalação do bucket (depara_tempo_bucket.INSTALACAO),
-// agrupado por bucket (via depara_bucket) e TIME_SLOT.
-// Retorna linhas { bucket, timeSlot, consumo } onde consumo = COUNT * minutos.
-async function getConsumoHoje() {
+// "DD/MM/YYYY HH:MM:SS", então usamos LIKE), multiplicadas pelo tempo do bucket
+// daquele tipo (depara_tempo_bucket.INSTALACAO / .SERVICO), agrupado por bucket
+// (via depara_bucket) e TIME_SLOT.
+// Retorna linhas { bucket, timeSlot, qtdOrdens, consumo } com consumo = COUNT * minutos.
+async function getConsumoHoje(tipo = 'instalacao') {
+  const cfg = CONSUMO_POR_TIPO[tipo];
+  if (!cfg) throw new Error(`Consumo não configurado para o tipo: ${tipo}.`);
+
   const hoje = new Date();
   const dd = String(hoje.getDate()).padStart(2, '0');
   const mm = String(hoje.getMonth() + 1).padStart(2, '0');
@@ -295,18 +327,18 @@ async function getConsumoHoje() {
 
   const [rows] = await pool.query(
     `SELECT
-       COALESCE(d.BKT, 'BKT_GOIANIA') AS bucket,
+       COALESCE(d.BKT, '${BUCKET_CURINGA_CONSUMO}') AS bucket,
        i.TIME_SLOT AS timeSlot,
        COUNT(i.ID) AS qtdOrdens,
-       COUNT(i.ID) * COALESCE(t.INSTALACAO, 0) AS consumo
+       COUNT(i.ID) * COALESCE(t.\`${cfg.colunaTempo}\`, 0) AS consumo
      FROM backlog_instalacoes i
      LEFT JOIN depara_bucket d ON d.ARMARIO = i.ARMARIO
-     LEFT JOIN depara_tempo_bucket t ON t.BUCKET = COALESCE(d.BKT, 'BKT_GOIANIA')
+     LEFT JOIN depara_tempo_bucket t ON t.BUCKET = COALESCE(d.BKT, '${BUCKET_CURINGA_CONSUMO}')
      WHERE i.DATA_VENCIMENTO LIKE ?
-       AND i.CLUSTER_ = 'GOIANIA'
-       AND i.SPECIFICATION_TYPE = 'INSTALAÇÃO'
-     GROUP BY COALESCE(d.BKT, 'BKT_GOIANIA'), i.TIME_SLOT, t.INSTALACAO`,
-    [prefixoHoje]
+       AND i.CLUSTER_ = ?
+       ${cfg.condicao}
+     GROUP BY COALESCE(d.BKT, '${BUCKET_CURINGA_CONSUMO}'), i.TIME_SLOT, t.\`${cfg.colunaTempo}\``,
+    [prefixoHoje, CLUSTER_ESCOPO_CONSUMO, ...cfg.params]
   );
   return rows;
 }

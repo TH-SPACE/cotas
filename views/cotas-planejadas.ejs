@@ -1,247 +1,130 @@
 <%- include('partials/head') %>
 
-  <% const tiposCotas=[ { tipo: 'instalacao' , label: 'Instalação' }, { tipo: 'servico' , label: 'Serviço' }, {
-    tipo: 'me' , label: 'ME' }, { tipo: 'reparo' , label: 'Reparos' }, ]; const rotuloTipo=t=> (tiposCotas.find(x =>
-    x.tipo === t) || {}).label || t;
+<%
+  const tiposCotas = [
+    { tipo: 'instalacao', label: 'Instalação' },
+    { tipo: 'servico', label: 'Serviço' },
+    { tipo: 'me', label: 'ME' },
+    { tipo: 'reparo', label: 'Reparos' },
+  ];
+  const rotuloTipo = (t) => (tiposCotas.find(x => x.tipo === t) || {}).label || t;
 
-    // Chaves de janela sem espaço (Excel usa "08:30-10:30", label do painel "08:30 - 10:30").
-    const janelaKeys = janelasInstalacaoLabels.map(label => String(label).replace(/\s/g, ''));
-    // Totais por janela (rodapé): Planejadas soma sempre; D0 e Consumo só somam quem tem valor.
-    const totaisPlanejadas = janelasInstalacaoLabels.map((_, j) =>
-    linhasInstalacoes.reduce((acc, l) => acc + (l.minutos[j] || 0), 0)
-    );
-    const totaisD0 = janelaKeys.map(chave => {
-    let soma = 0, tem = false;
-    linhasInstalacoes.forEach(l => {
-    const d0 = (mapaCotasD0[l.bucket] || {})[chave];
-    if (d0 && d0.cotaAberta != null) { soma += Number(d0.cotaAberta); tem = true; }
-    });
-    return tem ? soma : null;
-    });
-    const totaisConsumo = janelaKeys.map(chave => {
-    let soma = 0, tem = false;
-    linhasInstalacoes.forEach(l => {
-    const v = (mapaConsumo[l.bucket] || {})[chave];
-    if (v != null) { soma += Number(v.minutos); tem = true; }
-    });
-    return tem ? soma : null;
-    });
-    const totaisQtdOrdens = janelaKeys.map(chave => {
-    let soma = 0, tem = false;
-    linhasInstalacoes.forEach(l => {
-    const v = (mapaConsumo[l.bucket] || {})[chave];
-    if (v != null) { soma += Number(v.qtdOrdens); tem = true; }
-    });
-    return tem ? soma : null;
-    });
+  /*
+    Uma entrada por seção; a tabela em si é o partial `tabela-cotas`. ME e Reparos
+    entram aqui quando tiverem o recorte de Consumo definido (ver CONSUMO_POR_TIPO
+    em cotasService.js) -- até lá seguem como abas desabilitadas.
+  */
+  const secoes = [
+    {
+      id: 'instalacao',
+      label: 'Instalação',
+      titulo: 'Cotas de Instalação em D0',
+      rotuloColuna: 'Instalação',
+      linhas: linhasInstalacoes,
+      janelasLabels: janelasInstalacaoLabels,
+      aliadaCores: aliadaCoresInstalacoes,
+      mapaD0: mapaCotasD0,
+      mapaConsumo: mapaConsumo,
+      campoTempo: 'tempoInstalacaoMinutos',
+    },
+    {
+      id: 'servico',
+      label: 'Serviços',
+      titulo: 'Cotas de Serviços em D0',
+      rotuloColuna: 'Serviço',
+      linhas: linhasServicos,
+      janelasLabels: janelasServicoLabels,
+      aliadaCores: aliadaCoresServicos,
+      mapaD0: mapaCotasD0Servico,
+      mapaConsumo: mapaConsumoServico,
+      campoTempo: 'tempoServicoMinutos',
+    },
+  ];
+  const abasFuturas = ['ME', 'Reparos'];
+%>
 
-    /*
-      Versão em ORDENS das mesmas colunas (o toggle "Minutos / Ordens" troca só a
-      exibição -- os dois valores já vão no HTML, nada é recalculado no clique):
-        Planej. -> linha.janelas[j] (as ordens de onde os minutos saíram)
-        Consumo -> qtdOrdens (já vinha no tooltip)
-        D0      -> cota em minutos ÷ tempo do bucket (depara_tempo_bucket.INSTALACAO),
-                   que é exatamente o inverso do cálculo de minutos.
-    */
-    const d0EmOrdens = (linha, chave) => {
-    const d0 = (mapaCotasD0[linha.bucket] || {})[chave];
-    if (!d0 || d0.cotaAberta == null) return null;
-    const tempo = Number(linha.tempoInstalacaoMinutos) || 0;
-    return tempo > 0 ? Math.round(Number(d0.cotaAberta) / tempo) : null;
-    };
-    const totaisPlanejadasQtd = janelasInstalacaoLabels.map((_, j) =>
-    linhasInstalacoes.reduce((acc, l) => acc + (l.janelas[j] || 0), 0)
-    );
-    const totaisD0Qtd = janelaKeys.map(chave => {
-    let soma = 0, tem = false;
-    linhasInstalacoes.forEach(l => {
-    const q = d0EmOrdens(l, chave);
-    if (q != null) { soma += q; tem = true; }
-    });
-    return tem ? soma : null;
-    });
-    %>
-
-    <%
-      /*
-        Abas de seção: hoje só Instalação tem dados. Serviços/ME/Reparos entram
-        depois na MESMA estrutura -- é só trocar a fonte da tabela e marcar a aba
-        como ativa. Ficam desabilitadas (não fingem funcionar) até existirem.
-      */
-      const abasSecao = [
-        { id: 'instalacao', label: 'Instalação', ativa: true },
-        { id: 'servico', label: 'Serviços', ativa: false },
-        { id: 'me', label: 'ME', ativa: false },
-        { id: 'reparo', label: 'Reparos', ativa: false },
-      ];
-    %>
-    <section class="panel" id="cotas-tabela">
-      <div class="tabela-card-header">
-        <div>
-          <h2 class="tabela-card-titulo">Cotas de Instalação em D0</h2>
+<section class="panel" id="cotas-tabela">
+  <div class="tabela-card-header">
+    <div>
+      <% secoes.forEach((secao, i) => { %>
+        <div class="secao-cabecalho" data-secao="<%= secao.id %>" <%= i === 0 ? '' : 'hidden' %>>
+          <h2 class="tabela-card-titulo"><%= secao.titulo %></h2>
           <p class="tabela-card-contexto">
-            Cluster GOIANIA · <%= linhasInstalacoes.length %> buckets · <%= janelasInstalacaoLabels.length %> janelas
-            <% if (datasCargaCotas.instalacao) { %>
-              · cotas do ETA de <strong><%= datasCargaCotas.instalacao %></strong>
+            Cluster GOIANIA · <%= secao.linhas.length %> buckets · <%= secao.janelasLabels.length %> janelas
+            <% if (datasCargaCotas[secao.id]) { %>
+              · cotas do ETA de <strong><%= datasCargaCotas[secao.id] %></strong>
+            <% } else { %>
+              · <strong>cotas do ETA ainda não importadas</strong>
             <% } %>
           </p>
         </div>
-        <div class="tabela-card-acoes">
-          <div class="unidade-toggle">
-            <span class="unidade-toggle-label" id="rotulo-unidade">Ver em</span>
-            <div class="secao-tabs" role="group" aria-labelledby="rotulo-unidade">
-              <button type="button" class="secao-tab unidade-tab is-active" data-unidade="min" aria-pressed="true" title="Mostrar os valores em minutos">Minutos</button>
-              <button type="button" class="secao-tab unidade-tab" data-unidade="qtd" aria-pressed="false" title="Mostrar os valores em quantidade de ordens">Ordens</button>
-            </div>
-          </div>
-          <nav class="secao-tabs" aria-label="Seção">
-            <% abasSecao.forEach(aba => { %>
-              <button type="button" class="secao-tab <%= aba.ativa ? 'is-active' : '' %>" <%- aba.ativa ? 'aria-current="page"' : 'disabled title="Em breve"' %>><%= aba.label %></button>
-            <% }) %>
-          </nav>
+      <% }) %>
+    </div>
+    <div class="tabela-card-acoes">
+      <div class="unidade-toggle">
+        <span class="unidade-toggle-label" id="rotulo-unidade">Ver em</span>
+        <div class="secao-tabs" role="group" aria-labelledby="rotulo-unidade">
+          <button type="button" class="secao-tab unidade-tab is-active" data-unidade="min" aria-pressed="true" title="Mostrar os valores em minutos">Minutos</button>
+          <button type="button" class="secao-tab unidade-tab" data-unidade="qtd" aria-pressed="false" title="Mostrar os valores em quantidade de ordens">Ordens</button>
         </div>
       </div>
-      <div class="table-scroll">
-        <table class="cotas-table cotas-table-compact">
-          <colgroup>
-            <col class="colw-aliada" />
-            <col class="colw-bucket" />
-            <% janelasInstalacaoLabels.forEach(()=> { %>
-              <col class="colw-num" />
-              <col class="colw-num" />
-              <col class="colw-num" />
-              <col class="colw-num" />
-              <% }) %>
-          </colgroup>
-          <thead>
-            <tr>
-              <th rowspan="2" title="Empresa aliada responsável pelo bucket">Aliada</th>
-              <th rowspan="2" title="Agrupamento de ARDs (armários) mapeado em depara_bucket">Instalação</th>
-              <% janelasInstalacaoLabels.forEach(label=> { %>
-                <th colspan="4" class="group-header col-divider" title="Janela de horário <%= label %>">
-                  <%= label %>
-                </th>
-                <% }) %>
-            </tr>
-            <tr>
-              <% janelasInstalacaoLabels.forEach(label=> { %>
-                <th class="num col-divider" title="Status da cota do dia (D0) no ETA — <%= label %>">Status</th>
-                <th class="num" title="COTAS(min) de Instalação (ordens × tempo do bucket) — <%= label %>">Planej.</th>
-                <th class="num" title="Cota Aberta do ETA na linha Age = D0 — <%= label %>">D0</th>
-                <th class="num" title="Ordens de instalação agendadas para hoje nesta janela — <%= label %>">Consumo
-                </th>
-                <% }) %>
-            </tr>
-          </thead>
-          <tbody>
-            <% let aliadaAtual=null; %>
-              <% linhasInstalacoes.forEach(linha=> { %>
-                <% const novaAliada=linha.aliada !==aliadaAtual; aliadaAtual=linha.aliada; %>
-                  <tr class="<%= novaAliada ? 'group-start' : '' %>">
-                    <td><span class="aliada-badge aliada-color-<%= aliadaCoresInstalacoes[linha.aliada] %>">
-                        <%= linha.aliada %>
-                      </span></td>
-                    <td class="celula-truncada" title="<%= linha.bucket %>">
-                      <%= linha.bucket %>
-                    </td>
-                    <% janelaKeys.forEach((chave, j)=> { %>
-                      <% const d0=(mapaCotasD0[linha.bucket] || {})[chave] || null; %>
-                        <td
-                          class="col-divider <%= d0 && d0.status === 'Fechado' ? 'status-fechado' : (d0 ? 'status-aberto' : '') %>">
-                          <%= d0 ? d0.status : '—' %>
-                        </td>
-                        <td class="num">
-                          <span class="v-min"><%= linha.minutos[j] || 0 %></span><span class="v-qtd"><%= linha.janelas[j] || 0 %></span>
-                        </td>
-                        <% const d0Qtd = d0EmOrdens(linha, chave); %>
-                        <td class="num">
-                          <span class="v-min"><%= d0 && d0.cotaAberta !=null ? d0.cotaAberta : '—' %></span><span class="v-qtd"><%= d0Qtd !=null ? d0Qtd : '—' %></span>
-                        </td>
-                        <td class="num celula-napplicavel"
-                          title="<% if ((mapaConsumo[linha.bucket] || {})[chave]) { %><%= (mapaConsumo[linha.bucket] || {})[chave].qtdOrdens %> ordem(ns) agendada(s) para hoje<% } else { %>Sem ordens agendadas para hoje<% } %>">
-                          <% const consumo=(mapaConsumo[linha.bucket] || {})[chave]; %>
-                            <span class="v-min"><%= consumo !=null ? consumo.minutos : '—' %></span><span class="v-qtd"><%= consumo !=null ? consumo.qtdOrdens : '—' %></span>
-                        </td>
-                        <% }) %>
-                  </tr>
-                  <% }) %>
-          </tbody>
-          <tfoot>
-            <tr>
-              <td colspan="2" title="Soma de todos os buckets">Total geral</td>
-              <% janelasInstalacaoLabels.forEach((label, j)=> { %>
-                <td class="col-divider"></td>
-                <td class="num">
-                  <span class="v-min"><%= totaisPlanejadas[j] %></span><span class="v-qtd"><%= totaisPlanejadasQtd[j] %></span>
-                </td>
-                <td class="num">
-                  <span class="v-min"><%= totaisD0[j] !=null ? totaisD0[j] : '—' %></span><span class="v-qtd"><%= totaisD0Qtd[j] !=null ? totaisD0Qtd[j] : '—' %></span>
-                </td>
-                <td class="num celula-napplicavel"
-                  title="<%= totaisQtdOrdens[j] != null ? totaisQtdOrdens[j] + ' ordem(ns) agendada(s) para hoje' : 'Sem ordens agendadas para hoje' %>">
-                  <span class="v-min"><%= totaisConsumo[j] !=null ? totaisConsumo[j] : '—' %></span><span class="v-qtd"><%= totaisQtdOrdens[j] !=null ? totaisQtdOrdens[j] : '—' %></span>
-                </td>
-                <% }) %>
-            </tr>
-          </tfoot>
-        </table>
-      </div>
-      <p class="tabela-nota">
-        <strong>Planej.</strong> = COTAS da Sugestão de Instalações (mesmo cálculo da página inicial) ·
-        <strong>Status</strong> e <strong>D0</strong> = cota do dia no ETA (Age = D0) ·
-        <strong>Consumo</strong> = ordens agendadas para hoje.
-        Use <strong>Ver em</strong> para alternar entre minutos e quantidade de ordens — a conversão é sempre
-        o tempo do bucket (<code>depara_tempo_bucket</code>): minutos ÷ tempo = ordens.
-      </p>
-    </section>
+      <nav class="secao-tabs" aria-label="Seção">
+        <% secoes.forEach((secao, i) => { %>
+          <button type="button" class="secao-tab secao-aba <%= i === 0 ? 'is-active' : '' %>" data-secao="<%= secao.id %>" aria-pressed="<%= i === 0 ? 'true' : 'false' %>"><%= secao.label %></button>
+        <% }) %>
+        <% abasFuturas.forEach(label => { %>
+          <button type="button" class="secao-tab" disabled title="Em breve"><%= label %></button>
+        <% }) %>
+      </nav>
+    </div>
+  </div>
 
-    <dialog id="cotas-upload-modal" class="config-modal" data-abrir-automatico="<%= cotasUpload ? 'true' : '' %>">
-      <div class="modal-header">
-        <h3
-          title="Envia os relatórios de cotas do ETA (Excel, aba Export) — um arquivo por tipo. Cada envio substitui todo o conteúdo daquele tipo.">
-          Analítico Disponibilidade e Consumo PB</h3>
-        <button type="button" class="icon-btn" id="cotas-upload-close-btn" aria-label="Fechar"
-          title="Fechar">&times;</button>
-      </div>
+  <% secoes.forEach((secao, i) => { %>
+    <div class="secao-painel" data-secao="<%= secao.id %>" <%= i === 0 ? '' : 'hidden' %>>
+      <%- include('partials/tabela-cotas', { secao: secao }) %>
+    </div>
+  <% }) %>
 
-      <% if (cotasUpload==='ok' ) { %>
-        <p class="alert alert-ok" data-auto-dismiss style="margin: 1rem 1.25rem 0;">Cotas de <strong>
-            <%= rotuloTipo(cotasUploadTipo) %>
-          </strong> importadas: <strong>
-            <%= cotasUploadLinhas %>
-          </strong> linhas.</p>
-        <% } else if (cotasUpload==='erro' ) { %>
-          <p class="alert alert-erro" data-auto-dismiss style="margin: 1rem 1.25rem 0;">Falha ao importar cotas<%=
-              cotasUploadTipo ? ' de ' + rotuloTipo(cotasUploadTipo) : '' %>: <%= cotasUploadErro %>
-          </p>
+  <p class="tabela-nota">
+    <strong>Planej.</strong> = COTAS da Sugestão (mesmo cálculo da página inicial) ·
+    <strong>Status</strong> e <strong>D0</strong> = cota do dia no ETA (Age = D0) ·
+    <strong>Consumo</strong> = ordens agendadas para hoje.
+    Use <strong>Ver em</strong> para alternar entre minutos e quantidade de ordens — a conversão é sempre
+    o tempo do bucket (<code>depara_tempo_bucket</code>): minutos ÷ tempo = ordens.
+  </p>
+</section>
+
+<dialog id="cotas-upload-modal" class="config-modal" data-abrir-automatico="<%= cotasUpload ? 'true' : '' %>">
+  <div class="modal-header">
+    <h3 title="Envia os relatórios de cotas do ETA (Excel, aba Export) — um arquivo por tipo. Cada envio substitui todo o conteúdo daquele tipo.">Analítico Disponibilidade e Consumo PB</h3>
+    <button type="button" class="icon-btn" id="cotas-upload-close-btn" aria-label="Fechar" title="Fechar">&times;</button>
+  </div>
+
+  <% if (cotasUpload === 'ok') { %>
+    <p class="alert alert-ok" data-auto-dismiss style="margin: 1rem 1.25rem 0;">Cotas de <strong><%= rotuloTipo(cotasUploadTipo) %></strong> importadas: <strong><%= cotasUploadLinhas %></strong> linhas.</p>
+  <% } else if (cotasUpload === 'erro') { %>
+    <p class="alert alert-erro" data-auto-dismiss style="margin: 1rem 1.25rem 0;">Falha ao importar cotas<%= cotasUploadTipo ? ' de ' + rotuloTipo(cotasUploadTipo) : '' %>: <%= cotasUploadErro %></p>
+  <% } %>
+
+  <div class="upload-compact-grid">
+    <% tiposCotas.forEach(({ tipo, label }) => { %>
+      <form class="cota-upload-item" method="post" action="/cotas/upload/<%= tipo %>" enctype="multipart/form-data" data-loading="Enviando e processando o arquivo…">
+        <div class="cota-upload-head">
+          <span class="cota-upload-tipo"><%= label %></span>
+          <% if (datasCargaCotas[tipo]) { %>
+            <span class="cota-upload-data" title="Última atualização de <%= label %>">atualizado <%= datasCargaCotas[tipo] %></span>
+          <% } else { %>
+            <span class="cota-upload-data cota-upload-nunca" title="Nunca enviado">nunca enviado</span>
           <% } %>
+        </div>
+        <div class="cota-upload-row">
+          <input type="file" name="arquivo" accept=".xlsx" required aria-label="Arquivo de cotas de <%= label %>" />
+          <button type="submit" title="Enviar e substituir as cotas de <%= label %>">Enviar</button>
+        </div>
+      </form>
+    <% }) %>
+  </div>
+  <p class="hint" style="margin: 0 1.25rem 1.25rem;">Cada envio <strong>substitui</strong> todo o conteúdo daquele tipo. Hoje <strong>Instalação</strong> e <strong>Serviço</strong> alimentam as tabelas acima; ME e Reparos ficam guardados para quando as abas entrarem.</p>
+</dialog>
 
-            <div class="upload-compact-grid">
-              <% tiposCotas.forEach(({ tipo, label })=> { %>
-                <form class="cota-upload-item" method="post" action="/cotas/upload/<%= tipo %>"
-                  enctype="multipart/form-data" data-loading="Enviando e processando o arquivo…">
-                  <div class="cota-upload-head">
-                    <span class="cota-upload-tipo">
-                      <%= label %>
-                    </span>
-                    <% if (datasCargaCotas[tipo]) { %>
-                      <span class="cota-upload-data" title="Última atualização de <%= label %>">atualizado <%=
-                          datasCargaCotas[tipo] %></span>
-                      <% } else { %>
-                        <span class="cota-upload-data cota-upload-nunca" title="Nunca enviado">nunca enviado</span>
-                        <% } %>
-                  </div>
-                  <div class="cota-upload-row">
-                    <input type="file" name="arquivo" accept=".xlsx" required
-                      aria-label="Arquivo de cotas de <%= label %>" />
-                    <button type="submit" title="Enviar e substituir as cotas de <%= label %>">Enviar</button>
-                  </div>
-                </form>
-                <% }) %>
-            </div>
-            <p class="hint" style="margin: 0 1.25rem 1.25rem;">Cada envio <strong>substitui</strong> todo o conteúdo
-              daquele tipo. Por enquanto só as cotas de <strong>Instalação</strong> alimentam a tabela acima; os outros
-              tipos ficam guardados para uso futuro.</p>
-    </dialog>
-
-    <%- include('partials/footer') %>
+<%- include('partials/footer') %>

@@ -221,6 +221,35 @@ document.addEventListener('DOMContentLoaded', () => {
     editaveis.forEach(el => el.addEventListener('input', recalcularRestante));
   });
 
+  // Abas de seção (Instalação / Serviços / ...) da página de Cotas Planejadas.
+  // Todas as tabelas já vêm renderizadas; a aba só mostra/esconde o painel e o
+  // cabeçalho correspondentes (troca instantânea, sem recarregar). A seção
+  // escolhida fica guardada na sessão.
+  const abasDeSecao = document.querySelectorAll('.secao-aba');
+  if (abasDeSecao.length > 0) {
+    const SECAO_KEY = 'calc_secao_cotas';
+
+    const aplicarSecao = (id) => {
+      document.querySelectorAll('.secao-painel[data-secao], .secao-cabecalho[data-secao]').forEach((el) => {
+        el.hidden = el.dataset.secao !== id;
+      });
+      abasDeSecao.forEach((aba) => {
+        const ativa = aba.dataset.secao === id;
+        aba.classList.toggle('is-active', ativa);
+        aba.setAttribute('aria-pressed', ativa ? 'true' : 'false');
+      });
+      sessionStorage.setItem(SECAO_KEY, id);
+    };
+
+    abasDeSecao.forEach((aba) => {
+      aba.addEventListener('click', () => aplicarSecao(aba.dataset.secao));
+    });
+
+    const salva = sessionStorage.getItem(SECAO_KEY);
+    const existe = Array.from(abasDeSecao).some((aba) => aba.dataset.secao === salva);
+    aplicarSecao(existe ? salva : abasDeSecao[0].dataset.secao);
+  }
+
   // Toggle "Minutos / Ordens" da tabela de Cotas Planejadas. Os dois valores já
   // vêm renderizados (spans .v-min e .v-qtd), então trocar é só uma classe -- sem
   // recarregar a página nem recalcular nada. A escolha fica guardada na sessão

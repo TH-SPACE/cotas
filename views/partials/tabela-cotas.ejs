@@ -1,0 +1,98 @@
+<%
+/*
+  Tabela de cotas de UMA seção (Instalação, Serviços, e futuramente ME/Reparos).
+  Recebe `secao`:
+    { id, rotuloColuna, linhas, janelasLabels, aliadaCores, mapaD0, mapaConsumo, campoTempo }
+
+  Cada célula numérica sai com os DOIS valores no HTML (<span class="v-min"> e
+  <span class="v-qtd">); o toggle "Ver em" só troca qual aparece, via CSS.
+  Ordens = minutos ÷ tempo do bucket daquele tipo (campoTempo).
+*/
+const _linhas = secao.linhas || [];
+const _janelas = secao.janelasLabels || [];
+const _mapaD0 = secao.mapaD0 || {};
+const _mapaConsumo = secao.mapaConsumo || {};
+const _chaves = _janelas.map(label => String(label).replace(/\s/g, ''));
+
+const _d0Ordens = (linha, chave) => {
+  const d0 = (_mapaD0[linha.bucket] || {})[chave];
+  if (!d0 || d0.cotaAberta == null) return null;
+  const tempo = Number(linha[secao.campoTempo]) || 0;
+  return tempo > 0 ? Math.round(Number(d0.cotaAberta) / tempo) : null;
+};
+
+// Totais por janela. Planejado soma sempre; D0/Consumo só somam quem tem valor
+// (senão um bucket sem cota viraria zero e mentiria no rodapé).
+const _totPlanMin = _janelas.map((_, j) => _linhas.reduce((acc, l) => acc + (l.minutos[j] || 0), 0));
+const _totPlanQtd = _janelas.map((_, j) => _linhas.reduce((acc, l) => acc + (l.janelas[j] || 0), 0));
+const _somaOuNulo = (obter) => _chaves.map(chave => {
+  let soma = 0, tem = false;
+  _linhas.forEach(l => {
+    const v = obter(l, chave);
+    if (v != null) { soma += Number(v); tem = true; }
+  });
+  return tem ? soma : null;
+});
+const _d0De = (l, c) => { const d = (_mapaD0[l.bucket] || {})[c]; return d && d.cotaAberta != null ? d.cotaAberta : null; };
+const _consumoDe = (l, c) => (_mapaConsumo[l.bucket] || {})[c] || null;
+const _totD0Min = _somaOuNulo(_d0De);
+const _totD0Qtd = _somaOuNulo(_d0Ordens);
+const _totConsMin = _somaOuNulo((l, c) => { const v = _consumoDe(l, c); return v ? v.minutos : null; });
+const _totConsQtd = _somaOuNulo((l, c) => { const v = _consumoDe(l, c); return v ? v.qtdOrdens : null; });
+%>
+<div class="table-scroll">
+  <table class="cotas-table cotas-table-compact">
+    <colgroup>
+      <col class="colw-aliada" />
+      <col class="colw-bucket" />
+      <% _janelas.forEach(() => { %><col class="colw-num" /><col class="colw-num" /><col class="colw-num" /><col class="colw-num" /><% }) %>
+    </colgroup>
+    <thead>
+      <tr>
+        <th rowspan="2" title="Empresa aliada responsável pelo bucket">Aliada</th>
+        <th rowspan="2" title="Agrupamento de ARDs (armários) mapeado em depara_bucket"><%= secao.rotuloColuna %></th>
+        <% _janelas.forEach(label => { %>
+          <th colspan="4" class="group-header col-divider" title="Janela de horário <%= label %>"><%= label %></th>
+        <% }) %>
+      </tr>
+      <tr>
+        <% _janelas.forEach(label => { %>
+          <th class="num col-divider" title="Status da cota do dia (D0) no ETA — <%= label %>">Status</th>
+          <th class="num" title="COTAS da Sugestão (mesmo cálculo da página inicial) — <%= label %>">Planej.</th>
+          <th class="num" title="Cota Aberta do ETA na linha Age = D0 — <%= label %>">D0</th>
+          <th class="num" title="Ordens agendadas para hoje nesta janela — <%= label %>">Consumo</th>
+        <% }) %>
+      </tr>
+    </thead>
+    <tbody>
+      <% let _aliadaAtual = null; %>
+      <% _linhas.forEach(linha => { %>
+        <% const _nova = linha.aliada !== _aliadaAtual; _aliadaAtual = linha.aliada; %>
+        <tr class="<%= _nova ? 'group-start' : '' %>">
+          <td><span class="aliada-badge aliada-color-<%= secao.aliadaCores[linha.aliada] %>"><%= linha.aliada %></span></td>
+          <td class="celula-truncada" title="<%= linha.bucket %>"><%= linha.bucket %></td>
+          <% _chaves.forEach((chave, j) => { %>
+            <% const d0 = (_mapaD0[linha.bucket] || {})[chave] || null; %>
+            <% const consumo = _consumoDe(linha, chave); %>
+            <% const d0Qtd = _d0Ordens(linha, chave); %>
+            <td class="col-divider <%= d0 && d0.status === 'Fechado' ? 'status-fechado' : (d0 ? 'status-aberto' : '') %>"><%= d0 ? d0.status : '—' %></td>
+            <td class="num"><span class="v-min"><%= linha.minutos[j] || 0 %></span><span class="v-qtd"><%= linha.janelas[j] || 0 %></span></td>
+            <td class="num"><span class="v-min"><%= d0 && d0.cotaAberta != null ? d0.cotaAberta : '—' %></span><span class="v-qtd"><%= d0Qtd != null ? d0Qtd : '—' %></span></td>
+            <td class="num celula-napplicavel" title="<%= consumo ? consumo.qtdOrdens + ' ordem(ns) agendada(s) para hoje' : 'Sem ordens agendadas para hoje' %>"><span class="v-min"><%= consumo ? consumo.minutos : '—' %></span><span class="v-qtd"><%= consumo ? consumo.qtdOrdens : '—' %></span></td>
+          <% }) %>
+        </tr>
+      <% }) %>
+    </tbody>
+    <tfoot>
+      <tr>
+        <td colspan="2" title="Soma de todos os buckets">Total geral</td>
+        <% _janelas.forEach((label, j) => { %>
+          <td class="col-divider"></td>
+          <td class="num"><span class="v-min"><%= _totPlanMin[j] %></span><span class="v-qtd"><%= _totPlanQtd[j] %></span></td>
+          <td class="num"><span class="v-min"><%= _totD0Min[j] != null ? _totD0Min[j] : '—' %></span><span class="v-qtd"><%= _totD0Qtd[j] != null ? _totD0Qtd[j] : '—' %></span></td>
+          <td class="num celula-napplicavel" title="<%= _totConsQtd[j] != null ? _totConsQtd[j] + ' ordem(ns) agendada(s) para hoje' : 'Sem ordens agendadas para hoje' %>"><span class="v-min"><%= _totConsMin[j] != null ? _totConsMin[j] : '—' %></span><span class="v-qtd"><%= _totConsQtd[j] != null ? _totConsQtd[j] : '—' %></span></td>
+        <% }) %>
+      </tr>
+    </tfoot>
+  </table>
+</div>
