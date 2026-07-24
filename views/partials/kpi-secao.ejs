@@ -1,0 +1,45 @@
+<%
+/*
+  Linha de KPIs de uma seção (Instalações/Serviços/ME/Reparos).
+
+  Forma escolhida de propósito: "a handful of headline numbers" pede uma KPI row
+  de stat tiles, NÃO um gráfico. Estes números já existiam, mas só na última linha
+  ("Total geral") da tabela -- ou seja, o resumo ficava escondido depois de 15
+  linhas. Aqui eles sobem pro topo e a tabela segue sendo a fonte dos valores
+  exatos por bucket.
+
+  Os valores usam figuras proporcionais (sem tabular-nums de propósito: número
+  grande solto fica "frouxo" com dígitos de largura fixa).
+
+  Recebe: kpi = { backlog, previsto, percentual, sugestao, minutos[], tecnicos, pu }
+*/
+const _minutos = (kpi.minutos || []).reduce((soma, v) => soma + Number(v || 0), 0);
+const _fmt = (n) => Number(n || 0).toLocaleString('pt-BR');
+%>
+<div class="kpi-row">
+  <div class="kpi-tile">
+    <span class="kpi-label">Backlog</span>
+    <span class="kpi-value"><%= _fmt(kpi.backlog) %></span>
+    <span class="kpi-sub">ordens em aberto</span>
+  </div>
+  <div class="kpi-tile">
+    <span class="kpi-label">Previsto</span>
+    <span class="kpi-value"><%= _fmt(kpi.previsto) %></span>
+    <span class="kpi-sub"><%= kpi.percentual %>% do backlog</span>
+  </div>
+  <div class="kpi-tile">
+    <span class="kpi-label">Sugestão</span>
+    <span class="kpi-value"><%= _fmt(kpi.sugestao) %></span>
+    <span class="kpi-sub">ordens a distribuir</span>
+  </div>
+  <div class="kpi-tile">
+    <span class="kpi-label">Cotas</span>
+    <span class="kpi-value"><%= _fmt(_minutos) %></span>
+    <span class="kpi-sub">minutos no dia</span>
+  </div>
+  <div class="kpi-tile kpi-tile-destaque">
+    <span class="kpi-label">Técnicos</span>
+    <span class="kpi-value"><%= _fmt(kpi.tecnicos) %></span>
+    <span class="kpi-sub"><%= _fmt(kpi.pu) %> PU no total</span>
+  </div>
+</div>

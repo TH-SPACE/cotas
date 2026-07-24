@@ -41,6 +41,7 @@ const { importarReparos } = require('../services/reparosUploadService');
 const {
   importarCotas,
   getCotasD0,
+  getConsumoHoje,
   getDatasCargaCotas,
   TIPOS: TIPOS_COTAS,
 } = require('../services/cotasService');
@@ -163,285 +164,285 @@ function montarQueryStringEstado(body) {
 async function carregarDadosPainel(query) {
   const configGeral = await getConfiguracoesGerais();
   const percentual = normalizarPercentual(configGeral.percentual, PERCENTUAL_PADRAO);
-    const percentualJanela = normalizarPercentual(configGeral.percentualJanela, PERCENTUAL_JANELA_PADRAO);
-    const puReparo = normalizarPu(configGeral.puReparo, PU_REPARO_PADRAO);
-    const metaPuTecnico = normalizarMetaPuTecnico(configGeral.metaPuTecnico, META_PU_TECNICO_PADRAO);
-    const cargaReparo = normalizarPu(configGeral.cargaReparo, CARGA_REPARO_PADRAO);
-    const tecnologiasSelecionadas = normalizarTecnologias(query.tecnologia);
+  const percentualJanela = normalizarPercentual(configGeral.percentualJanela, PERCENTUAL_JANELA_PADRAO);
+  const puReparo = normalizarPu(configGeral.puReparo, PU_REPARO_PADRAO);
+  const metaPuTecnico = normalizarMetaPuTecnico(configGeral.metaPuTecnico, META_PU_TECNICO_PADRAO);
+  const cargaReparo = normalizarPu(configGeral.cargaReparo, CARGA_REPARO_PADRAO);
+  const tecnologiasSelecionadas = normalizarTecnologias(query.tecnologia);
 
-    // Mesmo raciocínio do bloco de Instalações: os valores disponíveis (e o padrão
-    // pré-marcado) dependem do que existe hoje em backlog_elos.
-    const filtrosDisponiveisReparo = await getFiltrosDisponiveisReparo();
-    const statusReparoSelecionados = normalizarListaComPadrao(
-      query.statusReparo,
-      filtrosDisponiveisReparo.status.filter(v => !STATUS_EXCLUIDOS_PADRAO_REPARO.includes(v))
-    );
-    const statusReasonReparoSelecionados = normalizarListaComPadrao(
-      query.statusReasonReparo,
-      filtrosDisponiveisReparo.statusReason.filter(v => !STATUS_REASON_EXCLUIDOS_PADRAO_REPARO.includes(v))
-    );
+  // Mesmo raciocínio do bloco de Instalações: os valores disponíveis (e o padrão
+  // pré-marcado) dependem do que existe hoje em backlog_elos.
+  const filtrosDisponiveisReparo = await getFiltrosDisponiveisReparo();
+  const statusReparoSelecionados = normalizarListaComPadrao(
+    query.statusReparo,
+    filtrosDisponiveisReparo.status.filter(v => !STATUS_EXCLUIDOS_PADRAO_REPARO.includes(v))
+  );
+  const statusReasonReparoSelecionados = normalizarListaComPadrao(
+    query.statusReasonReparo,
+    filtrosDisponiveisReparo.statusReason.filter(v => !STATUS_REASON_EXCLUIDOS_PADRAO_REPARO.includes(v))
+  );
 
-    const percentualInstalacao = normalizarPercentual(configGeral.percentualInstalacao, PERCENTUAL_INSTALACAO_PADRAO);
-    const percentualJanela1Instalacao = normalizarPercentual(configGeral.percentualJanela1Instalacao, PERCENTUAL_JANELA1_INSTALACAO_PADRAO);
-    const percentualJanela2Instalacao = normalizarPercentual(configGeral.percentualJanela2Instalacao, PERCENTUAL_JANELA2_INSTALACAO_PADRAO);
-    const percentualJanela3Instalacao = normalizarPercentual(configGeral.percentualJanela3Instalacao, PERCENTUAL_JANELA3_INSTALACAO_PADRAO);
-    const metaPuTecnicoInstalacao = normalizarMetaPuTecnico(configGeral.metaPuTecnicoInstalacao, META_PU_TECNICO_INSTALACAO_PADRAO);
-    const cargaInstalacao = normalizarPu(configGeral.cargaInstalacao, CARGA_INSTALACAO_PADRAO);
+  const percentualInstalacao = normalizarPercentual(configGeral.percentualInstalacao, PERCENTUAL_INSTALACAO_PADRAO);
+  const percentualJanela1Instalacao = normalizarPercentual(configGeral.percentualJanela1Instalacao, PERCENTUAL_JANELA1_INSTALACAO_PADRAO);
+  const percentualJanela2Instalacao = normalizarPercentual(configGeral.percentualJanela2Instalacao, PERCENTUAL_JANELA2_INSTALACAO_PADRAO);
+  const percentualJanela3Instalacao = normalizarPercentual(configGeral.percentualJanela3Instalacao, PERCENTUAL_JANELA3_INSTALACAO_PADRAO);
+  const metaPuTecnicoInstalacao = normalizarMetaPuTecnico(configGeral.metaPuTecnicoInstalacao, META_PU_TECNICO_INSTALACAO_PADRAO);
+  const cargaInstalacao = normalizarPu(configGeral.cargaInstalacao, CARGA_INSTALACAO_PADRAO);
 
-    // Os valores disponíveis (e, por tabela, o padrão pré-marcado) dependem do que
-    // existe hoje em backlog_instalacoes, então precisam vir antes de montar a seleção.
-    const filtrosDisponiveisInstalacoes = await getFiltrosDisponiveisInstalacoes();
-    const statusInstalacaoSelecionados = normalizarListaComPadrao(
-      query.statusInstalacao,
-      filtrosDisponiveisInstalacoes.status.filter(v => !STATUS_EXCLUIDOS_PADRAO_INSTALACAO.includes(v))
-    );
-    const statusReasonInstalacaoSelecionados = normalizarListaComPadrao(
-      query.statusReasonInstalacao,
-      filtrosDisponiveisInstalacoes.statusReason.filter(v => !STATUS_REASON_EXCLUIDOS_PADRAO_INSTALACAO.includes(v))
-    );
-    const tecnologiaAcessoSelecionadas = normalizarListaComPadrao(query.tecnologiaAcesso, TECNOLOGIA_ACESSO_PADRAO);
+  // Os valores disponíveis (e, por tabela, o padrão pré-marcado) dependem do que
+  // existe hoje em backlog_instalacoes, então precisam vir antes de montar a seleção.
+  const filtrosDisponiveisInstalacoes = await getFiltrosDisponiveisInstalacoes();
+  const statusInstalacaoSelecionados = normalizarListaComPadrao(
+    query.statusInstalacao,
+    filtrosDisponiveisInstalacoes.status.filter(v => !STATUS_EXCLUIDOS_PADRAO_INSTALACAO.includes(v))
+  );
+  const statusReasonInstalacaoSelecionados = normalizarListaComPadrao(
+    query.statusReasonInstalacao,
+    filtrosDisponiveisInstalacoes.statusReason.filter(v => !STATUS_REASON_EXCLUIDOS_PADRAO_INSTALACAO.includes(v))
+  );
+  const tecnologiaAcessoSelecionadas = normalizarListaComPadrao(query.tecnologiaAcesso, TECNOLOGIA_ACESSO_PADRAO);
 
-    const percentualServico = normalizarPercentual(configGeral.percentualServico, PERCENTUAL_SERVICO_PADRAO);
-    const percentualJanela1Servico = normalizarPercentual(configGeral.percentualJanela1Servico, PERCENTUAL_JANELA1_SERVICO_PADRAO);
-    const percentualJanela2Servico = normalizarPercentual(configGeral.percentualJanela2Servico, PERCENTUAL_JANELA2_SERVICO_PADRAO);
-    const percentualJanela3Servico = normalizarPercentual(configGeral.percentualJanela3Servico, PERCENTUAL_JANELA3_SERVICO_PADRAO);
-    const metaPuTecnicoServico = normalizarMetaPuTecnico(configGeral.metaPuTecnicoServico, META_PU_TECNICO_SERVICO_PADRAO);
-    const cargaServico = normalizarPu(configGeral.cargaServico, CARGA_SERVICO_PADRAO);
+  const percentualServico = normalizarPercentual(configGeral.percentualServico, PERCENTUAL_SERVICO_PADRAO);
+  const percentualJanela1Servico = normalizarPercentual(configGeral.percentualJanela1Servico, PERCENTUAL_JANELA1_SERVICO_PADRAO);
+  const percentualJanela2Servico = normalizarPercentual(configGeral.percentualJanela2Servico, PERCENTUAL_JANELA2_SERVICO_PADRAO);
+  const percentualJanela3Servico = normalizarPercentual(configGeral.percentualJanela3Servico, PERCENTUAL_JANELA3_SERVICO_PADRAO);
+  const metaPuTecnicoServico = normalizarMetaPuTecnico(configGeral.metaPuTecnicoServico, META_PU_TECNICO_SERVICO_PADRAO);
+  const cargaServico = normalizarPu(configGeral.cargaServico, CARGA_SERVICO_PADRAO);
 
-    const filtrosDisponiveisServicos = await getFiltrosDisponiveisServicos();
-    const statusServicoSelecionados = normalizarListaComPadrao(
-      query.statusServico,
-      filtrosDisponiveisServicos.status.filter(v => !STATUS_EXCLUIDOS_PADRAO_SERVICO.includes(v))
-    );
-    const statusReasonServicoSelecionados = normalizarListaComPadrao(
-      query.statusReasonServico,
-      filtrosDisponiveisServicos.statusReason.filter(v => !STATUS_REASON_EXCLUIDOS_PADRAO_SERVICO.includes(v))
-    );
-    const tecnologiaAcessoServicoSelecionadas = normalizarListaComPadrao(query.tecnologiaAcessoServico, TECNOLOGIA_ACESSO_PADRAO_SERVICO);
+  const filtrosDisponiveisServicos = await getFiltrosDisponiveisServicos();
+  const statusServicoSelecionados = normalizarListaComPadrao(
+    query.statusServico,
+    filtrosDisponiveisServicos.status.filter(v => !STATUS_EXCLUIDOS_PADRAO_SERVICO.includes(v))
+  );
+  const statusReasonServicoSelecionados = normalizarListaComPadrao(
+    query.statusReasonServico,
+    filtrosDisponiveisServicos.statusReason.filter(v => !STATUS_REASON_EXCLUIDOS_PADRAO_SERVICO.includes(v))
+  );
+  const tecnologiaAcessoServicoSelecionadas = normalizarListaComPadrao(query.tecnologiaAcessoServico, TECNOLOGIA_ACESSO_PADRAO_SERVICO);
 
-    const percentualMe = normalizarPercentual(configGeral.percentualMe, PERCENTUAL_ME_PADRAO);
-    const percentualJanela1Me = normalizarPercentual(configGeral.percentualJanela1Me, PERCENTUAL_JANELA1_ME_PADRAO);
-    const percentualJanela2Me = normalizarPercentual(configGeral.percentualJanela2Me, PERCENTUAL_JANELA2_ME_PADRAO);
-    const percentualJanela3Me = normalizarPercentual(configGeral.percentualJanela3Me, PERCENTUAL_JANELA3_ME_PADRAO);
-    const metaPuTecnicoMe = normalizarMetaPuTecnico(configGeral.metaPuTecnicoMe, META_PU_TECNICO_ME_PADRAO);
-    const cargaMe = normalizarPu(configGeral.cargaMe, CARGA_ME_PADRAO);
+  const percentualMe = normalizarPercentual(configGeral.percentualMe, PERCENTUAL_ME_PADRAO);
+  const percentualJanela1Me = normalizarPercentual(configGeral.percentualJanela1Me, PERCENTUAL_JANELA1_ME_PADRAO);
+  const percentualJanela2Me = normalizarPercentual(configGeral.percentualJanela2Me, PERCENTUAL_JANELA2_ME_PADRAO);
+  const percentualJanela3Me = normalizarPercentual(configGeral.percentualJanela3Me, PERCENTUAL_JANELA3_ME_PADRAO);
+  const metaPuTecnicoMe = normalizarMetaPuTecnico(configGeral.metaPuTecnicoMe, META_PU_TECNICO_ME_PADRAO);
+  const cargaMe = normalizarPu(configGeral.cargaMe, CARGA_ME_PADRAO);
 
-    const filtrosDisponiveisMe = await getFiltrosDisponiveisMe();
-    const statusMeSelecionados = normalizarListaComPadrao(
-      query.statusMe,
-      filtrosDisponiveisMe.status.filter(v => !STATUS_EXCLUIDOS_PADRAO_ME.includes(v))
-    );
-    const statusReasonMeSelecionados = normalizarListaComPadrao(
-      query.statusReasonMe,
-      filtrosDisponiveisMe.statusReason.filter(v => !STATUS_REASON_EXCLUIDOS_PADRAO_ME.includes(v))
-    );
-    const tecnologiaAcessoMeSelecionadas = normalizarListaComPadrao(query.tecnologiaAcessoMe, TECNOLOGIA_ACESSO_PADRAO_ME);
+  const filtrosDisponiveisMe = await getFiltrosDisponiveisMe();
+  const statusMeSelecionados = normalizarListaComPadrao(
+    query.statusMe,
+    filtrosDisponiveisMe.status.filter(v => !STATUS_EXCLUIDOS_PADRAO_ME.includes(v))
+  );
+  const statusReasonMeSelecionados = normalizarListaComPadrao(
+    query.statusReasonMe,
+    filtrosDisponiveisMe.statusReason.filter(v => !STATUS_REASON_EXCLUIDOS_PADRAO_ME.includes(v))
+  );
+  const tecnologiaAcessoMeSelecionadas = normalizarListaComPadrao(query.tecnologiaAcessoMe, TECNOLOGIA_ACESSO_PADRAO_ME);
 
-    const [
-      { linhas, totalGeral },
-      temposBucket,
-      tecnologiasDisponiveis,
-      dataCargaReparo,
-      { linhas: linhasInstalacoes, totalGeral: totalGeralInstalacoes },
-      puProdutos,
-      dataCargaInstalacoes,
-      { linhas: linhasServicos, totalGeral: totalGeralServicos },
-      puProdutosServicos,
-      { linhas: linhasMe, totalGeral: totalGeralMe },
-      puProdutosMe,
-      elosCredenciais,
-    ] = await Promise.all([
-      getResumoBuckets(tecnologiasSelecionadas, {
-        status: statusReparoSelecionados,
-        statusReason: statusReasonReparoSelecionados,
-      }),
-      getTemposBucket(),
-      getTecnologiasDisponiveis(),
-      getDataCargaReparo(),
-      getResumoBucketsInstalacoes({
-        status: statusInstalacaoSelecionados,
-        statusReason: statusReasonInstalacaoSelecionados,
-        tecnologiaAcesso: tecnologiaAcessoSelecionadas,
-      }),
-      getPuProdutos(),
-      getDataCargaInstalacoes(),
-      getResumoBucketsServicos({
-        status: statusServicoSelecionados,
-        statusReason: statusReasonServicoSelecionados,
-        tecnologiaAcesso: tecnologiaAcessoServicoSelecionadas,
-      }),
-      getPuProdutosServicos(),
-      getResumoBucketsMe({
-        status: statusMeSelecionados,
-        statusReason: statusReasonMeSelecionados,
-        tecnologiaAcesso: tecnologiaAcessoMeSelecionadas,
-      }),
-      getPuProdutosMe(),
-      getElosCredenciais(),
-    ]);
+  const [
+    { linhas, totalGeral },
+    temposBucket,
+    tecnologiasDisponiveis,
+    dataCargaReparo,
+    { linhas: linhasInstalacoes, totalGeral: totalGeralInstalacoes },
+    puProdutos,
+    dataCargaInstalacoes,
+    { linhas: linhasServicos, totalGeral: totalGeralServicos },
+    puProdutosServicos,
+    { linhas: linhasMe, totalGeral: totalGeralMe },
+    puProdutosMe,
+    elosCredenciais,
+  ] = await Promise.all([
+    getResumoBuckets(tecnologiasSelecionadas, {
+      status: statusReparoSelecionados,
+      statusReason: statusReasonReparoSelecionados,
+    }),
+    getTemposBucket(),
+    getTecnologiasDisponiveis(),
+    getDataCargaReparo(),
+    getResumoBucketsInstalacoes({
+      status: statusInstalacaoSelecionados,
+      statusReason: statusReasonInstalacaoSelecionados,
+      tecnologiaAcesso: tecnologiaAcessoSelecionadas,
+    }),
+    getPuProdutos(),
+    getDataCargaInstalacoes(),
+    getResumoBucketsServicos({
+      status: statusServicoSelecionados,
+      statusReason: statusReasonServicoSelecionados,
+      tecnologiaAcesso: tecnologiaAcessoServicoSelecionadas,
+    }),
+    getPuProdutosServicos(),
+    getResumoBucketsMe({
+      status: statusMeSelecionados,
+      statusReason: statusReasonMeSelecionados,
+      tecnologiaAcesso: tecnologiaAcessoMeSelecionadas,
+    }),
+    getPuProdutosMe(),
+    getElosCredenciais(),
+  ]);
 
-    const linhasComPrevistoBruto = calcularPrevisto(linhas, { percentual, campoBacklog: 'backlogReparos' });
-    const totalPrevistoReparo = calcularTotalPrevisto(totalGeral, percentual);
-    const linhasComSugestaoReparo = calcularSugestao(linhasComPrevistoBruto, totalPrevistoReparo, cargaReparo);
-    const linhasComPrevisto = calcularDistribuicaoPorSugestao(linhasComSugestaoReparo, {
-      percentuaisJanela: [percentualJanela], pu: puReparo, metaPuTecnico,
-      campoBacklog: 'backlogReparos', campoTempo: 'tempoReparoMinutos',
-    });
-    const totais = calcularTotais(totalPrevistoReparo, cargaReparo, linhasComPrevisto, {
-      percentuaisJanela: [percentualJanela], metaPuTecnico,
-    });
+  const linhasComPrevistoBruto = calcularPrevisto(linhas, { percentual, campoBacklog: 'backlogReparos' });
+  const totalPrevistoReparo = calcularTotalPrevisto(totalGeral, percentual);
+  const linhasComSugestaoReparo = calcularSugestao(linhasComPrevistoBruto, totalPrevistoReparo, cargaReparo);
+  const linhasComPrevisto = calcularDistribuicaoPorSugestao(linhasComSugestaoReparo, {
+    percentuaisJanela: [percentualJanela], pu: puReparo, metaPuTecnico,
+    campoBacklog: 'backlogReparos', campoTempo: 'tempoReparoMinutos',
+  });
+  const totais = calcularTotais(totalPrevistoReparo, cargaReparo, linhasComPrevisto, {
+    percentuaisJanela: [percentualJanela], metaPuTecnico,
+  });
 
-    const percentuaisJanelaInstalacao = [percentualJanela1Instalacao, percentualJanela2Instalacao, percentualJanela3Instalacao];
-    const linhasInstalacoesComPrevistoBruto = calcularPrevisto(linhasInstalacoes, {
-      percentual: percentualInstalacao, campoBacklog: 'backlogInstalacoes',
-    });
-    const totalPrevistoInstalacaoBase = calcularTotalPrevisto(totalGeralInstalacoes, percentualInstalacao);
-    const linhasInstalacoesComSugestao = calcularSugestao(linhasInstalacoesComPrevistoBruto, totalPrevistoInstalacaoBase, cargaInstalacao);
-    const linhasInstalacoesComPrevisto = calcularDistribuicaoPorSugestao(linhasInstalacoesComSugestao, {
-      percentuaisJanela: percentuaisJanelaInstalacao, metaPuTecnico: metaPuTecnicoInstalacao,
-      campoBacklog: 'backlogInstalacoes', campoTempo: 'tempoInstalacaoMinutos',
-      campoPuBruto: 'puBrutoTotal',
-    });
-    const totaisInstalacoes = calcularTotais(totalPrevistoInstalacaoBase, cargaInstalacao, linhasInstalacoesComPrevisto, {
-      percentuaisJanela: percentuaisJanelaInstalacao, metaPuTecnico: metaPuTecnicoInstalacao,
-    });
-    const totalSugestaoInstalacoes = totaisInstalacoes.totalSugestao;
+  const percentuaisJanelaInstalacao = [percentualJanela1Instalacao, percentualJanela2Instalacao, percentualJanela3Instalacao];
+  const linhasInstalacoesComPrevistoBruto = calcularPrevisto(linhasInstalacoes, {
+    percentual: percentualInstalacao, campoBacklog: 'backlogInstalacoes',
+  });
+  const totalPrevistoInstalacaoBase = calcularTotalPrevisto(totalGeralInstalacoes, percentualInstalacao);
+  const linhasInstalacoesComSugestao = calcularSugestao(linhasInstalacoesComPrevistoBruto, totalPrevistoInstalacaoBase, cargaInstalacao);
+  const linhasInstalacoesComPrevisto = calcularDistribuicaoPorSugestao(linhasInstalacoesComSugestao, {
+    percentuaisJanela: percentuaisJanelaInstalacao, metaPuTecnico: metaPuTecnicoInstalacao,
+    campoBacklog: 'backlogInstalacoes', campoTempo: 'tempoInstalacaoMinutos',
+    campoPuBruto: 'puBrutoTotal',
+  });
+  const totaisInstalacoes = calcularTotais(totalPrevistoInstalacaoBase, cargaInstalacao, linhasInstalacoesComPrevisto, {
+    percentuaisJanela: percentuaisJanelaInstalacao, metaPuTecnico: metaPuTecnicoInstalacao,
+  });
+  const totalSugestaoInstalacoes = totaisInstalacoes.totalSugestao;
 
-    const percentuaisJanelaServico = [percentualJanela1Servico, percentualJanela2Servico, percentualJanela3Servico];
-    const linhasServicosComPrevistoBruto = calcularPrevisto(linhasServicos, {
-      percentual: percentualServico, campoBacklog: 'backlogServicos',
-    });
-    const totalPrevistoServicoBase = calcularTotalPrevisto(totalGeralServicos, percentualServico);
-    const linhasServicosComSugestao = calcularSugestao(linhasServicosComPrevistoBruto, totalPrevistoServicoBase, cargaServico);
-    const linhasServicosComPrevisto = calcularDistribuicaoPorSugestao(linhasServicosComSugestao, {
-      percentuaisJanela: percentuaisJanelaServico, metaPuTecnico: metaPuTecnicoServico,
-      campoBacklog: 'backlogServicos', campoTempo: 'tempoServicoMinutos',
-      campoPuBruto: 'puBrutoTotal',
-    });
-    const totaisServicos = calcularTotais(totalPrevistoServicoBase, cargaServico, linhasServicosComPrevisto, {
-      percentuaisJanela: percentuaisJanelaServico, metaPuTecnico: metaPuTecnicoServico,
-    });
-    const totalSugestaoServicos = totaisServicos.totalSugestao;
+  const percentuaisJanelaServico = [percentualJanela1Servico, percentualJanela2Servico, percentualJanela3Servico];
+  const linhasServicosComPrevistoBruto = calcularPrevisto(linhasServicos, {
+    percentual: percentualServico, campoBacklog: 'backlogServicos',
+  });
+  const totalPrevistoServicoBase = calcularTotalPrevisto(totalGeralServicos, percentualServico);
+  const linhasServicosComSugestao = calcularSugestao(linhasServicosComPrevistoBruto, totalPrevistoServicoBase, cargaServico);
+  const linhasServicosComPrevisto = calcularDistribuicaoPorSugestao(linhasServicosComSugestao, {
+    percentuaisJanela: percentuaisJanelaServico, metaPuTecnico: metaPuTecnicoServico,
+    campoBacklog: 'backlogServicos', campoTempo: 'tempoServicoMinutos',
+    campoPuBruto: 'puBrutoTotal',
+  });
+  const totaisServicos = calcularTotais(totalPrevistoServicoBase, cargaServico, linhasServicosComPrevisto, {
+    percentuaisJanela: percentuaisJanelaServico, metaPuTecnico: metaPuTecnicoServico,
+  });
+  const totalSugestaoServicos = totaisServicos.totalSugestao;
 
-    const percentuaisJanelaMe = [percentualJanela1Me, percentualJanela2Me, percentualJanela3Me];
-    const linhasMeComPrevistoBruto = calcularPrevisto(linhasMe, {
-      percentual: percentualMe, campoBacklog: 'backlogMe',
-    });
-    const totalPrevistoMeBase = calcularTotalPrevisto(totalGeralMe, percentualMe);
-    const linhasMeComSugestao = calcularSugestao(linhasMeComPrevistoBruto, totalPrevistoMeBase, cargaMe);
-    const linhasMeComPrevisto = calcularDistribuicaoPorSugestao(linhasMeComSugestao, {
-      percentuaisJanela: percentuaisJanelaMe, metaPuTecnico: metaPuTecnicoMe,
-      campoBacklog: 'backlogMe', campoTempo: 'tempoMeMinutos',
-      campoPuBruto: 'puBrutoTotal',
-    });
-    const totaisMe = calcularTotais(totalPrevistoMeBase, cargaMe, linhasMeComPrevisto, {
-      percentuaisJanela: percentuaisJanelaMe, metaPuTecnico: metaPuTecnicoMe,
-    });
-    const totalSugestaoMe = totaisMe.totalSugestao;
+  const percentuaisJanelaMe = [percentualJanela1Me, percentualJanela2Me, percentualJanela3Me];
+  const linhasMeComPrevistoBruto = calcularPrevisto(linhasMe, {
+    percentual: percentualMe, campoBacklog: 'backlogMe',
+  });
+  const totalPrevistoMeBase = calcularTotalPrevisto(totalGeralMe, percentualMe);
+  const linhasMeComSugestao = calcularSugestao(linhasMeComPrevistoBruto, totalPrevistoMeBase, cargaMe);
+  const linhasMeComPrevisto = calcularDistribuicaoPorSugestao(linhasMeComSugestao, {
+    percentuaisJanela: percentuaisJanelaMe, metaPuTecnico: metaPuTecnicoMe,
+    campoBacklog: 'backlogMe', campoTempo: 'tempoMeMinutos',
+    campoPuBruto: 'puBrutoTotal',
+  });
+  const totaisMe = calcularTotais(totalPrevistoMeBase, cargaMe, linhasMeComPrevisto, {
+    percentuaisJanela: percentuaisJanelaMe, metaPuTecnico: metaPuTecnicoMe,
+  });
+  const totalSugestaoMe = totaisMe.totalSugestao;
 
-    return {
-      // Reparos
-      linhas: linhasComPrevisto,
-      totalGeral,
-      ...totais,
-      janelasReparoLabels: JANELAS_REPARO,
-      percentual,
-      percentualJanela,
-      puReparo,
-      metaPuTecnico,
-      cargaReparo,
-      aliadaCores: construirMapaCoresAliada(ALIADA_COR_QTD, linhasComPrevisto, temposBucket),
-      tecnologiasSelecionadas,
-      tecnologiasDisponiveis,
-      filtrosDisponiveisReparo,
-      statusReparoSelecionados,
-      statusReasonReparoSelecionados,
-      dataCargaReparo: formatarDataCarga(dataCargaReparo),
+  return {
+    // Reparos
+    linhas: linhasComPrevisto,
+    totalGeral,
+    ...totais,
+    janelasReparoLabels: JANELAS_REPARO,
+    percentual,
+    percentualJanela,
+    puReparo,
+    metaPuTecnico,
+    cargaReparo,
+    aliadaCores: construirMapaCoresAliada(ALIADA_COR_QTD, linhasComPrevisto, temposBucket),
+    tecnologiasSelecionadas,
+    tecnologiasDisponiveis,
+    filtrosDisponiveisReparo,
+    statusReparoSelecionados,
+    statusReasonReparoSelecionados,
+    dataCargaReparo: formatarDataCarga(dataCargaReparo),
 
-      // Instalações
-      linhasInstalacoes: linhasInstalacoesComPrevisto,
-      totalGeralInstalacoes,
-      totalPrevistoInstalacoes: totaisInstalacoes.totalPrevisto,
-      totalJanelasInstalacoes: totaisInstalacoes.totalJanelas,
-      totalMinutosInstalacoes: totaisInstalacoes.totalMinutos,
-      totalPuInstalacoes: totaisInstalacoes.totalPu,
-      totalTecnicosInstalacoes: totaisInstalacoes.totalTecnicos,
-      totalSugestaoInstalacoes,
-      janelasInstalacaoLabels: JANELAS_INSTALACAO,
-      percentualInstalacao,
-      percentualJanela1Instalacao,
-      percentualJanela2Instalacao,
-      percentualJanela3Instalacao,
-      metaPuTecnicoInstalacao,
-      cargaInstalacao,
-      puProdutos,
-      aliadaCoresInstalacoes: construirMapaCoresAliada(ALIADA_COR_QTD, linhasInstalacoesComPrevisto, temposBucket),
-      filtrosDisponiveisInstalacoes,
-      statusInstalacaoSelecionados,
-      statusReasonInstalacaoSelecionados,
-      tecnologiaAcessoSelecionadas,
-      dataCargaInstalacoes: formatarDataCarga(dataCargaInstalacoes),
+    // Instalações
+    linhasInstalacoes: linhasInstalacoesComPrevisto,
+    totalGeralInstalacoes,
+    totalPrevistoInstalacoes: totaisInstalacoes.totalPrevisto,
+    totalJanelasInstalacoes: totaisInstalacoes.totalJanelas,
+    totalMinutosInstalacoes: totaisInstalacoes.totalMinutos,
+    totalPuInstalacoes: totaisInstalacoes.totalPu,
+    totalTecnicosInstalacoes: totaisInstalacoes.totalTecnicos,
+    totalSugestaoInstalacoes,
+    janelasInstalacaoLabels: JANELAS_INSTALACAO,
+    percentualInstalacao,
+    percentualJanela1Instalacao,
+    percentualJanela2Instalacao,
+    percentualJanela3Instalacao,
+    metaPuTecnicoInstalacao,
+    cargaInstalacao,
+    puProdutos,
+    aliadaCoresInstalacoes: construirMapaCoresAliada(ALIADA_COR_QTD, linhasInstalacoesComPrevisto, temposBucket),
+    filtrosDisponiveisInstalacoes,
+    statusInstalacaoSelecionados,
+    statusReasonInstalacaoSelecionados,
+    tecnologiaAcessoSelecionadas,
+    dataCargaInstalacoes: formatarDataCarga(dataCargaInstalacoes),
 
-      // Serviços
-      linhasServicos: linhasServicosComPrevisto,
-      totalGeralServicos,
-      totalPrevistoServicos: totaisServicos.totalPrevisto,
-      totalJanelasServicos: totaisServicos.totalJanelas,
-      totalMinutosServicos: totaisServicos.totalMinutos,
-      totalPuServicos: totaisServicos.totalPu,
-      totalTecnicosServicos: totaisServicos.totalTecnicos,
-      totalSugestaoServicos,
-      janelasServicoLabels: JANELAS_SERVICO,
-      percentualServico,
-      percentualJanela1Servico,
-      percentualJanela2Servico,
-      percentualJanela3Servico,
-      metaPuTecnicoServico,
-      cargaServico,
-      puProdutosServicos,
-      aliadaCoresServicos: construirMapaCoresAliada(ALIADA_COR_QTD, linhasServicosComPrevisto, temposBucket),
-      filtrosDisponiveisServicos,
-      statusServicoSelecionados,
-      statusReasonServicoSelecionados,
-      tecnologiaAcessoServicoSelecionadas,
-      dataCargaServicos: formatarDataCarga(dataCargaInstalacoes),
+    // Serviços
+    linhasServicos: linhasServicosComPrevisto,
+    totalGeralServicos,
+    totalPrevistoServicos: totaisServicos.totalPrevisto,
+    totalJanelasServicos: totaisServicos.totalJanelas,
+    totalMinutosServicos: totaisServicos.totalMinutos,
+    totalPuServicos: totaisServicos.totalPu,
+    totalTecnicosServicos: totaisServicos.totalTecnicos,
+    totalSugestaoServicos,
+    janelasServicoLabels: JANELAS_SERVICO,
+    percentualServico,
+    percentualJanela1Servico,
+    percentualJanela2Servico,
+    percentualJanela3Servico,
+    metaPuTecnicoServico,
+    cargaServico,
+    puProdutosServicos,
+    aliadaCoresServicos: construirMapaCoresAliada(ALIADA_COR_QTD, linhasServicosComPrevisto, temposBucket),
+    filtrosDisponiveisServicos,
+    statusServicoSelecionados,
+    statusReasonServicoSelecionados,
+    tecnologiaAcessoServicoSelecionadas,
+    dataCargaServicos: formatarDataCarga(dataCargaInstalacoes),
 
-      // ME (Mudança de Endereço)
-      linhasMe: linhasMeComPrevisto,
-      totalGeralMe,
-      totalPrevistoMe: totaisMe.totalPrevisto,
-      totalJanelasMe: totaisMe.totalJanelas,
-      totalMinutosMe: totaisMe.totalMinutos,
-      totalPuMe: totaisMe.totalPu,
-      totalTecnicosMe: totaisMe.totalTecnicos,
-      totalSugestaoMe,
-      janelasMeLabels: JANELAS_ME,
-      percentualMe,
-      percentualJanela1Me,
-      percentualJanela2Me,
-      percentualJanela3Me,
-      metaPuTecnicoMe,
-      cargaMe,
-      puProdutosMe,
-      aliadaCoresMe: construirMapaCoresAliada(ALIADA_COR_QTD, linhasMeComPrevisto, temposBucket),
-      filtrosDisponiveisMe,
-      statusMeSelecionados,
-      statusReasonMeSelecionados,
-      tecnologiaAcessoMeSelecionadas,
-      dataCargaMe: formatarDataCarga(dataCargaInstalacoes),
+    // ME (Mudança de Endereço)
+    linhasMe: linhasMeComPrevisto,
+    totalGeralMe,
+    totalPrevistoMe: totaisMe.totalPrevisto,
+    totalJanelasMe: totaisMe.totalJanelas,
+    totalMinutosMe: totaisMe.totalMinutos,
+    totalPuMe: totaisMe.totalPu,
+    totalTecnicosMe: totaisMe.totalTecnicos,
+    totalSugestaoMe,
+    janelasMeLabels: JANELAS_ME,
+    percentualMe,
+    percentualJanela1Me,
+    percentualJanela2Me,
+    percentualJanela3Me,
+    metaPuTecnicoMe,
+    cargaMe,
+    puProdutosMe,
+    aliadaCoresMe: construirMapaCoresAliada(ALIADA_COR_QTD, linhasMeComPrevisto, temposBucket),
+    filtrosDisponiveisMe,
+    statusMeSelecionados,
+    statusReasonMeSelecionados,
+    tecnologiaAcessoMeSelecionadas,
+    dataCargaMe: formatarDataCarga(dataCargaInstalacoes),
 
-      // Tempos por bucket (depara_tempo_bucket): 1 tabela só, compartilhada pelas
-      // 4 seções na página de Configurações (Instalação/Serviço/ME/Reparo são
-      // colunas da mesma linha, não tabelas separadas).
-      temposBucket,
-      aliadaCoresTemposBucket: construirMapaCoresAliada(ALIADA_COR_QTD, temposBucket),
+    // Tempos por bucket (depara_tempo_bucket): 1 tabela só, compartilhada pelas
+    // 4 seções na página de Configurações (Instalação/Serviço/ME/Reparo são
+    // colunas da mesma linha, não tabelas separadas).
+    temposBucket,
+    aliadaCoresTemposBucket: construirMapaCoresAliada(ALIADA_COR_QTD, temposBucket),
 
-      // Credenciais da raspagem automática do Elos (elos-backlog-scraper) --
-      // nunca inclui a senha, só usuário + quando foi a última atualização.
-      elosCredenciais: elosCredenciais
-        ? { usuario: elosCredenciais.usuario, atualizadoEm: formatarDataCarga(elosCredenciais.atualizado_em) }
-        : null,
-    };
+    // Credenciais da raspagem automática do Elos (elos-backlog-scraper) --
+    // nunca inclui a senha, só usuário + quando foi a última atualização.
+    elosCredenciais: elosCredenciais
+      ? { usuario: elosCredenciais.usuario, atualizadoEm: formatarDataCarga(elosCredenciais.atualizado_em) }
+      : null,
+  };
 }
 
 router.get('/', async (req, res, next) => {
@@ -572,7 +573,10 @@ router.get('/cotas-planejadas', async (req, res, next) => {
     // Normaliza o rótulo da janela tirando espaços porque o Excel usa "08:30-10:30"
     // e os labels do painel usam "08:30 - 10:30". A tabela por enquanto é só de
     // Instalação; os outros 3 tipos só têm upload (última atualização) por ora.
-    const cotasD0 = await getCotasD0('instalacao');
+    const [cotasD0, consumoHoje] = await Promise.all([
+      getCotasD0('instalacao'),
+      getConsumoHoje(),
+    ]);
     const mapaCotasD0 = {};
     cotasD0.forEach(r => {
       const janela = String(r.timeSlot || '').replace(/\s/g, '');
@@ -583,6 +587,16 @@ router.get('/cotas-planejadas', async (req, res, next) => {
       };
     });
 
+    // bucket -> janela (sem espaços) -> consumo (ordens × tempo do bucket)
+    const mapaConsumo = {};
+    consumoHoje.forEach(r => {
+      const janela = String(r.timeSlot || '').replace(/\s/g, '');
+      (mapaConsumo[r.bucket] || (mapaConsumo[r.bucket] = {}))[janela] = {
+        minutos: r.consumo,
+        qtdOrdens: r.qtdOrdens,
+      };
+    });
+
     const datasCargaBrutas = await getDatasCargaCotas();
     const datasCargaCotas = {};
     Object.entries(datasCargaBrutas).forEach(([tipo, data]) => {
@@ -590,6 +604,9 @@ router.get('/cotas-planejadas', async (req, res, next) => {
     });
 
     res.render('cotas-planejadas', {
+      // Sinaliza pro head.ejs mostrar o botão "Upload de cotas" na navbar só aqui
+      // (o <dialog> do upload mora nesta página).
+      paginaAtual: 'cotas-planejadas',
       linkVoltar,
       linkResumoCotas,
       linkConfiguracoes,
@@ -598,6 +615,7 @@ router.get('/cotas-planejadas', async (req, res, next) => {
       janelasInstalacaoLabels: dados.janelasInstalacaoLabels,
       aliadaCoresInstalacoes: dados.aliadaCoresInstalacoes,
       mapaCotasD0,
+      mapaConsumo,
       datasCargaCotas,
       cotasUpload: req.query.cotasUpload,
       cotasUploadTipo: req.query.cotasUploadTipo,

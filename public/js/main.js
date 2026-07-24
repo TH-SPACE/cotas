@@ -221,6 +221,32 @@ document.addEventListener('DOMContentLoaded', () => {
     editaveis.forEach(el => el.addEventListener('input', recalcularRestante));
   });
 
+  // Toggle "Minutos / Ordens" da tabela de Cotas Planejadas. Os dois valores já
+  // vêm renderizados (spans .v-min e .v-qtd), então trocar é só uma classe -- sem
+  // recarregar a página nem recalcular nada. A escolha fica guardada na sessão
+  // pra não voltar pro padrão a cada reload.
+  const botoesUnidade = document.querySelectorAll('.unidade-tab');
+  const tabelaCotas = document.getElementById('cotas-tabela');
+  if (botoesUnidade.length > 0 && tabelaCotas) {
+    const UNIDADE_KEY = 'calc_unidade_cotas';
+
+    const aplicarUnidade = (unidade) => {
+      tabelaCotas.classList.toggle('mostrar-qtd', unidade === 'qtd');
+      botoesUnidade.forEach((botao) => {
+        const ativo = botao.dataset.unidade === unidade;
+        botao.classList.toggle('is-active', ativo);
+        botao.setAttribute('aria-pressed', ativo ? 'true' : 'false');
+      });
+      sessionStorage.setItem(UNIDADE_KEY, unidade);
+    };
+
+    botoesUnidade.forEach((botao) => {
+      botao.addEventListener('click', () => aplicarUnidade(botao.dataset.unidade));
+    });
+
+    aplicarUnidade(sessionStorage.getItem(UNIDADE_KEY) === 'qtd' ? 'qtd' : 'min');
+  }
+
   const formsComFiltroAutoSubmit = ['filtro-tecnologia-form', 'filtro-instalacoes-form', 'filtro-servicos-form', 'filtro-me-form'];
   formsComFiltroAutoSubmit.forEach((formId) => {
     const form = document.getElementById(formId);

@@ -44,6 +44,11 @@
 
     const texto = form.dataset.loading;
     if (texto) {
+      // Se o form está dentro de um <dialog> aberto (ex.: modal de upload de
+      // cotas), o dialog fica na "top layer" e taparia o overlay — fecha ele pra
+      // a tela de carregamento aparecer inteira (o modal reabre com o resultado).
+      const dialogo = form.closest('dialog[open]');
+      if (dialogo) dialogo.close();
       mostrarOverlay(texto);
     } else {
       mostrarProgresso();

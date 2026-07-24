@@ -322,6 +322,25 @@ body {
 .status-aberto {
   color: var(--muted);
 }
+/* Cota aberta no Elos: ponto verde com pulso suave, marcando onde ainda dá pra
+   agendar. Usa ::before (a célula continua sendo table-cell -- mudar o display
+   do <td> quebraria a tabela) e anima só opacidade/escala, porque `.cotas-table
+   td` tem overflow:hidden e um anel expandindo seria cortado. Quem pediu menos
+   movimento no SO não vê o pulso (regra global de prefers-reduced-motion). */
+.status-aberto::before {
+  content: "";
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-right: 0.35rem;
+  border-radius: 50%;
+  background: var(--status-bom);
+  animation: pulsoCotaAberta 1.8s ease-in-out infinite;
+}
+@keyframes pulsoCotaAberta {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.35; transform: scale(0.8); }
+}
 
 .badge-alerta {
   display: inline-block;
@@ -977,11 +996,6 @@ body {
   padding: 1.5rem;
 }
 
-.footer code {
-  background: var(--border);
-  padding: 0.1rem 0.35rem;
-  border-radius: 4px;
-}
 
 /* =======================================================================
    CAMADA DE UX / FEEDBACK VISUAL (v2)
@@ -1162,6 +1176,178 @@ button.is-loading::after {
 @keyframes alertaSai {
   to { opacity: 0; transform: translateY(-6px); max-height: 0; margin: 0; padding-top: 0; padding-bottom: 0; }
 }
+
+/* =======================================================================
+   CAMADA DE VISUALIZAÇÃO DE DADOS
+   Formas escolhidas pelo trabalho do dado (não por gosto):
+   - números de manchete  -> KPI row de stat tiles (não gráfico)
+   - magnitude por bucket -> barra em célula, UMA cor só (usar rampa por valor
+     em categoria nominal duplica o encode e é anti-pattern)
+   - razão contra limite  -> meter, com cor de status SEMPRE acompanhada de
+     ícone/rótulo (o amarelo de status é sub-3:1 por design; a legibilidade vem
+     do texto + da tabela, que continua com os valores exatos)
+   `--viz-serie` é o roxo da marca, validado com scripts/validate_palette.js
+   contra a superfície branca (passou faixa, croma, CVD e contraste).
+   ======================================================================= */
+:root {
+  --viz-serie: #6c3ce0;
+  --viz-track: #ece7fa;   /* trilho = passo mais claro da mesma rampa */
+  --status-bom: #0ca30c;
+  --status-atencao: #fab219;
+  --status-atencao-texto: #8a6100;  /* o amarelo não é legível como texto */
+  --status-critico: #d03b3b;
+}
+
+.kpi-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(112px, 1fr));
+  gap: 0.45rem;
+  margin: 0 0 0.75rem;
+}
+.kpi-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 0.05rem;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+}
+.kpi-label {
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+.kpi-value {
+  font-size: 1.15rem;
+  font-weight: 600;
+  line-height: 1.15;
+  color: var(--text);
+}
+.kpi-sub {
+  font-size: 0.62rem;
+  line-height: 1.3;
+  color: var(--muted);
+}
+/* Destaque do tile principal pela moldura, não pintando o número: texto usa
+   token de tinta, nunca a cor do dado. */
+.kpi-tile-destaque {
+  border-color: var(--viz-serie);
+  background: var(--col-backlog-bg);
+}
+
+/* Barra de magnitude dentro da célula: quadrada na linha de base, ponta
+   arredondada. aria-hidden porque o número na própria célula já carrega o valor. */
+.barra-magnitude {
+  display: block;
+  height: 6px;
+  margin-top: 0.25rem;
+  border-radius: 3px;
+  background: var(--viz-track);
+}
+.barra-magnitude-fill {
+  display: block;
+  height: 100%;
+  min-width: 2px;
+  border-radius: 0 3px 3px 0;
+  background: var(--viz-serie);
+}
+
+/* =======================================================================
+   LAYOUT DE PAINEL (visão executiva)
+   A tabela é o conteúdo principal e fica no topo: o card carrega o próprio
+   título + contexto, e as abas de seção deixam o layout escalar pra
+   Instalação/Serviços/ME/Reparos sem empilhar 4 tabelas gigantes na tela.
+   ======================================================================= */
+.topbar-acoes {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.tabela-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.9rem;
+}
+.tabela-card-titulo {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+.tabela-card-contexto {
+  margin: 0.15rem 0 0;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+.tabela-nota {
+  margin: 0.75rem 0 0;
+  font-size: 0.72rem;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+/* Abas de seção (segmented control). */
+.secao-tabs {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  flex-shrink: 0;
+}
+.secao-tab {
+  padding: 0.4rem 0.85rem;
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.secao-tab:hover:not(:disabled):not(.is-active) { color: var(--accent); }
+.secao-tab.is-active {
+  background: var(--panel-bg);
+  color: var(--text);
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.12);
+}
+.secao-tab:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* Toggle Minutos/Ordens: os dois valores já estão no HTML; o clique só troca
+   qual aparece (nada é recalculado, e o valor oculto continua no DOM). */
+.tabela-card-acoes {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+.unidade-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.unidade-toggle-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+.v-qtd { display: none; }
+.mostrar-qtd .v-min { display: none; }
+.mostrar-qtd .v-qtd { display: inline; }
 
 /* Respeita quem pediu menos animação no sistema operacional. */
 @media (prefers-reduced-motion: reduce) {

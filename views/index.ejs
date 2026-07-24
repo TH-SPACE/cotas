@@ -7,6 +7,16 @@
    // então o aviso continua aparecendo em qualquer carregamento da página enquanto
    // existir produto com PU=0, não só logo depois do upload. %>
 <% const calcularProdutosSemPu = (lista) => lista.filter(p => p.pu == 0).map(p => p.produto); %>
+<% // Escala das barras de magnitude da coluna Backlog: comprimento relativo ao
+   // maior bucket da própria seção. UMA cor só pra todas as barras -- pintar
+   // "mais escuro onde é maior" duplicaria o encode (o comprimento já diz isso)
+   // e é anti-pattern em categoria nominal (bucket não tem ordem natural). %>
+<% const maiorDe = (lista, campo) => Math.max(1, ...lista.map(l => Number(l[campo]) || 0)); %>
+<% const maxBacklogInstalacoes = maiorDe(linhasInstalacoes, 'backlogInstalacoes'); %>
+<% const maxBacklogServicos = maiorDe(linhasServicos, 'backlogServicos'); %>
+<% const maxBacklogMe = maiorDe(linhasMe, 'backlogMe'); %>
+<% const maxBacklogReparos = maiorDe(linhas, 'backlogReparos'); %>
+<% const larguraBarra = (valor, maximo) => (Math.max(0, Number(valor) || 0) / maximo * 100).toFixed(1); %>
 
 <div class="home-layout">
   <aside class="home-sidebar" aria-label="Seções e configurações">
@@ -95,6 +105,12 @@
     </form>
   </details>
 
+  <%- include('partials/kpi-secao', { kpi: {
+    backlog: totalGeralInstalacoes, previsto: totalPrevistoInstalacoes, percentual: percentualInstalacao,
+    sugestao: totalSugestaoInstalacoes, minutos: totalMinutosInstalacoes,
+    tecnicos: totalTecnicosInstalacoes, pu: totalPuInstalacoes,
+  } }) %>
+
   <% const produtosInstalacoesSemPu = calcularProdutosSemPu(puProdutos); %>
   <% if (produtosInstalacoesSemPu.length > 0) { %>
     <p class="alert alert-aviso">
@@ -147,6 +163,7 @@
               <% if (linha.maiorVolume) { %>
                 <svg class="volume-flag" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" title="Um dos <%= 3 %> buckets com maior volume de backlog"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
               <% } %>
+              <span class="barra-magnitude" aria-hidden="true"><span class="barra-magnitude-fill" style="width: <%= larguraBarra(linha.backlogInstalacoes, maxBacklogInstalacoes) %>%"></span></span>
             </td>
             <td class="<%= numCls('col-backlog', linha.previstoResolucao) %>"><%= linha.previstoResolucao %></td>
             <td class="<%= numCls('col-backlog', linha.sugestao) %>"><%= linha.sugestao %></td>
@@ -241,6 +258,12 @@
     </form>
   </details>
 
+  <%- include('partials/kpi-secao', { kpi: {
+    backlog: totalGeralServicos, previsto: totalPrevistoServicos, percentual: percentualServico,
+    sugestao: totalSugestaoServicos, minutos: totalMinutosServicos,
+    tecnicos: totalTecnicosServicos, pu: totalPuServicos,
+  } }) %>
+
   <% const produtosServicosSemPu = calcularProdutosSemPu(puProdutosServicos); %>
   <% if (produtosServicosSemPu.length > 0) { %>
     <p class="alert alert-aviso">
@@ -293,6 +316,7 @@
               <% if (linha.maiorVolume) { %>
                 <svg class="volume-flag" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" title="Um dos <%= 3 %> buckets com maior volume de backlog"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
               <% } %>
+              <span class="barra-magnitude" aria-hidden="true"><span class="barra-magnitude-fill" style="width: <%= larguraBarra(linha.backlogServicos, maxBacklogServicos) %>%"></span></span>
             </td>
             <td class="<%= numCls('col-backlog', linha.previstoResolucao) %>"><%= linha.previstoResolucao %></td>
             <td class="<%= numCls('col-backlog', linha.sugestao) %>"><%= linha.sugestao %></td>
@@ -387,6 +411,12 @@
     </form>
   </details>
 
+  <%- include('partials/kpi-secao', { kpi: {
+    backlog: totalGeralMe, previsto: totalPrevistoMe, percentual: percentualMe,
+    sugestao: totalSugestaoMe, minutos: totalMinutosMe,
+    tecnicos: totalTecnicosMe, pu: totalPuMe,
+  } }) %>
+
   <% const produtosMeSemPu = calcularProdutosSemPu(puProdutosMe); %>
   <% if (produtosMeSemPu.length > 0) { %>
     <p class="alert alert-aviso">
@@ -439,6 +469,7 @@
               <% if (linha.maiorVolume) { %>
                 <svg class="volume-flag" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" title="Um dos <%= 3 %> buckets com maior volume de backlog"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
               <% } %>
+              <span class="barra-magnitude" aria-hidden="true"><span class="barra-magnitude-fill" style="width: <%= larguraBarra(linha.backlogMe, maxBacklogMe) %>%"></span></span>
             </td>
             <td class="<%= numCls('col-backlog', linha.previstoResolucao) %>"><%= linha.previstoResolucao %></td>
             <td class="<%= numCls('col-backlog', linha.sugestao) %>"><%= linha.sugestao %></td>
@@ -533,6 +564,12 @@
     </form>
   </details>
 
+  <%- include('partials/kpi-secao', { kpi: {
+    backlog: totalGeral, previsto: totalPrevisto, percentual: percentual,
+    sugestao: totalSugestao, minutos: totalMinutos,
+    tecnicos: totalTecnicos, pu: totalPu,
+  } }) %>
+
   <div class="table-scroll">
     <table class="cotas-table">
       <colgroup>
@@ -575,6 +612,7 @@
               <% if (linha.maiorVolume) { %>
                 <svg class="volume-flag" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" title="Um dos <%= 3 %> buckets com maior volume de backlog"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
               <% } %>
+              <span class="barra-magnitude" aria-hidden="true"><span class="barra-magnitude-fill" style="width: <%= larguraBarra(linha.backlogReparos, maxBacklogReparos) %>%"></span></span>
             </td>
             <td class="<%= numCls('col-backlog', linha.previstoResolucao) %>"><%= linha.previstoResolucao %></td>
             <td class="<%= numCls('col-backlog', linha.sugestao) %>"><%= linha.sugestao %></td>

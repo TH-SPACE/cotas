@@ -34,9 +34,18 @@
         <span>Cotas Planejadas</span>
       </a>
     </nav>
-    <button type="button" class="icon-btn" id="config-elos-open-btn" aria-haspopup="dialog" aria-controls="config-elos-modal" title="Credenciais de login da raspagem automática do Elos">
-      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="15" r="4"/><path d="M10.5 12.5 20 3M17 6l3 3M14 9l2 2"/></svg>
-    </button>
+    <div class="topbar-acoes">
+      <% // Ação contextual: só aparece na página que tem o <dialog> de upload. %>
+      <% if (typeof paginaAtual !== 'undefined' && paginaAtual === 'cotas-planejadas') { %>
+        <button type="button" class="btn-secundario btn-com-icone" id="cotas-upload-open-btn" aria-haspopup="dialog" aria-controls="cotas-upload-modal" title="Enviar Analítico Disponibilidade e Consumo PB (um arquivo por tipo)">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M6 10l6-6 6 6"/><path d="M4 20h16"/></svg>
+          Upload de cotas
+        </button>
+      <% } %>
+      <button type="button" class="icon-btn" id="config-elos-open-btn" aria-haspopup="dialog" aria-controls="config-elos-modal" title="Credenciais de login da raspagem automática do Elos">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="15" r="4"/><path d="M10.5 12.5 20 3M17 6l3 3M14 9l2 2"/></svg>
+      </button>
+    </div>
   </header>
   <dialog id="config-elos-modal" class="config-modal">
     <div class="modal-header">

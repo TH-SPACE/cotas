@@ -277,6 +277,40 @@ async function getCotasD0(tipo) {
   return rows;
 }
 
+// Consumo de hoje: soma as ordens de backlog_instalacoes AGENDADAS para hoje.
+// Atenção ao nome da coluna: apesar de se chamar DATA_VENCIMENTO, ela guarda a
+// data do AGENDAMENTO da ordem -- não é prazo/vencimento. Não descreva como
+// "vencendo hoje" na tela (já foi corrigido uma vez).
+// Filtra por DATA_VENCIMENTO começando por DD/MM/YYYY (o CSV do ELOS grava
+// "DD/MM/YYYY HH:MM:SS", então usamos LIKE),
+// multiplicadas pelo tempo de instalação do bucket (depara_tempo_bucket.INSTALACAO),
+// agrupado por bucket (via depara_bucket) e TIME_SLOT.
+// Retorna linhas { bucket, timeSlot, consumo } onde consumo = COUNT * minutos.
+async function getConsumoHoje() {
+  const hoje = new Date();
+  const dd = String(hoje.getDate()).padStart(2, '0');
+  const mm = String(hoje.getMonth() + 1).padStart(2, '0');
+  const yyyy = hoje.getFullYear();
+  const prefixoHoje = `${dd}/${mm}/${yyyy}%`;
+
+  const [rows] = await pool.query(
+    `SELECT
+       COALESCE(d.BKT, 'BKT_GOIANIA') AS bucket,
+       i.TIME_SLOT AS timeSlot,
+       COUNT(i.ID) AS qtdOrdens,
+       COUNT(i.ID) * COALESCE(t.INSTALACAO, 0) AS consumo
+     FROM backlog_instalacoes i
+     LEFT JOIN depara_bucket d ON d.ARMARIO = i.ARMARIO
+     LEFT JOIN depara_tempo_bucket t ON t.BUCKET = COALESCE(d.BKT, 'BKT_GOIANIA')
+     WHERE i.DATA_VENCIMENTO LIKE ?
+       AND i.CLUSTER_ = 'GOIANIA'
+       AND i.SPECIFICATION_TYPE = 'INSTALAÇÃO'
+     GROUP BY COALESCE(d.BKT, 'BKT_GOIANIA'), i.TIME_SLOT, t.INSTALACAO`,
+    [prefixoHoje]
+  );
+  return rows;
+}
+
 // { instalacao, servico, me, reparo } -> última IMPORTADO_EM (string 'YYYY-...' ou
 // null) de cada tipo, pra mostrar "atualizado em X" ao lado de cada botão de upload.
 async function getDatasCargaCotas() {
@@ -292,6 +326,7 @@ async function getDatasCargaCotas() {
 module.exports = {
   importarCotas,
   getCotasD0,
+  getConsumoHoje,
   getDatasCargaCotas,
   parseXlsx,
   TIPOS,
