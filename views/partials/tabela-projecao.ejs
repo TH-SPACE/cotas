@@ -1,0 +1,136 @@
+<%
+/*
+  Tabela de projeção D1-D7 de UMA seção (Instalação, Serviços, ME, Reparos).
+  Recebe `secao` { id, rotuloColuna, linhas, aliadaCores, mapaCotas, mapaConsumo, campoTempo }
+  e `dias` (mesmo array pras 4 seções): [{ age, dataIso, dataLabel }, ...] (D1..D7).
+
+  Status/Cota Aberta vêm do rótulo Age do arquivo do ETA (podem estar
+  desatualizados se a base não for reenviada -- ver aviso no rodapé da página);
+  Consumo é calculado por data de calendário real. Os dois são agregados por
+  bucket somando/contando todas as janelas daquele bucket no dia (um bucket pode
+  ter janelas com Status diferentes no mesmo dia -- daí "Parcial").
+*/
+const _linhas = secao.linhas || [];
+const _dias = dias || [];
+const _mapaCotas = secao.mapaCotas || {};
+const _mapaConsumo = secao.mapaConsumo || {};
+
+const _cotasDe = (bucket, age) => (_mapaCotas[bucket] || {})[age] || null;
+const _consumoDe = (bucket, age) => (_mapaConsumo[bucket] || {})[age] || null;
+
+const _statusInfo = (c) => {
+  if (!c || c.statusTotal === 0) return { rotulo: '—', classe: '', titulo: 'Sem dado de status' };
+  if (c.statusAberto === c.statusTotal) return { rotulo: 'Aberto', classe: 'status-aberto', titulo: 'Todas as janelas do bucket abertas nesse dia' };
+  if (c.statusAberto === 0) return { rotulo: 'Fechado', classe: 'status-fechado', titulo: 'Todas as janelas do bucket fechadas nesse dia' };
+  return {
+    rotulo: `${c.statusAberto}/${c.statusTotal}`,
+    classe: 'status-parcial',
+    titulo: `${c.statusAberto} de ${c.statusTotal} janelas do bucket abertas nesse dia`,
+  };
+};
+
+const _ordensDe = (linha, c) => {
+  if (!c || c.cotaAberta == null) return null;
+  const tempo = Number(linha[secao.campoTempo]) || 0;
+  return tempo > 0 ? Math.round(Number(c.cotaAberta) / tempo) : null;
+};
+
+// Totais por dia. Cota Aberta/Consumo só somam quem tem valor (senão um bucket
+// sem cota naquele dia viraria zero e mentiria no rodapé); Status agrega os
+// contadores de todos os buckets antes de decidir Aberto/Fechado/Parcial.
+const _totCotaMin = _dias.map(dia => {
+  let soma = 0, tem = false;
+  _linhas.forEach(l => {
+    const c = _cotasDe(l.bucket, dia.age);
+    if (c && c.cotaAberta != null) { soma += Number(c.cotaAberta); tem = true; }
+  });
+  return tem ? soma : null;
+});
+const _totCotaQtd = _dias.map(dia => {
+  let soma = 0, tem = false;
+  _linhas.forEach(l => {
+    const c = _cotasDe(l.bucket, dia.age);
+    const ord = _ordensDe(l, c);
+    if (ord != null) { soma += ord; tem = true; }
+  });
+  return tem ? soma : null;
+});
+const _totConsMin = _dias.map(dia => {
+  let soma = 0, tem = false;
+  _linhas.forEach(l => {
+    const c = _consumoDe(l.bucket, dia.age);
+    if (c) { soma += Number(c.consumo); tem = true; }
+  });
+  return tem ? soma : null;
+});
+const _totConsQtd = _dias.map(dia => {
+  let soma = 0, tem = false;
+  _linhas.forEach(l => {
+    const c = _consumoDe(l.bucket, dia.age);
+    if (c) { soma += Number(c.qtdOrdens); tem = true; }
+  });
+  return tem ? soma : null;
+});
+const _totStatus = _dias.map(dia => {
+  let aberto = 0, total = 0;
+  _linhas.forEach(l => {
+    const c = _cotasDe(l.bucket, dia.age);
+    if (c && c.statusTotal > 0) { aberto += c.statusAberto; total += c.statusTotal; }
+  });
+  return _statusInfo({ statusAberto: aberto, statusTotal: total });
+});
+%>
+<div class="table-scroll">
+  <table class="cotas-table cotas-table-compact">
+    <colgroup>
+      <col class="colw-aliada" />
+      <col class="colw-bucket" />
+      <% _dias.forEach(() => { %><col class="colw-num" /><col class="colw-num" /><col class="colw-num" /><% }) %>
+    </colgroup>
+    <thead>
+      <tr>
+        <th rowspan="2" title="Empresa aliada responsável pelo bucket">Aliada</th>
+        <th rowspan="2" title="Agrupamento de ARDs (armários) mapeado em depara_bucket"><%= secao.rotuloColuna %></th>
+        <% _dias.forEach(dia => { %>
+          <th colspan="3" class="group-header col-divider" title="<%= dia.age %> — <%= dia.dataLabel %>"><%= dia.age %> · <%= dia.dataLabel %></th>
+        <% }) %>
+      </tr>
+      <tr>
+        <% _dias.forEach(dia => { %>
+          <th class="num col-divider" title="Status da cota no ETA (Age = <%= dia.age %>) — resumo de todas as janelas do bucket nesse dia">Status</th>
+          <th class="num" title="Cota Aberta do ETA na linha Age = <%= dia.age %>, somada em todas as janelas do bucket">Cota Aberta</th>
+          <th class="num" title="Ordens agendadas para <%= dia.dataLabel %> (DATA_VENCIMENTO), somadas em todas as janelas do bucket">Consumo</th>
+        <% }) %>
+      </tr>
+    </thead>
+    <tbody>
+      <% let _aliadaAtual = null; %>
+      <% _linhas.forEach(linha => { %>
+        <% const _nova = linha.aliada !== _aliadaAtual; _aliadaAtual = linha.aliada; %>
+        <tr class="<%= _nova ? 'group-start' : '' %>">
+          <td><span class="aliada-badge aliada-color-<%= secao.aliadaCores[linha.aliada] %>"><%= linha.aliada %></span></td>
+          <td class="celula-truncada" title="<%= linha.bucket %>"><%= linha.bucket %></td>
+          <% _dias.forEach(dia => { %>
+            <% const c = _cotasDe(linha.bucket, dia.age); %>
+            <% const consumo = _consumoDe(linha.bucket, dia.age); %>
+            <% const st = _statusInfo(c); %>
+            <% const ord = _ordensDe(linha, c); %>
+            <td class="col-divider <%= st.classe %>" title="<%= st.titulo %>"><%= st.rotulo %></td>
+            <td class="num"><span class="v-min"><%= c && c.cotaAberta != null ? c.cotaAberta : '—' %></span><span class="v-qtd"><%= ord != null ? ord : '—' %></span></td>
+            <td class="num celula-napplicavel" title="<%= consumo ? consumo.qtdOrdens + ' ordem(ns) agendada(s) para ' + dia.dataLabel : 'Sem ordens agendadas para ' + dia.dataLabel %>"><span class="v-min"><%= consumo ? consumo.consumo : '—' %></span><span class="v-qtd"><%= consumo ? consumo.qtdOrdens : '—' %></span></td>
+          <% }) %>
+        </tr>
+      <% }) %>
+    </tbody>
+    <tfoot>
+      <tr>
+        <td colspan="2" title="Soma de todos os buckets">Total geral</td>
+        <% _dias.forEach((dia, i) => { %>
+          <td class="col-divider <%= _totStatus[i].classe %>" title="<%= _totStatus[i].titulo %>"><%= _totStatus[i].rotulo %></td>
+          <td class="num"><span class="v-min"><%= _totCotaMin[i] != null ? _totCotaMin[i] : '—' %></span><span class="v-qtd"><%= _totCotaQtd[i] != null ? _totCotaQtd[i] : '—' %></span></td>
+          <td class="num celula-napplicavel"><span class="v-min"><%= _totConsMin[i] != null ? _totConsMin[i] : '—' %></span><span class="v-qtd"><%= _totConsQtd[i] != null ? _totConsQtd[i] : '—' %></span></td>
+        <% }) %>
+      </tr>
+    </tfoot>
+  </table>
+</div>

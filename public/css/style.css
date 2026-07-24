@@ -24,6 +24,7 @@
   --table-header-fg: #ffffff;
   --table-card-border: #c3b2ec;
   --table-stripe-bg: #f2f3f5;
+  --table-hover-bg: #e7e4f5;
   --table-shadow: 0 6px 18px rgba(44, 40, 80, 0.14);
 }
 
@@ -354,14 +355,26 @@ button.home-sidebar-btn {
 }
 
 /* Status da cota do dia (D0) na página de Cotas Planejadas: "Fechado" destacado
-   (é o que precisa de atenção), "Aberto" discreto. */
-.status-fechado {
+   (é o que precisa de atenção), "Aberto" discreto.
+   Qualificado com `.cotas-table td` (2 classes) em vez da classe isolada: `.cotas-table
+   tbody td { color: var(--text) }` tem mais especificidade (1 classe + 2 elementos)
+   que uma classe só, e sempre vencia -- o texto do Status nunca teve a cor certa
+   antes disso (só o ponto pulsante do Aberto, que é outro seletor). */
+.cotas-table td.status-fechado {
   color: var(--aliada-0-fg);
   font-weight: 600;
 }
 
-.status-aberto {
+.cotas-table td.status-aberto {
   color: var(--muted);
+}
+
+/* Projeção D1-D7: um bucket pode ter janelas com Status diferentes no mesmo dia
+   (ex.: uma janela Aberta, outra Fechada) -- "Parcial" (n/total) usa a mesma cor
+   de alerta das outras telas, pra não inventar uma 3ª cor de status no sistema. */
+.cotas-table td.status-parcial {
+  color: var(--status-atencao-texto);
+  font-weight: 600;
 }
 
 /* Cota aberta no Elos: ponto verde com pulso suave, marcando onde ainda dá pra
@@ -850,6 +863,17 @@ button.home-sidebar-btn {
 
 .cotas-table tbody tr:nth-child(even) {
   background: var(--table-stripe-bg);
+}
+
+/* Realce da linha sob o mouse: fica mais escura que a listra pra dar referência
+   visual de "em qual linha eu estou" em tabelas largas (18 colunas em algumas
+   páginas). Empatando em especificidade com a regra de listra acima, esta vence
+   por vir depois no arquivo -- funciona em linhas pares e ímpares igual. */
+.cotas-table tbody tr {
+  transition: background-color 0.12s ease;
+}
+.cotas-table tbody tr:hover {
+  background: var(--table-hover-bg);
 }
 
 .cotas-table tbody tr.group-start td,
@@ -1664,5 +1688,16 @@ button.is-loading::after {
     animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;
     scroll-behavior: auto !important;
+  }
+
+  /* Exceção: o ponto de "cota aberta" é um indicador de ESTADO (tipo um "ao
+     vivo"), não decoração -- 6px, lento (1.8s), sem estroboscopia: não é o tipo
+     de movimento que a preferência de acessibilidade pretende barrar. Sem esta
+     exceção a regra acima (que existe pra evitar chateação vestibular em
+     animações grandes) também apagava esse indicador pequeno sem necessidade,
+     deixando a bolinha estática. */
+  .status-aberto::before {
+    animation-duration: 1.8s !important;
+    animation-iteration-count: infinite !important;
   }
 }

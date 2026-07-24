@@ -41,7 +41,9 @@ const { importarReparos } = require('../services/reparosUploadService');
 const {
   importarCotas,
   getCotasD0,
+  getCotasD1aD7,
   getConsumoHoje,
+  getConsumoD1aD7,
   getDatasCargaCotas,
   TIPOS: TIPOS_COTAS,
 } = require('../services/cotasService');
@@ -451,12 +453,14 @@ router.get('/', async (req, res, next) => {
     const linkResumoCotas = `/resumo-cotas?${montarQueryStringEstado(req.query).toString()}`;
     const linkConfiguracoes = `/configuracoes?${montarQueryStringEstado(req.query).toString()}`;
     const linkCotasPlanejadas = `/cotas-planejadas?${montarQueryStringEstado(req.query).toString()}`;
+    const linkProjecaoD1D7 = `/projecao-d1-d7?${montarQueryStringEstado(req.query).toString()}`;
 
     res.render('index', {
       ...dados,
       linkResumoCotas,
       linkConfiguracoes,
       linkCotasPlanejadas,
+      linkProjecaoD1D7,
     });
   } catch (err) {
     next(err);
@@ -474,6 +478,7 @@ router.get('/configuracoes', async (req, res, next) => {
     const linkResumoCotas = `/resumo-cotas?${montarQueryStringEstado(req.query).toString()}`;
     const linkConfiguracoes = `/configuracoes?${montarQueryStringEstado(req.query).toString()}`;
     const linkCotasPlanejadas = `/cotas-planejadas?${montarQueryStringEstado(req.query).toString()}`;
+    const linkProjecaoD1D7 = `/projecao-d1-d7?${montarQueryStringEstado(req.query).toString()}`;
 
     res.render('configuracoes', {
       ...dados,
@@ -481,6 +486,7 @@ router.get('/configuracoes', async (req, res, next) => {
       linkResumoCotas,
       linkConfiguracoes,
       linkCotasPlanejadas,
+      linkProjecaoD1D7,
       instalacoesUpload: req.query.instalacoesUpload,
       instalacoesUploadLinhas: req.query.instalacoesUploadLinhas,
       instalacoesUploadErro: req.query.instalacoesUploadErro,
@@ -503,6 +509,7 @@ router.get('/resumo-cotas', async (req, res, next) => {
     const linkResumoCotas = `/resumo-cotas?${montarQueryStringEstado(req.query).toString()}`;
     const linkConfiguracoes = `/configuracoes?${montarQueryStringEstado(req.query).toString()}`;
     const linkCotasPlanejadas = `/cotas-planejadas?${montarQueryStringEstado(req.query).toString()}`;
+    const linkProjecaoD1D7 = `/projecao-d1-d7?${montarQueryStringEstado(req.query).toString()}`;
 
     const qtdJanelasInstalacao = dados.janelasInstalacaoLabels.length;
     const qtdJanelasMe = dados.janelasMeLabels.length;
@@ -539,6 +546,7 @@ router.get('/resumo-cotas', async (req, res, next) => {
       linkResumoCotas,
       linkConfiguracoes,
       linkCotasPlanejadas,
+      linkProjecaoD1D7,
       linhasResumo,
       janelasInstalacaoLabels: dados.janelasInstalacaoLabels,
       janelasMeLabels: dados.janelasMeLabels,
@@ -570,6 +578,7 @@ router.get('/cotas-planejadas', async (req, res, next) => {
     const linkResumoCotas = `/resumo-cotas?${montarQueryStringEstado(req.query).toString()}`;
     const linkConfiguracoes = `/configuracoes?${montarQueryStringEstado(req.query).toString()}`;
     const linkCotasPlanejadas = `/cotas-planejadas?${montarQueryStringEstado(req.query).toString()}`;
+    const linkProjecaoD1D7 = `/projecao-d1-d7?${montarQueryStringEstado(req.query).toString()}`;
 
     // Normaliza o rótulo da janela tirando espaços porque o Excel usa "08:30-10:30"
     // e os labels do painel usam "08:30 - 10:30".
@@ -625,17 +634,34 @@ router.get('/cotas-planejadas', async (req, res, next) => {
     const linhasServicosComPlanej = linhasDeSnapshot(
       'servico', dados.linhasServicos, dados.janelasServicoLabels
     );
+    const linhasMeComPlanej = linhasDeSnapshot(
+      'me', dados.linhasMe, dados.janelasMeLabels
+    );
+    const linhasReparosComPlanej = linhasDeSnapshot(
+      'reparo', dados.linhas, dados.janelasReparoLabels
+    );
 
-    const [cotasD0, consumoHoje, cotasD0Servico, consumoHojeServico] = await Promise.all([
+    const [
+      cotasD0, consumoHoje, cotasD0Servico, consumoHojeServico,
+      cotasD0Me, consumoHojeMe, cotasD0Reparo, consumoHojeReparo,
+    ] = await Promise.all([
       getCotasD0('instalacao'),
       getConsumoHoje('instalacao'),
       getCotasD0('servico'),
       getConsumoHoje('servico'),
+      getCotasD0('me'),
+      getConsumoHoje('me'),
+      getCotasD0('reparo'),
+      getConsumoHoje('reparo'),
     ]);
     const mapaCotasD0 = montarMapaD0(cotasD0);
     const mapaConsumo = montarMapaConsumo(consumoHoje);
     const mapaCotasD0Servico = montarMapaD0(cotasD0Servico);
     const mapaConsumoServico = montarMapaConsumo(consumoHojeServico);
+    const mapaCotasD0Me = montarMapaD0(cotasD0Me);
+    const mapaConsumoMe = montarMapaConsumo(consumoHojeMe);
+    const mapaCotasD0Reparo = montarMapaD0(cotasD0Reparo);
+    const mapaConsumoReparo = montarMapaConsumo(consumoHojeReparo);
 
     const datasCargaBrutas = await getDatasCargaCotas();
     const datasCargaCotas = {};
@@ -651,6 +677,7 @@ router.get('/cotas-planejadas', async (req, res, next) => {
       linkResumoCotas,
       linkConfiguracoes,
       linkCotasPlanejadas,
+      linkProjecaoD1D7,
       linhasInstalacoes: linhasInstalacoesComPlanej,
       janelasInstalacaoLabels: dados.janelasInstalacaoLabels,
       aliadaCoresInstalacoes: dados.aliadaCoresInstalacoes,
@@ -662,6 +689,19 @@ router.get('/cotas-planejadas', async (req, res, next) => {
       aliadaCoresServicos: dados.aliadaCoresServicos,
       mapaCotasD0Servico,
       mapaConsumoServico,
+      // ME: mesma estrutura, recorte/tempo próprios (depara_tempo_bucket.ALTERACAO).
+      linhasMe: linhasMeComPlanej,
+      janelasMeLabels: dados.janelasMeLabels,
+      aliadaCoresMe: dados.aliadaCoresMe,
+      mapaCotasD0Me,
+      mapaConsumoMe,
+      // Reparos: único tipo em backlog_elos (não backlog_instalacoes); tempo
+      // próprio (depara_tempo_bucket.REPARO), só 2 janelas (não 4).
+      linhasReparos: linhasReparosComPlanej,
+      janelasReparoLabels: dados.janelasReparoLabels,
+      aliadaCoresReparos: dados.aliadaCores,
+      mapaCotasD0Reparo,
+      mapaConsumoReparo,
       datasCargaCotas,
       // Indica ao template se o Planej. vem do histórico (D-1) ou do cálculo ao vivo.
       planejadoDeHistorico: temSnapshotD1,
@@ -670,6 +710,115 @@ router.get('/cotas-planejadas', async (req, res, next) => {
       cotasUploadLinhas: req.query.cotasUploadLinhas,
       cotasUploadErro: req.query.cotasUploadErro,
       elosCredenciais: dados.elosCredenciais,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Projeção D1-D7: por bucket, o Status/Cota Aberta (rótulo AGE do próprio arquivo
+// do ETA -- pode estar desatualizado se a base não for reenviada, ver
+// datasCargaCotas) e o Consumo (calculado por data de calendário real, D1..D7 a
+// partir de hoje) de cada um dos 4 tipos. Status/Cota Aberta são agregados por
+// bucket somando/contando todas as janelas daquele bucket no dia (um bucket pode
+// ter janelas com Status diferentes no mesmo dia -- daí "Parcial").
+router.get('/projecao-d1-d7', async (req, res, next) => {
+  try {
+    const dados = await carregarDadosPainel(req.query);
+    const linkVoltar = `/?${montarQueryStringEstado(req.query).toString()}`;
+    const linkResumoCotas = `/resumo-cotas?${montarQueryStringEstado(req.query).toString()}`;
+    const linkConfiguracoes = `/configuracoes?${montarQueryStringEstado(req.query).toString()}`;
+    const linkCotasPlanejadas = `/cotas-planejadas?${montarQueryStringEstado(req.query).toString()}`;
+    const linkProjecaoD1D7 = `/projecao-d1-d7?${montarQueryStringEstado(req.query).toString()}`;
+
+    // 7 dias à frente de hoje, com data de calendário real -- ao contrário do AGE
+    // do arquivo do ETA (que é o rótulo que o próprio relatório trouxe, e pode
+    // estar desatualizado se ninguém reenviar a base), essa data aqui é sempre
+    // recalculada a partir de "agora".
+    const hoje = new Date();
+    const dias = Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(hoje);
+      d.setDate(d.getDate() + i + 1);
+      const dd = String(d.getDate()).padStart(2, '0');
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      return { age: `D${i + 1}`, dataIso: `${d.getFullYear()}-${mm}-${dd}`, dataLabel: `${dd}/${mm}` };
+    });
+    const ageDaData = Object.fromEntries(dias.map(d => [d.dataIso, d.age]));
+
+    // bucket -> age -> { statusAberto, statusTotal, cotaAberta, cotaUsada }
+    const montarMapaCotasPorDia = (linhas) => {
+      const mapa = {};
+      linhas.forEach(r => {
+        const porBucket = mapa[r.bucket] || (mapa[r.bucket] = {});
+        const acc = porBucket[r.age] || (porBucket[r.age] = {
+          statusAberto: 0, statusTotal: 0, cotaAberta: 0, cotaUsada: 0,
+        });
+        acc.statusTotal += 1;
+        if (r.status === 'Aberto') acc.statusAberto += 1;
+        acc.cotaAberta += Number(r.cotaAberta) || 0;
+        acc.cotaUsada += Number(r.cotaUsada) || 0;
+      });
+      return mapa;
+    };
+
+    // bucket -> age -> { qtdOrdens, consumo }. `r.data` (YYYY-MM-DD) é convertido
+    // pro rótulo Dn comparando com a data real calculada acima.
+    const montarMapaConsumoPorDia = (linhas) => {
+      const mapa = {};
+      linhas.forEach(r => {
+        const age = ageDaData[r.data];
+        if (!age) return;
+        const porBucket = mapa[r.bucket] || (mapa[r.bucket] = {});
+        const acc = porBucket[age] || (porBucket[age] = { qtdOrdens: 0, consumo: 0 });
+        acc.qtdOrdens += Number(r.qtdOrdens) || 0;
+        acc.consumo += Number(r.consumo) || 0;
+      });
+      return mapa;
+    };
+
+    const [
+      cotasInstalacao, consumoInstalacao,
+      cotasServico, consumoServico,
+      cotasMe, consumoMe,
+      cotasReparo, consumoReparo,
+    ] = await Promise.all([
+      getCotasD1aD7('instalacao'), getConsumoD1aD7('instalacao'),
+      getCotasD1aD7('servico'), getConsumoD1aD7('servico'),
+      getCotasD1aD7('me'), getConsumoD1aD7('me'),
+      getCotasD1aD7('reparo'), getConsumoD1aD7('reparo'),
+    ]);
+
+    const datasCargaBrutas = await getDatasCargaCotas();
+    const datasCargaCotas = {};
+    Object.entries(datasCargaBrutas).forEach(([tipo, data]) => {
+      datasCargaCotas[tipo] = data ? formatarDataCarga(data) : null;
+    });
+
+    res.render('projecao-d1-d7', {
+      paginaAtual: 'projecao-d1-d7',
+      linkVoltar,
+      linkResumoCotas,
+      linkConfiguracoes,
+      linkCotasPlanejadas,
+      linkProjecaoD1D7,
+      dias,
+      linhasInstalacoes: dados.linhasInstalacoes,
+      aliadaCoresInstalacoes: dados.aliadaCoresInstalacoes,
+      mapaCotasInstalacao: montarMapaCotasPorDia(cotasInstalacao),
+      mapaConsumoInstalacao: montarMapaConsumoPorDia(consumoInstalacao),
+      linhasServicos: dados.linhasServicos,
+      aliadaCoresServicos: dados.aliadaCoresServicos,
+      mapaCotasServico: montarMapaCotasPorDia(cotasServico),
+      mapaConsumoServico: montarMapaConsumoPorDia(consumoServico),
+      linhasMe: dados.linhasMe,
+      aliadaCoresMe: dados.aliadaCoresMe,
+      mapaCotasMe: montarMapaCotasPorDia(cotasMe),
+      mapaConsumoMe: montarMapaConsumoPorDia(consumoMe),
+      linhasReparos: dados.linhas,
+      aliadaCoresReparos: dados.aliadaCores,
+      mapaCotasReparo: montarMapaCotasPorDia(cotasReparo),
+      mapaConsumoReparo: montarMapaConsumoPorDia(consumoReparo),
+      datasCargaCotas,
     });
   } catch (err) {
     next(err);

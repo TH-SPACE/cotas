@@ -33,6 +33,10 @@
         <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6a1 1 0 0 1 1 1v1a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M8 4H6a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-2"/><path d="m9 14 2 2 4-4"/></svg>
         <span>Cotas Planejadas</span>
       </a>
+      <a href="<%= typeof linkProjecaoD1D7 !== 'undefined' ? linkProjecaoD1D7 : '/projecao-d1-d7' %>" class="topbar-nav-item" title="Projeção de Status, Cota Aberta e Consumo por bucket para os próximos 7 dias (D1 a D7)">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 3v3M16 3v3"/><path d="M8 13h2M13 13h3M8 17h2M13 17h3"/></svg>
+        <span>Projeção D1-D7</span>
+      </a>
     </nav>
     <div class="topbar-acoes">
       <% // Ação contextual: só aparece na página que tem o <dialog> de upload. %>

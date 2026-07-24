@@ -1,0 +1,102 @@
+<%- include('partials/head') %>
+
+<%
+  // Uma entrada por seção; a tabela em si é o partial `tabela-projecao`. `dias`
+  // (D1..D7, com a data de calendário real de cada um) é o mesmo pras 4 seções,
+  // vem pronto da rota.
+  const secoes = [
+    {
+      id: 'instalacao',
+      label: 'Instalação',
+      titulo: 'Projeção D1-D7 de Instalação',
+      rotuloColuna: 'Instalação',
+      linhas: linhasInstalacoes,
+      aliadaCores: aliadaCoresInstalacoes,
+      mapaCotas: mapaCotasInstalacao,
+      mapaConsumo: mapaConsumoInstalacao,
+      campoTempo: 'tempoInstalacaoMinutos',
+    },
+    {
+      id: 'servico',
+      label: 'Serviços',
+      titulo: 'Projeção D1-D7 de Serviços',
+      rotuloColuna: 'Serviço',
+      linhas: linhasServicos,
+      aliadaCores: aliadaCoresServicos,
+      mapaCotas: mapaCotasServico,
+      mapaConsumo: mapaConsumoServico,
+      campoTempo: 'tempoServicoMinutos',
+    },
+    {
+      id: 'me',
+      label: 'ME',
+      titulo: 'Projeção D1-D7 de ME',
+      rotuloColuna: 'ME',
+      linhas: linhasMe,
+      aliadaCores: aliadaCoresMe,
+      mapaCotas: mapaCotasMe,
+      mapaConsumo: mapaConsumoMe,
+      campoTempo: 'tempoMeMinutos',
+    },
+    {
+      id: 'reparo',
+      label: 'Reparos',
+      titulo: 'Projeção D1-D7 de Reparos',
+      rotuloColuna: 'Reparo',
+      linhas: linhasReparos,
+      aliadaCores: aliadaCoresReparos,
+      mapaCotas: mapaCotasReparo,
+      mapaConsumo: mapaConsumoReparo,
+      campoTempo: 'tempoReparoMinutos',
+    },
+  ];
+%>
+
+<section class="panel" id="cotas-tabela">
+  <div class="tabela-card-header">
+    <div>
+      <% secoes.forEach((secao, i) => { %>
+        <div class="secao-cabecalho" data-secao="<%= secao.id %>" <%= i === 0 ? '' : 'hidden' %>>
+          <h2 class="tabela-card-titulo"><%= secao.titulo %></h2>
+          <p class="tabela-card-contexto">
+            Cluster GOIANIA · <%= secao.linhas.length %> buckets · 7 dias (D1 a D7)
+            <% if (datasCargaCotas[secao.id]) { %>
+              · cotas do ETA de <strong><%= datasCargaCotas[secao.id] %></strong>
+            <% } else { %>
+              · <strong>cotas do ETA ainda não importadas</strong>
+            <% } %>
+          </p>
+        </div>
+      <% }) %>
+    </div>
+    <div class="tabela-card-acoes">
+      <div class="unidade-toggle">
+        <span class="unidade-toggle-label" id="rotulo-unidade">Ver em</span>
+        <div class="secao-tabs" role="group" aria-labelledby="rotulo-unidade">
+          <button type="button" class="secao-tab unidade-tab is-active" data-unidade="min" aria-pressed="true" title="Mostrar os valores em minutos">Minutos</button>
+          <button type="button" class="secao-tab unidade-tab" data-unidade="qtd" aria-pressed="false" title="Mostrar os valores em quantidade de ordens">Ordens</button>
+        </div>
+      </div>
+      <nav class="secao-tabs" aria-label="Seção">
+        <% secoes.forEach((secao, i) => { %>
+          <button type="button" class="secao-tab secao-aba <%= i === 0 ? 'is-active' : '' %>" data-secao="<%= secao.id %>" aria-pressed="<%= i === 0 ? 'true' : 'false' %>"><%= secao.label %></button>
+        <% }) %>
+      </nav>
+    </div>
+  </div>
+
+  <% secoes.forEach((secao, i) => { %>
+    <div class="secao-painel" data-secao="<%= secao.id %>" <%= i === 0 ? '' : 'hidden' %>>
+      <%- include('partials/tabela-projecao', { secao: secao, dias: dias }) %>
+    </div>
+  <% }) %>
+
+  <p class="tabela-nota">
+    <strong>Status</strong> e <strong>Cota Aberta</strong> = rótulo <code>Age</code> (D1 a D7) do arquivo do ETA, somando/contando todas as janelas do bucket naquele dia · <strong>Parcial</strong> = nem todas as janelas do bucket concordam no Status ·
+    <strong>Consumo</strong> = ordens agendadas (<code>DATA_VENCIMENTO</code>) para a data real de cada dia, calculada a partir de hoje e contada na hora.
+    <strong>Atenção:</strong> Status/Cota Aberta só refletem a data ao lado do rótulo (D1, D2...) se a base tiver sido reenviada <em>hoje</em> — confira a data de carga do ETA acima de cada aba; se a base estiver desatualizada, o rótulo Dn pode não corresponder ao dia real.
+    Use <strong>Ver em</strong> para alternar entre minutos e quantidade de ordens.
+  </p>
+</section>
+
+<%- include('partials/footer') %>

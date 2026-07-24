@@ -11,6 +11,13 @@ const {
   SPECIFICATION_TYPE_EXCLUIDOS: SERVICO_TIPOS_EXCLUIDOS,
   SPECIFICATION_PRODUCT_PREFIXO_EXCLUIDO: SERVICO_PRODUTO_EXCLUIDO_LIKE,
 } = require('./servicoBucketService');
+const {
+  SPECIFICATION_PRODUCT_CONTEM: ME_PRODUTO_CONTEM_LIKE,
+} = require('./meBucketService');
+const {
+  TABELA_BACKLOG_ELOS,
+  SPECIFICATION_TYPE_REPARO,
+} = require('./bucketService');
 // Mesmo curinga dos painéis: ARD sem linha em depara_bucket cai em BKT_GOIANIA.
 const BUCKET_CURINGA_CONSUMO = 'BKT_GOIANIA';
 
@@ -290,6 +297,26 @@ async function getCotasD0(tipo) {
   return rows;
 }
 
+// Cotas de D1 a D7 (mesma tabela do D0, só muda o filtro de AGE) por bucket +
+// janela + dia: alimenta a página de projeção /projecao-d1-d7. Ao contrário de
+// getCotasD0, NÃO agrega por bucket sozinho -- devolve uma linha por
+// bucket+janela+age pra rota decidir como resumir (ex.: status pode divergir
+// entre janelas do mesmo bucket no mesmo dia).
+async function getCotasD1aD7(tipo) {
+  const tabela = tabelaDoTipo(tipo);
+  await criarTabela(tabela);
+  const [rows] = await pool.query(
+    `SELECT BUCKET AS bucket, TIME_SLOT AS timeSlot, AGE AS age,
+            MAX(STATUS) AS status,
+            SUM(COTA_ABERTA) AS cotaAberta,
+            SUM(COTA_USADA) AS cotaUsada
+     FROM \`${tabela}\`
+     WHERE AGE IN ('D1','D2','D3','D4','D5','D6','D7')
+     GROUP BY BUCKET, TIME_SLOT, AGE`
+  );
+  return rows;
+}
+
 // Recorte de cada tipo no Consumo. As regras de negócio NÃO são reescritas aqui:
 // vêm dos mesmos serviços que alimentam os painéis da página inicial, senão a
 // mesma ordem contaria de um jeito lá e de outro aqui.
@@ -304,41 +331,123 @@ const CONSUMO_POR_TIPO = {
     condicao: 'AND i.SPECIFICATION_TYPE NOT IN (?, ?) AND i.SPECIFICATION_PRODUCT NOT LIKE ?',
     params: [...SERVICO_TIPOS_EXCLUIDOS, SERVICO_PRODUTO_EXCLUIDO_LIKE],
   },
+  me: {
+    colunaTempo: 'ALTERACAO',
+    // Sem restrição de SPECIFICATION_TYPE (igual ao painel de ME): ALTERAÇÃO e
+    // DESCONEXÃO contam as duas.
+    condicao: 'AND i.SPECIFICATION_PRODUCT LIKE ?',
+    params: [ME_PRODUTO_CONTEM_LIKE],
+  },
+  // Reparos é o único tipo que mora em backlog_elos (banco indicadores,
+  // compartilhado), não backlog_instalacoes -- por isso tem `tabela` e
+  // `colunaContagem` próprios (COD_SS, não ID). Mesmo recorte do painel de
+  // Reparos: CLUSTER=GOIANIA + SPECIFICATION_TYPE='DEFEITO', tempo REPARO.
+  // `dataVencimentoEhDatetime`: ver comentário em getConsumoHoje -- diferente de
+  // backlog_instalacoes, aqui DATA_VENCIMENTO é DATETIME de verdade (não texto
+  // cru "DD/MM/YYYY"), o import já reformata pra "YYYY-MM-DD HH:mm:ss".
+  reparo: {
+    tabela: TABELA_BACKLOG_ELOS,
+    colunaContagem: 'COD_SS',
+    colunaTempo: 'REPARO',
+    condicao: 'AND i.SPECIFICATION_TYPE = ?',
+    params: [SPECIFICATION_TYPE_REPARO],
+    dataVencimentoEhDatetime: true,
+  },
 };
 
-// Consumo de hoje: soma as ordens de backlog_instalacoes AGENDADAS para hoje.
-// Atenção ao nome da coluna: apesar de se chamar DATA_VENCIMENTO, ela guarda a
-// data do AGENDAMENTO da ordem -- não é prazo/vencimento. Não descreva como
-// "vencendo hoje" na tela (já foi corrigido uma vez).
-// Filtra por DATA_VENCIMENTO começando por DD/MM/YYYY (o CSV do ELOS grava
-// "DD/MM/YYYY HH:MM:SS", então usamos LIKE), multiplicadas pelo tempo do bucket
-// daquele tipo (depara_tempo_bucket.INSTALACAO / .SERVICO), agrupado por bucket
-// (via depara_bucket) e TIME_SLOT.
+// Consumo de hoje: soma as ordens AGENDADAS para hoje. Atenção ao nome da
+// coluna: apesar de se chamar DATA_VENCIMENTO, ela guarda a data do
+// AGENDAMENTO da ordem -- não é prazo/vencimento. Não descreva como "vencendo
+// hoje" na tela (já foi corrigido uma vez).
+// backlog_instalacoes grava DATA_VENCIMENTO como TEXTO cru do CSV do ELOS
+// ("DD/MM/YYYY HH:MM:SS", daí o LIKE); backlog_elos (Reparos) grava como
+// DATETIME de verdade já reformatado pelo import ("YYYY-MM-DD HH:mm:ss") --
+// usar LIKE com o formato errado nunca dá erro, só sempre retorna 0 linhas
+// (foi um bug real aqui: Consumo de Reparos sempre zerado até essa correção).
+// Multiplica pelo tempo do bucket daquele tipo
+// (depara_tempo_bucket.INSTALACAO/.SERVICO/.ALTERACAO/.REPARO), agrupado por
+// bucket (via depara_bucket) e TIME_SLOT.
 // Retorna linhas { bucket, timeSlot, qtdOrdens, consumo } com consumo = COUNT * minutos.
 async function getConsumoHoje(tipo = 'instalacao') {
   const cfg = CONSUMO_POR_TIPO[tipo];
   if (!cfg) throw new Error(`Consumo não configurado para o tipo: ${tipo}.`);
+  // Instalação/Serviço/ME moram em backlog_instalacoes (banco cotas, ID como PK);
+  // Reparos mora em backlog_elos (banco indicadores, COD_SS como PK) -- ver
+  // CONSUMO_POR_TIPO.reparo.
+  const tabela = cfg.tabela || 'backlog_instalacoes';
+  const colunaContagem = cfg.colunaContagem || 'ID';
 
   const hoje = new Date();
   const dd = String(hoje.getDate()).padStart(2, '0');
   const mm = String(hoje.getMonth() + 1).padStart(2, '0');
   const yyyy = hoje.getFullYear();
-  const prefixoHoje = `${dd}/${mm}/${yyyy}%`;
+  const condicaoData = cfg.dataVencimentoEhDatetime
+    ? { clausula: 'DATE(i.DATA_VENCIMENTO) = ?', valor: `${yyyy}-${mm}-${dd}` }
+    : { clausula: 'i.DATA_VENCIMENTO LIKE ?', valor: `${dd}/${mm}/${yyyy}%` };
 
   const [rows] = await pool.query(
     `SELECT
        COALESCE(d.BKT, '${BUCKET_CURINGA_CONSUMO}') AS bucket,
        i.TIME_SLOT AS timeSlot,
-       COUNT(i.ID) AS qtdOrdens,
-       COUNT(i.ID) * COALESCE(t.\`${cfg.colunaTempo}\`, 0) AS consumo
-     FROM backlog_instalacoes i
+       COUNT(i.\`${colunaContagem}\`) AS qtdOrdens,
+       COUNT(i.\`${colunaContagem}\`) * COALESCE(t.\`${cfg.colunaTempo}\`, 0) AS consumo
+     FROM ${tabela} i
      LEFT JOIN depara_bucket d ON d.ARMARIO = i.ARMARIO
      LEFT JOIN depara_tempo_bucket t ON t.BUCKET = COALESCE(d.BKT, '${BUCKET_CURINGA_CONSUMO}')
-     WHERE i.DATA_VENCIMENTO LIKE ?
+     WHERE ${condicaoData.clausula}
        AND i.CLUSTER_ = ?
        ${cfg.condicao}
      GROUP BY COALESCE(d.BKT, '${BUCKET_CURINGA_CONSUMO}'), i.TIME_SLOT, t.\`${cfg.colunaTempo}\``,
-    [prefixoHoje, CLUSTER_ESCOPO_CONSUMO, ...cfg.params]
+    [condicaoData.valor, CLUSTER_ESCOPO_CONSUMO, ...cfg.params]
+  );
+  return rows;
+}
+
+// Normaliza DATA_VENCIMENTO pra uma expressão SQL de data comparável -- o formato
+// difere por tabela (mesmo motivo do comentário em getConsumoHoje): texto cru
+// "DD/MM/YYYY..." em backlog_instalacoes, DATETIME de verdade em backlog_elos.
+function expressaoDataVencimento(cfg) {
+  return cfg.dataVencimentoEhDatetime
+    ? 'DATE(i.DATA_VENCIMENTO)'
+    : "STR_TO_DATE(i.DATA_VENCIMENTO, '%d/%m/%Y')";
+}
+
+// Consumo dos próximos 7 dias (D1..D7): mesmo recorte de negócio de getConsumoHoje
+// (CONSUMO_POR_TIPO), só muda a janela de datas -- em vez de "= hoje", é "entre
+// amanhã e amanhã+6". Devolve uma linha por bucket+janela+dia (`data` no formato
+// 'YYYY-MM-DD', igual volta o driver com dateStrings:true) pra rota converter em
+// rótulo D1..D7 comparando com a data de hoje.
+async function getConsumoD1aD7(tipo = 'instalacao') {
+  const cfg = CONSUMO_POR_TIPO[tipo];
+  if (!cfg) throw new Error(`Consumo não configurado para o tipo: ${tipo}.`);
+  const tabela = cfg.tabela || 'backlog_instalacoes';
+  const colunaContagem = cfg.colunaContagem || 'ID';
+  const dataExpr = expressaoDataVencimento(cfg);
+
+  const paraIso = (d) => {
+    const dd = String(d.getDate()).padStart(2, '0');
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    return `${d.getFullYear()}-${mm}-${dd}`;
+  };
+  const hoje = new Date();
+  const d1 = new Date(hoje); d1.setDate(d1.getDate() + 1);
+  const d7 = new Date(hoje); d7.setDate(d7.getDate() + 7);
+
+  const [rows] = await pool.query(
+    `SELECT
+       COALESCE(d.BKT, '${BUCKET_CURINGA_CONSUMO}') AS bucket,
+       i.TIME_SLOT AS timeSlot,
+       ${dataExpr} AS data,
+       COUNT(i.\`${colunaContagem}\`) AS qtdOrdens,
+       COUNT(i.\`${colunaContagem}\`) * COALESCE(t.\`${cfg.colunaTempo}\`, 0) AS consumo
+     FROM ${tabela} i
+     LEFT JOIN depara_bucket d ON d.ARMARIO = i.ARMARIO
+     LEFT JOIN depara_tempo_bucket t ON t.BUCKET = COALESCE(d.BKT, '${BUCKET_CURINGA_CONSUMO}')
+     WHERE ${dataExpr} BETWEEN ? AND ?
+       AND i.CLUSTER_ = ?
+       ${cfg.condicao}
+     GROUP BY COALESCE(d.BKT, '${BUCKET_CURINGA_CONSUMO}'), i.TIME_SLOT, ${dataExpr}, t.\`${cfg.colunaTempo}\``,
+    [paraIso(d1), paraIso(d7), CLUSTER_ESCOPO_CONSUMO, ...cfg.params]
   );
   return rows;
 }
@@ -358,7 +467,9 @@ async function getDatasCargaCotas() {
 module.exports = {
   importarCotas,
   getCotasD0,
+  getCotasD1aD7,
   getConsumoHoje,
+  getConsumoD1aD7,
   getDatasCargaCotas,
   parseXlsx,
   TIPOS,

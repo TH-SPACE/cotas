@@ -1,19 +1,17 @@
 <%- include('partials/head') %>
 
 <%
+  // Ordem pedida pelo usuário pro modal de upload (grade 2x2, lida linha a
+  // linha): Reparos(Defeito) · Instalação / ME(Mudança de Endereço) · Serviço.
   const tiposCotas = [
-    { tipo: 'instalacao', label: 'Instalação' },
-    { tipo: 'servico', label: 'Serviço' },
-    { tipo: 'me', label: 'ME' },
     { tipo: 'reparo', label: 'Reparos' },
+    { tipo: 'instalacao', label: 'Instalação' },
+    { tipo: 'me', label: 'ME' },
+    { tipo: 'servico', label: 'Serviço' },
   ];
   const rotuloTipo = (t) => (tiposCotas.find(x => x.tipo === t) || {}).label || t;
 
-  /*
-    Uma entrada por seção; a tabela em si é o partial `tabela-cotas`. ME e Reparos
-    entram aqui quando tiverem o recorte de Consumo definido (ver CONSUMO_POR_TIPO
-    em cotasService.js) -- até lá seguem como abas desabilitadas.
-  */
+  // Uma entrada por seção; a tabela em si é o partial `tabela-cotas`.
   const secoes = [
     {
       id: 'instalacao',
@@ -39,8 +37,31 @@
       mapaConsumo: mapaConsumoServico,
       campoTempo: 'tempoServicoMinutos',
     },
+    {
+      id: 'me',
+      label: 'ME',
+      titulo: 'Cotas de ME em D0',
+      rotuloColuna: 'ME',
+      linhas: linhasMe,
+      janelasLabels: janelasMeLabels,
+      aliadaCores: aliadaCoresMe,
+      mapaD0: mapaCotasD0Me,
+      mapaConsumo: mapaConsumoMe,
+      campoTempo: 'tempoMeMinutos',
+    },
+    {
+      id: 'reparo',
+      label: 'Reparos',
+      titulo: 'Cotas de Reparos em D0',
+      rotuloColuna: 'Reparo',
+      linhas: linhasReparos,
+      janelasLabels: janelasReparoLabels,
+      aliadaCores: aliadaCoresReparos,
+      mapaD0: mapaCotasD0Reparo,
+      mapaConsumo: mapaConsumoReparo,
+      campoTempo: 'tempoReparoMinutos',
+    },
   ];
-  const abasFuturas = ['ME', 'Reparos'];
 %>
 
 <section class="panel" id="cotas-tabela">
@@ -72,9 +93,6 @@
         <% secoes.forEach((secao, i) => { %>
           <button type="button" class="secao-tab secao-aba <%= i === 0 ? 'is-active' : '' %>" data-secao="<%= secao.id %>" aria-pressed="<%= i === 0 ? 'true' : 'false' %>"><%= secao.label %></button>
         <% }) %>
-        <% abasFuturas.forEach(label => { %>
-          <button type="button" class="secao-tab" disabled title="Em breve"><%= label %></button>
-        <% }) %>
       </nav>
     </div>
   </div>
@@ -86,7 +104,7 @@
   <% }) %>
 
   <p class="tabela-nota">
-    <strong>Planej.</strong> = <%= planejadoDeHistorico ? 'planejamento de D-1 (snapshot das 9h de ontem)' : '<strong style="color:var(--cor-alerta,#b45309)">sem snapshot de D-1 — valores zerados até o cron das 9h rodar</strong>' %> ·
+    <strong>Planejado D-1</strong> = <%= planejadoDeHistorico ? 'planejamento de D-1 (snapshot das 9h de ontem)' : '<strong style="color:var(--cor-alerta,#b45309)">sem snapshot de D-1 — valores zerados até o cron das 9h rodar</strong>' %> ·
     <strong>Status</strong> e <strong>D0</strong> = cota do dia no ETA (Age = D0) ·
     <strong>Consumo</strong> = ordens agendadas para hoje.
     Use <strong>Ver em</strong> para alternar entre minutos e quantidade de ordens — a conversão é sempre
@@ -124,7 +142,7 @@
       </form>
     <% }) %>
   </div>
-  <p class="hint" style="margin: 0 1.25rem 1.25rem;">Cada envio <strong>substitui</strong> todo o conteúdo daquele tipo. Hoje <strong>Instalação</strong> e <strong>Serviço</strong> alimentam as tabelas acima; ME e Reparos ficam guardados para quando as abas entrarem.</p>
+  <p class="hint" style="margin: 0 1.25rem 1.25rem;">Cada envio <strong>substitui</strong> todo o conteúdo daquele tipo. <strong>Instalação</strong>, <strong>Serviço</strong>, <strong>ME</strong> e <strong>Reparos</strong> alimentam as tabelas acima.</p>
 </dialog>
 
 <%- include('partials/footer') %>

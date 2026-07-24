@@ -1,6 +1,6 @@
 <%
 /*
-  Tabela de cotas de UMA seção (Instalação, Serviços, e futuramente ME/Reparos).
+  Tabela de cotas de UMA seção (Instalação, Serviços, ME, e futuramente Reparos).
   Recebe `secao`:
     { id, rotuloColuna, linhas, janelasLabels, aliadaCores, mapaD0, mapaConsumo, campoTempo }
 
@@ -58,7 +58,7 @@ const _totConsQtd = _somaOuNulo((l, c) => { const v = _consumoDe(l, c); return v
       <tr>
         <% _janelas.forEach(label => { %>
           <th class="num col-divider" title="Status da cota do dia (D0) no ETA — <%= label %>">Status</th>
-          <th class="num" title="COTAS da Sugestão (mesmo cálculo da página inicial) — <%= label %>">Planej.</th>
+          <th class="num" title="Planejamento salvo no snapshot de D-1 (ontem às 9h) — <%= label %>">Planejado D-1</th>
           <th class="num" title="Cota Aberta do ETA na linha Age = D0 — <%= label %>">D0</th>
           <th class="num" title="Ordens agendadas para hoje nesta janela — <%= label %>">Consumo</th>
         <% }) %>
