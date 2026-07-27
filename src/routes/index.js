@@ -1010,6 +1010,12 @@ router.get('/projecao-d1-d7', async (req, res, next) => {
       opcoesJanelaReparo: construirOpcoesJanela('janelaReparo', dados.janelasReparoLabels, janelaReparoSel),
       datasCargaCotas,
       diasAtrasoCotas,
+      // Mesmo flash de upload da cotas-planejadas (ver comentário lá) -- desde
+      // 2026-07-27 o botão "Upload de cotas" também aparece aqui.
+      cotasUpload: req.query.cotasUpload,
+      cotasUploadTipo: req.query.cotasUploadTipo,
+      cotasUploadLinhas: req.query.cotasUploadLinhas,
+      cotasUploadErro: req.query.cotasUploadErro,
       aliadasDisponiveis: dados.aliadasDisponiveis,
       aliadasSelecionadas: dados.aliadasSelecionadas,
       pathAtual: req.path,
@@ -1020,24 +1026,42 @@ router.get('/projecao-d1-d7', async (req, res, next) => {
   }
 });
 
+// O <dialog> de upload de cotas vive tanto em cotas-planejadas quanto (desde
+// 2026-07-27) em projecao-d1-d7 -- cada form manda de onde veio em `voltarPara`
+// (ver hidden-query-estado.ejs) pra voltar pra mesma página com os mesmos
+// filtros em vez de sempre cair em cotas-planejadas. Só aceita as 2 origens
+// conhecidas (com ou sem querystring própria) pra não virar open redirect via
+// campo de formulário adulterado.
+const ORIGENS_UPLOAD_COTAS = ['/cotas-planejadas', '/projecao-d1-d7'];
+function origemUploadCotasSegura(voltarPara) {
+  const valor = typeof voltarPara === 'string' ? voltarPara : '';
+  const base = valor.split('?')[0];
+  return ORIGENS_UPLOAD_COTAS.includes(base) ? valor : '/cotas-planejadas';
+}
+function redirectComFlashCotas(origem, params) {
+  const separador = origem.includes('?') ? '&' : '?';
+  return origem + separador + new URLSearchParams(params).toString();
+}
+
 // Upload manual do Excel de cotas do ELOS (data (*).xlsx) por tipo (instalacao/
 // servico/me/reparo) -> tabela própria daquele tipo (banco cotas, não compartilhada),
 // TRUNCATE + INSERT substitui tudo. Um botão por tipo na página.
 router.post('/cotas/upload/:tipo', upload.single('arquivo'), async (req, res, next) => {
   const tipo = req.params.tipo;
+  const origem = origemUploadCotasSegura(req.body && req.body.voltarPara);
   try {
     if (!TIPOS_COTAS.includes(tipo)) {
-      return res.redirect('/cotas-planejadas?cotasUpload=erro&cotasUploadErro=' + encodeURIComponent('Tipo de cotas inválido.'));
+      return res.redirect(redirectComFlashCotas(origem, { cotasUpload: 'erro', cotasUploadErro: 'Tipo de cotas inválido.' }));
     }
     if (!req.file) {
-      return res.redirect(`/cotas-planejadas?cotasUpload=erro&cotasUploadTipo=${tipo}&cotasUploadErro=` + encodeURIComponent('Nenhum arquivo selecionado.'));
+      return res.redirect(redirectComFlashCotas(origem, { cotasUpload: 'erro', cotasUploadTipo: tipo, cotasUploadErro: 'Nenhum arquivo selecionado.' }));
     }
 
     const { totalLinhas } = await importarCotas(req.file.buffer, tipo);
 
-    res.redirect(`/cotas-planejadas?cotasUpload=ok&cotasUploadTipo=${tipo}&cotasUploadLinhas=${totalLinhas}`);
+    res.redirect(redirectComFlashCotas(origem, { cotasUpload: 'ok', cotasUploadTipo: tipo, cotasUploadLinhas: totalLinhas }));
   } catch (err) {
-    res.redirect(`/cotas-planejadas?cotasUpload=erro&cotasUploadTipo=${tipo}&cotasUploadErro=` + encodeURIComponent(err.message));
+    res.redirect(redirectComFlashCotas(origem, { cotasUpload: 'erro', cotasUploadTipo: tipo, cotasUploadErro: err.message }));
   }
 });
 

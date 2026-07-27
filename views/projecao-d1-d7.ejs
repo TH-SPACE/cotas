@@ -1,6 +1,19 @@
 <%- include('partials/head') %>
 
 <%
+  // Mesma lista/rótulo de tipos do modal de upload de cotas em cotas-planejadas.ejs
+  // (o <dialog> abaixo é a mesma peça, replicada aqui desde 2026-07-27 pra dar pra
+  // reenviar a base sem sair da Projeção).
+  const tiposCotas = [
+    { tipo: 'reparo', label: 'Reparos' },
+    { tipo: 'instalacao', label: 'Instalação' },
+    { tipo: 'me', label: 'ME' },
+    { tipo: 'servico', label: 'Serviço' },
+  ];
+  const rotuloTipo = (t) => (tiposCotas.find(x => x.tipo === t) || {}).label || t;
+%>
+
+<%
   // Uma entrada por seção; a tabela em si é o partial `tabela-projecao`. `dias`
   // (D1..D7, com a data de calendário real de cada um) é o mesmo pras 4 seções,
   // vem pronto da rota.
@@ -57,7 +70,7 @@
 %>
 
 <section class="panel" id="cotas-tabela">
-  <div class="tabela-card-header">
+  <div class="panel-header panel-header-row">
     <div>
       <% secoes.forEach((secao, i) => { %>
         <div class="secao-cabecalho" data-secao="<%= secao.id %>" <%= i === 0 ? '' : 'hidden' %>>
@@ -83,7 +96,7 @@
         </div>
       <% }) %>
     </div>
-    <div class="tabela-card-acoes">
+    <div class="panel-header-actions">
       <div class="unidade-toggle">
         <span class="unidade-toggle-label" id="rotulo-unidade">Ver em</span>
         <div class="secao-tabs" role="group" aria-labelledby="rotulo-unidade">
@@ -122,5 +135,39 @@
     Use <strong>Ver em</strong> para alternar entre minutos e quantidade de ordens.
   </p>
 </section>
+
+<dialog id="cotas-upload-modal" class="config-modal" data-abrir-automatico="<%= cotasUpload ? 'true' : '' %>">
+  <div class="modal-header">
+    <h3 title="Envia os relatórios de cotas do ETA (Excel, aba Export) — um arquivo por tipo. Cada envio substitui todo o conteúdo daquele tipo.">Analítico Disponibilidade e Consumo PB</h3>
+    <button type="button" class="icon-btn" id="cotas-upload-close-btn" aria-label="Fechar" title="Fechar">&times;</button>
+  </div>
+
+  <% if (cotasUpload === 'ok') { %>
+    <p class="alert alert-ok" data-auto-dismiss style="margin: 1rem 1.25rem 0;">Cotas de <strong><%= rotuloTipo(cotasUploadTipo) %></strong> importadas: <strong><%= cotasUploadLinhas %></strong> linhas.</p>
+  <% } else if (cotasUpload === 'erro') { %>
+    <p class="alert alert-erro" data-auto-dismiss style="margin: 1rem 1.25rem 0;">Falha ao importar cotas<%= cotasUploadTipo ? ' de ' + rotuloTipo(cotasUploadTipo) : '' %>: <%= cotasUploadErro %></p>
+  <% } %>
+
+  <div class="upload-compact-grid">
+    <% tiposCotas.forEach(({ tipo, label }) => { %>
+      <form class="cota-upload-item" method="post" action="/cotas/upload/<%= tipo %>" enctype="multipart/form-data" data-loading="Enviando e processando o arquivo…">
+        <input type="hidden" name="voltarPara" value="<%= linkProjecaoD1D7 %>" />
+        <div class="cota-upload-head">
+          <span class="cota-upload-tipo"><%= label %></span>
+          <% if (datasCargaCotas[tipo]) { %>
+            <span class="cota-upload-data" title="Última atualização de <%= label %>">atualizado <%= datasCargaCotas[tipo] %></span>
+          <% } else { %>
+            <span class="cota-upload-data cota-upload-nunca" title="Nunca enviado">nunca enviado</span>
+          <% } %>
+        </div>
+        <div class="cota-upload-row">
+          <input type="file" name="arquivo" accept=".xlsx" required aria-label="Arquivo de cotas de <%= label %>" />
+          <button type="submit" title="Enviar e substituir as cotas de <%= label %>">Enviar</button>
+        </div>
+      </form>
+    <% }) %>
+  </div>
+  <p class="hint" style="margin: 0 1.25rem 1.25rem;">Cada envio <strong>substitui</strong> todo o conteúdo daquele tipo. <strong>Instalação</strong>, <strong>Serviço</strong>, <strong>ME</strong> e <strong>Reparos</strong> alimentam as tabelas acima.</p>
+</dialog>
 
 <%- include('partials/footer') %>

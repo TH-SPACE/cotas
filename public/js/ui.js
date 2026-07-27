@@ -108,8 +108,11 @@
     const href = item.getAttribute('href') || '';
     let path;
     try { path = new URL(href, window.location.href).pathname; } catch (e) { return; }
-    if (path === aqui && path !== '/') item.classList.add('is-active');
-    if (path === '/' && aqui === '/') item.classList.add('is-active');
+    const ativa = (path === aqui && path !== '/') || (path === '/' && aqui === '/');
+    if (ativa) {
+      item.classList.add('is-active');
+      item.setAttribute('aria-current', 'page');
+    }
   });
 
   // ---- Alerts: ícone + botão fechar + auto-dismiss nos transitórios --------

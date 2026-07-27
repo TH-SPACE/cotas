@@ -43,13 +43,24 @@ body {
   color: var(--text);
 }
 
+/* Grid de 3 colunas (não flex+space-between) pra nav central ficar sempre no
+   centro geométrico do topbar. Com flex+space-between, a posição da nav
+   dependia da largura de .topbar-acoes (que varia por página: só o ícone de
+   credenciais Elos em algumas, +"Upload de cotas" em cotas-planejadas/
+   projecao-d1-d7, +3 ícones na home) -- cada troca de página deslocava os
+   itens da navbar (Início/Resumo COTAS/...) pros lados, mesmo eles sendo os
+   mesmos elementos. 1fr/auto/1fr faz as duas colunas laterais dividirem o
+   espaço restante igualmente, então a coluna central (auto = largura da nav)
+   fica sempre centralizada de verdade, com .topbar-acoes variando de largura
+   sem afetar a posição da nav. */
 .topbar {
   position: sticky;
   top: 0;
   z-index: 100;
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  justify-content: space-between;
+  gap: 1rem;
   padding: 1rem 2rem;
   background: var(--panel-bg);
   border-bottom: 1px solid var(--border);
@@ -58,6 +69,8 @@ body {
 .topbar h1 {
   font-size: 1.25rem;
   margin: 0;
+  justify-self: start;
+  min-width: 0;
 }
 
 .topbar-link {
@@ -182,17 +195,34 @@ body {
   flex-shrink: 0;
 }
 
+/* Cabeçalho de página (título + ações), padrão único nas 5 páginas -- até
+   2026-07-27 cotas-planejadas/projecao-d1-d7 tinham um 2º sistema só delas
+   (.tabela-card-header/.tabela-card-acoes), quase igual mas sem wrap/centro,
+   o que fazia os controles (chips, abas, voltar) pularem de posição/altura
+   ao trocar de página. align-items:center (em vez de flex-start) centraliza
+   as ações mesmo quando o título ocupa 2 linhas (h2 + .hint); flex-wrap evita
+   estouro em telas estreitas. */
 .panel-header-row {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
 }
 
 .hint {
   margin: 0 0 1rem;
   color: var(--muted);
   font-size: 0.85rem;
+}
+
+/* Dentro do cabeçalho, a margem inferior do .hint já cumpriu o papel dela
+   (separar título de conteúdo) -- sem zerar aqui, ela soma com o margin-bottom
+   do próprio .panel-header-row e deixa o espaço antes da tabela maior que nas
+   páginas sem .hint no cabeçalho. */
+.panel-header-row .hint {
+  margin-bottom: 0;
 }
 
 /* Fórmula da Sugestão no modal de Carga (#config-rapido-dica): fração empilhada
@@ -256,7 +286,9 @@ body {
 
 .panel-header-actions {
   display: flex;
-  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
   flex-shrink: 0;
 }
 
@@ -1739,21 +1771,19 @@ button.is-loading::after {
    A tabela é o conteúdo principal e fica no topo: o card carrega o próprio
    título + contexto, e as abas de seção deixam o layout escalar pra
    Instalação/Serviços/ME/Reparos sem empilhar 4 tabelas gigantes na tela.
+   O cabeçalho em si (título+ações) reaproveita .panel-header-row/
+   .panel-header-actions -- até 2026-07-27 essas 2 páginas tinham um sistema
+   próprio (.tabela-card-header/.tabela-card-acoes), removido pra padronizar
+   com as outras 3 páginas (ver comentário em .panel-header-row acima). Só
+   o título/contexto (mais compactos que h2/.hint por carregarem uma linha
+   densa de contadores) continuam com classe própria.
    ======================================================================= */
 .topbar-acoes {
   display: flex;
   align-items: center;
   gap: 0.5rem;
   flex-shrink: 0;
-}
-
-.tabela-card-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 1rem;
-  flex-wrap: wrap;
-  margin-bottom: 0.9rem;
+  justify-self: end;
 }
 
 .tabela-card-titulo {
@@ -1831,14 +1861,9 @@ button.is-loading::after {
 }
 
 /* Toggle Minutos/Ordens: os dois valores já estão no HTML; o clique só troca
-   qual aparece (nada é recalculado, e o valor oculto continua no DOM). */
-.tabela-card-acoes {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  flex-wrap: wrap;
-}
-
+   qual aparece (nada é recalculado, e o valor oculto continua no DOM). Vive
+   dentro de .panel-header-actions (mesmo container de ações do cabeçalho
+   padrão -- ver comentário em .panel-header-row). */
 .unidade-toggle {
   display: inline-flex;
   align-items: center;

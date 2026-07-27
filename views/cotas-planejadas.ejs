@@ -61,7 +61,7 @@
 %>
 
 <section class="panel" id="cotas-tabela">
-  <div class="tabela-card-header">
+  <div class="panel-header panel-header-row">
     <div>
       <% secoes.forEach((secao, i) => { %>
         <div class="secao-cabecalho" data-secao="<%= secao.id %>" <%= i === 0 ? '' : 'hidden' %>>
@@ -83,7 +83,7 @@
         </div>
       <% }) %>
     </div>
-    <div class="tabela-card-acoes">
+    <div class="panel-header-actions">
       <div class="unidade-toggle">
         <span class="unidade-toggle-label" id="rotulo-unidade">Ver em</span>
         <div class="secao-tabs" role="group" aria-labelledby="rotulo-unidade">
@@ -131,6 +131,7 @@
   <div class="upload-compact-grid">
     <% tiposCotas.forEach(({ tipo, label }) => { %>
       <form class="cota-upload-item" method="post" action="/cotas/upload/<%= tipo %>" enctype="multipart/form-data" data-loading="Enviando e processando o arquivo…">
+        <input type="hidden" name="voltarPara" value="<%= linkCotasPlanejadas %>" />
         <div class="cota-upload-head">
           <span class="cota-upload-tipo"><%= label %></span>
           <% if (datasCargaCotas[tipo]) { %>

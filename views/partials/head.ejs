@@ -42,8 +42,10 @@
       </a>
     </nav>
     <div class="topbar-acoes">
-      <% // Ação contextual: só aparece na página que tem o <dialog> de upload. %>
-      <% if (typeof paginaAtual !== 'undefined' && paginaAtual === 'cotas-planejadas') { %>
+      <% // Ação contextual: só aparece nas páginas que têm o <dialog> de upload
+         // de cotas (cotas-planejadas e, desde 2026-07-27, projecao-d1-d7 --
+         // ambas mostram cotas do ETA e se beneficiam de reenviar direto dali). %>
+      <% if (typeof paginaAtual !== 'undefined' && (paginaAtual === 'cotas-planejadas' || paginaAtual === 'projecao-d1-d7')) { %>
         <button type="button" class="btn-secundario btn-com-icone" id="cotas-upload-open-btn" aria-haspopup="dialog" aria-controls="cotas-upload-modal" title="Enviar Analítico Disponibilidade e Consumo PB (um arquivo por tipo)">
           <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M6 10l6-6 6 6"/><path d="M4 20h16"/></svg>
           Upload de cotas
