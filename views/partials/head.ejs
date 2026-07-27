@@ -15,11 +15,14 @@
         Calculadora de Cotas <span class="badge" title="Cluster GOIANIA">GO</span>
       </a>
     </h1>
-    <% // Navbar = só as 3 páginas do sistema (Início / Resumo COTAS / Cotas
-       // Planejadas). Os atalhos das seções (Instalações/Serviços/ME/Reparos) e o
-       // link de Configurações saíram daqui e foram pra barra lateral da página
-       // inicial (ver index.ejs .home-sidebar). `linkVoltar` preserva os filtros ao
-       // voltar pra index a partir das outras páginas. %>
+    <% // Navbar = só as 4 páginas do sistema (Início / Resumo COTAS / Cotas
+       // Planejadas / Projeção D1-D7). Os atalhos das seções (Instalações/
+       // Serviços/ME/Reparos) saíram daqui faz tempo (viraram abas dentro do
+       // cabeçalho de cada painel na home, ver index.ejs `navAbasSecao`).
+       // Configurações e Salvar planejamento também não ficam mais numa barra
+       // lateral (removida pra tabela ganhar largura, 2026-07-27) -- agora são
+       // 2 ícones discretos em .topbar-acoes, só na home (abaixo). `linkVoltar`
+       // preserva os filtros ao voltar pra index a partir das outras páginas. %>
     <nav class="topbar-nav" aria-label="Navegação principal">
       <a href="<%= typeof linkVoltar !== 'undefined' ? linkVoltar : '/' %>" class="topbar-nav-item" title="Página inicial — backlog de Instalações, Serviços, ME e Reparos">
         <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/><path d="M9 21v-6h6v6"/></svg>
@@ -45,6 +48,17 @@
           <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M6 10l6-6 6 6"/><path d="M4 20h16"/></svg>
           Upload de cotas
         </button>
+      <% } %>
+      <% // Só na home: Salvar planejamento e Configurações, discretos (ícone só) --
+         // antes viviam numa barra lateral fixa (removida pra dar mais largura
+         // pra tabela). %>
+      <% if (typeof pathAtual !== 'undefined' && pathAtual === '/') { %>
+        <button type="button" class="icon-btn" id="snapshot-manual-btn" title="Salvar planejamento — salva ORDENS e COTAS(min) atuais no histórico, usado como coluna Planej. em Cotas Planejadas amanhã">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+        </button>
+        <a href="<%= linkConfiguracoes %>" class="icon-btn" title="Configurações: previsto, janelas, Carga, PU, tempos e upload de backlog">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.65 1.65 0 0 0-1.8-.3 1.65 1.65 0 0 0-1 1.5V21a2 2 0 0 1-4 0v-.1A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.65 1.65 0 0 0 .3-1.8 1.65 1.65 0 0 0-1.5-1H3a2 2 0 0 1 0-4h.1A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.65 1.65 0 0 0 1.8.3H9a1.65 1.65 0 0 0 1-1.5V3a2 2 0 0 1 4 0v.1a1.65 1.65 0 0 0 1 1.5 1.65 1.65 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.65 1.65 0 0 0-.3 1.8V9a1.65 1.65 0 0 0 1.5 1H21a2 2 0 0 1 0 4h-.1a1.65 1.65 0 0 0-1.5 1z"/></svg>
+        </a>
       <% } %>
       <button type="button" class="icon-btn" id="config-elos-open-btn" aria-haspopup="dialog" aria-controls="config-elos-modal" title="Credenciais de login da raspagem automática do Elos">
         <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="15" r="4"/><path d="M10.5 12.5 20 3M17 6l3 3M14 9l2 2"/></svg>

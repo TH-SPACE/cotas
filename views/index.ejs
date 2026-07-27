@@ -56,52 +56,23 @@
 ]; %>
 <% const navAbasSecao = (ativa) => `<nav class="secao-tabs" aria-label="Seção" data-storage-key="calc_secao_home">${SECOES_HOME.map(s => `<button type="button" class="secao-tab secao-aba${s.id === ativa ? ' is-active' : ''}" data-secao="${s.id}" aria-pressed="${s.id === ativa ? 'true' : 'false'}">${s.label}</button>`).join('')}</nav>`; %>
 
-<div class="home-layout">
-  <aside class="home-sidebar" aria-label="Seções e configurações">
-    <span class="home-sidebar-titulo">Seções</span>
-    <button type="button" class="home-sidebar-item home-sidebar-btn secao-aba" data-secao="instalacoes" title="Mostrar o backlog de Instalações">
-      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94z"/></svg>
-      <span>Instalações</span>
-    </button>
-    <button type="button" class="home-sidebar-item home-sidebar-btn secao-aba" data-secao="servicos" title="Mostrar o backlog de Serviços">
-      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/><circle cx="12" cy="12" r="3"/></svg>
-      <span>Serviços</span>
-    </button>
-    <button type="button" class="home-sidebar-item home-sidebar-btn secao-aba" data-secao="me" title="Mostrar o backlog de ME (Mudança de Endereço)">
-      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
-      <span>ME</span>
-    </button>
-    <button type="button" class="home-sidebar-item home-sidebar-btn secao-aba" data-secao="reparos" title="Mostrar o backlog de Reparos">
-      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/></svg>
-      <span>Reparos</span>
-    </button>
-    <div class="home-sidebar-sep"></div>
-    <a href="<%= linkConfiguracoes %>" class="home-sidebar-item" title="Configurações: previsto, janelas, Carga, PU, tempos e upload de backlog">
-      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.65 1.65 0 0 0-1.8-.3 1.65 1.65 0 0 0-1 1.5V21a2 2 0 0 1-4 0v-.1A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.65 1.65 0 0 0 .3-1.8 1.65 1.65 0 0 0-1.5-1H3a2 2 0 0 1 0-4h.1A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.65 1.65 0 0 0 1.8.3H9a1.65 1.65 0 0 0 1-1.5V3a2 2 0 0 1 4 0v.1a1.65 1.65 0 0 0 1 1.5 1.65 1.65 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.65 1.65 0 0 0-.3 1.8V9a1.65 1.65 0 0 0 1.5 1H21a2 2 0 0 1 0 4h-.1a1.65 1.65 0 0 0-1.5 1z"/></svg>
-      <span>Configurações</span>
-    </a>
-    <button type="button" class="home-sidebar-item home-sidebar-btn" id="snapshot-manual-btn" title="Salva o planejamento atual no histórico — será usado como coluna Planej. em Cotas Planejadas amanhã">
-      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-      <span>Salvar planejamento</span>
-    </button>
+<!-- Modal de confirmação do save de planejamento (gatilho agora fica no topbar, ver head.ejs) -->
+<dialog id="snapshot-confirm-modal" class="config-modal">
+  <div class="modal-header">
+    <h3>Salvar planejamento para amanhã?</h3>
+    <button type="button" class="icon-btn" id="snapshot-confirm-close-btn" aria-label="Fechar" title="Fechar">&times;</button>
+  </div>
+  <div class="modal-body">
+    <p>Os valores de <strong>ORDENS</strong> e <strong>COTAS(min)</strong> de cada bucket e janela que estão na tela agora serão salvos no histórico.</p>
+    <p>Amanhã, esses valores aparecerão como <strong>Planej.</strong> na página de <strong>Cotas Planejadas</strong>.</p>
+    <p class="hint">Se já existe um planejamento salvo para hoje, ele será substituído.</p>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn-secundario" id="snapshot-confirm-close-btn-2">Cancelar</button>
+    <button type="button" id="snapshot-confirm-ok-btn">Salvar</button>
+  </div>
+</dialog>
 
-    <!-- Modal de confirmação do save de planejamento -->
-    <dialog id="snapshot-confirm-modal" class="config-modal">
-      <div class="modal-header">
-        <h3>Salvar planejamento para amanhã?</h3>
-        <button type="button" class="icon-btn" id="snapshot-confirm-close-btn" aria-label="Fechar" title="Fechar">&times;</button>
-      </div>
-      <div class="modal-body">
-        <p>Os valores de <strong>ORDENS</strong> e <strong>COTAS(min)</strong> de cada bucket e janela que estão na tela agora serão salvos no histórico.</p>
-        <p>Amanhã, esses valores aparecerão como <strong>Planej.</strong> na página de <strong>Cotas Planejadas</strong>.</p>
-        <p class="hint">Se já existe um planejamento salvo para hoje, ele será substituído.</p>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn-secundario" id="snapshot-confirm-close-btn-2">Cancelar</button>
-        <button type="button" id="snapshot-confirm-ok-btn">Salvar</button>
-      </div>
-    </dialog>
-  </aside>
   <div class="home-content">
 
 <section class="panel secao-painel" id="secao-instalacoes" data-secao="instalacoes">
@@ -112,13 +83,6 @@
         Resumo de Backlog de Instalações por Bucket
         <span class="badge" title="Este resumo conta instalação/ME/serviços do CSV diário do ELOS — reparos têm seção própria">INSTALAÇÕES</span>
       </h2>
-      <p class="data-carga-destaque" title="Data de carga registrada pelo próprio ELOS na coluna DATA_CARGA (backlog_instalacoes) — mesma base do painel de Serviços">
-        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
-        Dados atualizados em <strong><%= dataCargaInstalacoes %></strong>
-      </p>
-      <p class="hint">
-        Backlog em aberto = instalação (GOIANIA). Status, motivo e tecnologia são filtráveis abaixo. — esta tela calcula para D+1.
-      </p>
     </div>
     <div class="panel-header-actions">
       <%- include('partials/filtro-aliada-chips') %>
@@ -178,7 +142,7 @@
   <% } %>
 
   <div class="table-scroll">
-    <table class="cotas-table">
+    <table class="cotas-table cotas-table-compact">
       <colgroup>
         <col class="colw-aliada" />
         <col class="colw-bucket" />
@@ -268,6 +232,13 @@
       </tfoot>
     </table>
   </div>
+  <p class="data-carga-destaque" title="Data de carga registrada pelo próprio ELOS na coluna DATA_CARGA (backlog_instalacoes) — mesma base do painel de Serviços">
+    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+    Dados atualizados em <strong><%= dataCargaInstalacoes %></strong>
+  </p>
+  <p class="hint">
+    Backlog em aberto = instalação (GOIANIA). Status, motivo e tecnologia são filtráveis abaixo. — esta tela calcula para D+1.
+  </p>
 </section>
 
 <section class="panel secao-painel" id="secao-servicos" data-secao="servicos" hidden>
@@ -278,13 +249,6 @@
         Resumo de Backlog de Serviços por Bucket
         <span class="badge" title="Este resumo conta ALTERAÇÃO/UPGRADE/DOWNGRADE do CSV diário do ELOS, exceto Mudança de Endereço — instalações e reparos têm seção própria">SERVIÇOS</span>
       </h2>
-      <p class="data-carga-destaque" title="Data de carga registrada pelo próprio ELOS na coluna DATA_CARGA (backlog_instalacoes) — mesma base do painel de Instalações">
-        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
-        Dados atualizados em <strong><%= dataCargaServicos %></strong>
-      </p>
-      <p class="hint">
-        Backlog em aberto = SPECIFICATION_TYPE diferente de INSTALAÇÃO e DESCONEXÃO, excluindo produtos "MUDANÇA DE ENDEREÇO*" (GOIANIA). Status, motivo e tecnologia são filtráveis abaixo (padrão: fora CANCELADA/ENCERRADA/EXECUCAO; motivo só considera (sem motivo)/AGENDAMENTO — esta tela calcula para D+1).
-      </p>
     </div>
     <div class="panel-header-actions">
       <%- include('partials/filtro-aliada-chips') %>
@@ -344,7 +308,7 @@
   <% } %>
 
   <div class="table-scroll">
-    <table class="cotas-table">
+    <table class="cotas-table cotas-table-compact">
       <colgroup>
         <col class="colw-aliada" />
         <col class="colw-bucket" />
@@ -434,6 +398,13 @@
       </tfoot>
     </table>
   </div>
+  <p class="data-carga-destaque" title="Data de carga registrada pelo próprio ELOS na coluna DATA_CARGA (backlog_instalacoes) — mesma base do painel de Instalações">
+    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+    Dados atualizados em <strong><%= dataCargaServicos %></strong>
+  </p>
+  <p class="hint">
+    Backlog em aberto = SPECIFICATION_TYPE diferente de INSTALAÇÃO e DESCONEXÃO, excluindo produtos "MUDANÇA DE ENDEREÇO*" (GOIANIA). Status, motivo e tecnologia são filtráveis abaixo (padrão: fora CANCELADA/ENCERRADA/EXECUCAO; motivo só considera (sem motivo)/AGENDAMENTO — esta tela calcula para D+1).
+  </p>
 </section>
 
 <section class="panel secao-painel" id="secao-me" data-secao="me" hidden>
@@ -444,13 +415,6 @@
         Resumo de Backlog de ME por Bucket
         <span class="badge" title="Este resumo conta qualquer SPECIFICATION_PRODUCT que contenha Mudança de Endereço do CSV diário do ELOS — instalações, serviços e reparos têm seção própria">ME</span>
       </h2>
-      <p class="data-carga-destaque" title="Data de carga registrada pelo próprio ELOS na coluna DATA_CARGA (backlog_instalacoes) — mesma base dos painéis de Instalações e Serviços">
-        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
-        Dados atualizados em <strong><%= dataCargaMe %></strong>
-      </p>
-      <p class="hint">
-        Backlog em aberto = SPECIFICATION_PRODUCT contém "MUDANÇA DE ENDEREÇO" (GOIANIA) — conta as duas linhas do CSV (desconexão do endereço antigo e alteração/instalação no novo). Status, motivo e tecnologia são filtráveis abaixo (padrão: fora CANCELADA/ENCERRADA/EXECUCAO; motivo só considera (sem motivo)/AGENDAMENTO — esta tela calcula para D+1).
-      </p>
     </div>
     <div class="panel-header-actions">
       <%- include('partials/filtro-aliada-chips') %>
@@ -510,7 +474,7 @@
   <% } %>
 
   <div class="table-scroll">
-    <table class="cotas-table">
+    <table class="cotas-table cotas-table-compact">
       <colgroup>
         <col class="colw-aliada" />
         <col class="colw-bucket" />
@@ -600,6 +564,13 @@
       </tfoot>
     </table>
   </div>
+  <p class="data-carga-destaque" title="Data de carga registrada pelo próprio ELOS na coluna DATA_CARGA (backlog_instalacoes) — mesma base dos painéis de Instalações e Serviços">
+    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+    Dados atualizados em <strong><%= dataCargaMe %></strong>
+  </p>
+  <p class="hint">
+    Backlog em aberto = SPECIFICATION_PRODUCT contém "MUDANÇA DE ENDEREÇO" (GOIANIA) — conta as duas linhas do CSV (desconexão do endereço antigo e alteração/instalação no novo). Status, motivo e tecnologia são filtráveis abaixo (padrão: fora CANCELADA/ENCERRADA/EXECUCAO; motivo só considera (sem motivo)/AGENDAMENTO — esta tela calcula para D+1).
+  </p>
 </section>
 
 <section class="panel secao-painel" id="secao-reparos" data-secao="reparos" hidden>
@@ -610,13 +581,6 @@
         Resumo de Backlog de Reparos por Bucket
         <span class="badge" title="Este resumo conta apenas chamados de REPARO (defeito) — instalações têm seção própria">REPAROS</span>
       </h2>
-      <p class="data-carga-destaque" title="Data de carga registrada pelo próprio ELOS na coluna DATA_CARGA (backlog_elos)">
-        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
-        Dados atualizados em <strong><%= dataCargaReparo %></strong>
-      </p>
-      <p class="hint">
-        Backlog em aberto = defeito (GOIANIA). Status, motivo e tecnologia são filtráveis abaixo (padrão: fora CANCELADA/ENCERRADA/EXECUCAO; motivo só considera (sem motivo)/AGENDAMENTO — esta tela calcula para D+1).
-      </p>
     </div>
     <div class="panel-header-actions">
       <%- include('partials/filtro-aliada-chips') %>
@@ -668,7 +632,7 @@
   </details>
 
   <div class="table-scroll">
-    <table class="cotas-table">
+    <table class="cotas-table cotas-table-compact">
       <colgroup>
         <col class="colw-aliada" />
         <col class="colw-bucket" />
@@ -750,9 +714,15 @@
       </tfoot>
     </table>
   </div>
+  <p class="data-carga-destaque" title="Data de carga registrada pelo próprio ELOS na coluna DATA_CARGA (backlog_elos)">
+    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+    Dados atualizados em <strong><%= dataCargaReparo %></strong>
+  </p>
+  <p class="hint">
+    Backlog em aberto = defeito (GOIANIA). Status, motivo e tecnologia são filtráveis abaixo (padrão: fora CANCELADA/ENCERRADA/EXECUCAO; motivo só considera (sem motivo)/AGENDAMENTO — esta tela calcula para D+1).
+  </p>
 </section>
   </div>
-</div>
 
 <dialog id="config-rapido-modal" class="config-modal">
   <div class="modal-header">

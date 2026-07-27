@@ -29,12 +29,14 @@ const TECNOLOGIA_PADRAO = ['GPON'];
 // livremente depois (ver getFiltrosDisponiveisReparo).
 const STATUS_EXCLUIDOS_PADRAO = ['CANCELADA', 'ENCERRADA', 'EXECUCAO'];
 // Status Reason: ao contrário de Status (lista de EXCLUSÃO -- tudo fora disso conta),
-// aqui o padrão é uma lista de INCLUSÃO -- só esses dois contam por padrão. Pedido do
+// aqui o padrão é uma lista de INCLUSÃO -- só esses contam por padrão. Pedido do
 // usuário: a home calcula pra D+1, então só importa backlog sem motivo bloqueador
-// (`''`, "(sem motivo)" no front) ou já agendado (`AGENDAMENTO`); qualquer outro motivo
-// (aguardando peça, cliente ausente etc.) não é candidato a D+1 por padrão -- o usuário
-// pode marcar manualmente se quiser incluir outros motivos.
-const STATUS_REASON_INCLUIDOS_PADRAO = ['', 'AGENDAMENTO'];
+// (`''`, "(sem motivo)" no front), já agendado (`AGENDAMENTO`), em análise técnica
+// (`TECNICA`, sem acento -- é como vem gravado em backlog_elos) ou em triagem
+// (`TRIAGEM`); qualquer outro motivo (aguardando peça, cliente ausente etc.) não
+// é candidato a D+1 por padrão -- o usuário pode marcar manualmente se quiser
+// incluir outros motivos.
+const STATUS_REASON_INCLUIDOS_PADRAO = ['', 'AGENDAMENTO', 'TECNICA', 'TRIAGEM'];
 
 async function getResumoBuckets(tecnologias, filtros) {
   const filtroTecnologia = tecnologias.length > 0 ? tecnologias : TECNOLOGIA_PADRAO;

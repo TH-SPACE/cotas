@@ -158,124 +158,15 @@ body {
   padding: 1.5rem;
 }
 
-/* Layout da página inicial: barra lateral fixa à esquerda (atalhos das seções +
-   Configurações) + conteúdo à direita. A navbar do topo só tem as 3 páginas. */
-.home-layout {
-  display: flex;
-  align-items: flex-start;
-  gap: 1.25rem;
-}
-
+/* Conteúdo da home: só uma coluna (a barra lateral com atalhos de seção +
+   Configurações + Salvar planejamento foi removida em 2026-07-27 pra tabela
+   ganhar largura -- Configurações e Salvar planejamento viraram 2 ícones
+   discretos no topbar, ver head.ejs `.topbar-acoes`; os atalhos de seção já
+   tinham virado abas no cabeçalho de cada painel). */
 .home-content {
-  flex: 1;
-  min-width: 0;
-  /* deixa as tabelas encolherem/rolarem em vez de estourar */
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
-}
-
-.home-sidebar {
-  position: sticky;
-  top: 5rem;
-  flex-shrink: 0;
-  width: 190px;
-  background: var(--panel-bg);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 0.75rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
-}
-
-.home-sidebar-titulo {
-  padding: 0.25rem 0.7rem 0.4rem;
-  font-size: 0.7rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--muted);
-}
-
-.home-sidebar-item {
-  display: flex;
-  align-items: center;
-  gap: 0.55rem;
-  padding: 0.55rem 0.7rem;
-  border-radius: 8px;
-  color: var(--muted);
-  text-decoration: none;
-  font-size: 0.88rem;
-  font-weight: 600;
-  transition: background 0.15s ease, color 0.15s ease;
-}
-
-.home-sidebar-item:hover {
-  background: var(--bg);
-  color: var(--accent);
-}
-
-.home-sidebar-item svg {
-  flex-shrink: 0;
-}
-
-.home-sidebar-sep {
-  height: 1px;
-  margin: 0.4rem;
-  background: var(--border);
-}
-
-/* Botão na sidebar com visual idêntico ao home-sidebar-item (link) */
-button.home-sidebar-btn {
-  width: 100%;
-  background: none;
-  border: none;
-  cursor: pointer;
-  text-align: left;
-}
-
-/* Âncoras das seções (clicadas na barra lateral) não ficam escondidas sob o
-   cabeçalho fixo. */
-[id^="secao-"] {
-  scroll-margin-top: 5rem;
-}
-
-/* Tabelas da home um pouco mais compactas pra abrir espaço pra barra lateral. */
-.home-content .cotas-table {
-  font-size: 0.82rem;
-}
-
-.home-content .cotas-table th,
-.home-content .cotas-table td {
-  padding: 0.4rem 0.45rem;
-}
-
-.home-content .cotas-table thead th {
-  font-size: 0.68rem;
-}
-
-/* Telas estreitas: a barra lateral vira uma faixa horizontal no topo do conteúdo. */
-@media (max-width: 900px) {
-  .home-layout {
-    flex-direction: column;
-  }
-
-  .home-sidebar {
-    position: static;
-    width: auto;
-    flex-direction: row;
-    flex-wrap: wrap;
-    align-items: center;
-  }
-
-  .home-sidebar-titulo {
-    padding: 0.25rem 0.5rem;
-  }
-
-  .home-sidebar-sep {
-    display: none;
-  }
 }
 
 .panel-header h2 {
@@ -1209,8 +1100,9 @@ button.home-sidebar-btn {
   border-left: 1px solid var(--col-divider);
 }
 
-/* Variante compacta da página /cotas-planejadas: as 4 janelas de horário lado a
-   lado numa tabela só (18 colunas). Seletor composto (.cotas-table.cotas-table-compact)
+/* Variante compacta das tabelas de bucket (Reparos/Instalações/Serviços/ME) --
+   usada em /cotas-planejadas, /projecao-d1-d7, /resumo-cotas e na home (2026-07-27,
+   pra ficar igual às outras páginas). Seletor composto (.cotas-table.cotas-table-compact)
    pra ter mais especificidade que as media queries de .cotas-table e sempre vencer,
    mantendo a tabela compacta em qualquer largura. */
 .cotas-table.cotas-table-compact {
@@ -1537,10 +1429,6 @@ button.home-sidebar-btn {
   box-shadow: 0 1px 0 var(--border), 0 6px 18px rgba(16, 24, 40, 0.05);
 }
 
-.home-sidebar {
-  box-shadow: var(--panel-shadow);
-}
-
 /* Transições suaves e foco acessível por teclado (não atrapalha o mouse). */
 a,
 button,
@@ -1549,7 +1437,6 @@ input,
 select,
 summary,
 .topbar-nav-item,
-.home-sidebar-item,
 .cota-upload-item {
   transition: background-color 0.15s ease, border-color 0.15s ease,
     color 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease;
@@ -1592,8 +1479,7 @@ textarea:focus {
 }
 
 /* Item de navegação da página atual (marcado via JS em ui.js). */
-.topbar-nav-item.is-active,
-.home-sidebar-item.is-active {
+.topbar-nav-item.is-active {
   background: var(--col-backlog-bg);
   color: var(--accent);
 }
