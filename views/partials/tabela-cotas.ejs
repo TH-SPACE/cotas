@@ -37,6 +37,12 @@ const _consumoOrdens = (linha, chave) => {
 // em vez de deixar passar como um "0" comum.
 const _abertoCotaZero = (d0) => !!d0 && d0.status === 'Aberto' && Number(d0.cotaAberta) === 0;
 
+// Aviso "Consumo maior que a Cota Cadastrada": já usou mais do que o ETA tinha
+// registrado pra aquele bucket+janela -- seta pra cima animada na célula de
+// Consumo (pedido do usuário), só quando os dois valores existem de verdade.
+const _consumoAcimaDaCota = (d0) => !!d0 && d0.cotaUsada != null && d0.cotaAberta != null
+  && Number(d0.cotaUsada) > Number(d0.cotaAberta);
+
 // Totais por janela. Planejado soma sempre; D0/Consumo só somam quem tem valor
 // (senão um bucket sem cota viraria zero e mentiria no rodapé).
 const _totPlanMin = _janelas.map((_, j) => _linhas.reduce((acc, l) => acc + (l.minutos[j] || 0), 0));
@@ -74,8 +80,8 @@ const _totConsQtd = _somaOuNulo(_consumoOrdens);
       <tr>
         <% _janelas.forEach(label => { %>
           <th class="num col-divider" title="Status da cota do dia (D0) no ETA — <%= label %>">Status</th>
-          <th class="num" title="Planejamento salvo no snapshot de D-1 (ontem às 9h) — <%= label %>">Planejado D-1</th>
-          <th class="num" title="Cota Aberta do ETA na linha Age = D0 — <%= label %>">D0</th>
+          <th class="num" title="Planejamento salvo no snapshot de D-1 (ontem às 9h) — <%= label %>">Planejado</th>
+          <th class="num" title="Cota Aberta do ETA na linha Age = D0 — <%= label %>">Cota Cadastrada</th>
           <th class="num" title="Cota Usada do ETA na linha Age = D0 — <%= label %>">Consumo</th>
         <% }) %>
       </tr>
@@ -92,10 +98,11 @@ const _totConsQtd = _somaOuNulo(_consumoOrdens);
             <% const d0Qtd = _d0Ordens(linha, chave); %>
             <% const consumoQtd = _consumoOrdens(linha, chave); %>
             <% const _alerta = _abertoCotaZero(d0); %>
+            <% const _acima = _consumoAcimaDaCota(d0); %>
             <td class="col-divider <%= d0 && d0.status === 'Fechado' ? 'status-fechado' : (d0 ? 'status-aberto' : '') %> <%= _alerta ? 'cota-zero-aberto' : '' %>" title="<%= _alerta ? 'Aberto no ETA, mas Cota Aberta = 0' : '' %>"><%= d0 ? d0.status : '—' %></td>
             <td class="num"><span class="v-min"><%= linha.minutos[j] || 0 %></span><span class="v-qtd"><%= linha.janelas[j] || 0 %></span></td>
             <td class="num <%= _alerta ? 'cota-zero-aberto' : '' %>" title="<%= _alerta ? 'Aberto no ETA, mas Cota Aberta = 0' : '' %>"><span class="v-min"><%= d0 && d0.cotaAberta != null ? d0.cotaAberta : '—' %></span><span class="v-qtd"><%= d0Qtd != null ? d0Qtd : '—' %></span></td>
-            <td class="num celula-napplicavel"><span class="v-min"><%= d0 && d0.cotaUsada != null ? d0.cotaUsada : '—' %></span><span class="v-qtd"><%= consumoQtd != null ? consumoQtd : '—' %></span></td>
+            <td class="num celula-napplicavel"><span class="v-min"><%= d0 && d0.cotaUsada != null ? d0.cotaUsada : '—' %></span><span class="v-qtd"><%= consumoQtd != null ? consumoQtd : '—' %></span><% if (_acima) { %><svg class="volume-flag volume-flag-alerta" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" title="Consumo (<%= d0.cotaUsada %>) maior que a Cota Cadastrada (<%= d0.cotaAberta %>)"><path d="M12 19V5M5 12l7-7 7 7"/></svg><% } %></td>
           <% }) %>
         </tr>
       <% }) %>
@@ -107,7 +114,7 @@ const _totConsQtd = _somaOuNulo(_consumoOrdens);
           <td class="col-divider"></td>
           <td class="num"><span class="v-min"><%= _totPlanMin[j] %></span><span class="v-qtd"><%= _totPlanQtd[j] %></span></td>
           <td class="num"><span class="v-min"><%= _totD0Min[j] != null ? _totD0Min[j] : '—' %></span><span class="v-qtd"><%= _totD0Qtd[j] != null ? _totD0Qtd[j] : '—' %></span></td>
-          <td class="num celula-napplicavel"><span class="v-min"><%= _totConsMin[j] != null ? _totConsMin[j] : '—' %></span><span class="v-qtd"><%= _totConsQtd[j] != null ? _totConsQtd[j] : '—' %></span></td>
+          <td class="num celula-napplicavel"><span class="v-min"><%= _totConsMin[j] != null ? _totConsMin[j] : '—' %></span><span class="v-qtd"><%= _totConsQtd[j] != null ? _totConsQtd[j] : '—' %></span><% if (_totConsMin[j] != null && _totD0Min[j] != null && _totConsMin[j] > _totD0Min[j]) { %><svg class="volume-flag volume-flag-alerta" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" title="Consumo maior que a Cota Cadastrada"><path d="M12 19V5M5 12l7-7 7 7"/></svg><% } %></td>
         <% }) %>
       </tr>
     </tfoot>

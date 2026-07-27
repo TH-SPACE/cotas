@@ -441,6 +441,7 @@ button.home-sidebar-btn {
   background: var(--aviso-bg);
 }
 
+
 /* Célula "n/total" (Parcial) com popover de detalhe (Projeção D1-D7): sublinhado
    pontilhado avisa que dá pra passar o mouse/focar pra ver o detalhe, sem
    precisar de um ícone extra na célula (já é bem apertada). */
@@ -1442,6 +1443,15 @@ button.home-sidebar-btn {
   vertical-align: middle;
   margin-left: 0.1rem;
   animation: volume-flag-bounce 1.2s ease-in-out infinite;
+}
+
+/* Modificador pros usos de ALERTA do mesmo ícone/animação (Sugestão > Previsto na
+   home; Consumo > Cota Cadastrada/Aberta em cotas-planejadas e projecao-d1-d7) --
+   o roxo padrão (--accent) do .volume-flag original é usado só pro ranking de
+   maior volume de Backlog, que não é um alerta. Reaproveita --danger-fg (mesmo
+   vermelho já usado no alert-erro) em vez de inventar cor nova. */
+.volume-flag-alerta {
+  color: var(--danger-fg);
 }
 
 @keyframes volume-flag-bounce {

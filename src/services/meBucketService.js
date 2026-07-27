@@ -76,6 +76,7 @@ async function getResumoBucketsMe(filtros) {
          AND i.STATUS IN (?)
          AND i.STATUS_REASON IN (?)
          AND i.TECNOLOGIA_ACESSO IN (?)
+         AND DATE(STR_TO_DATE(i.DATA_VENCIMENTO, '%d/%m/%Y %H:%i:%s')) != CURDATE()
        LEFT JOIN depara_pu_produto_me p ON p.SPECIFICATION_PRODUCT = i.SPECIFICATION_PRODUCT
        LEFT JOIN depara_tempo_bucket t
          ON t.BUCKET = d.BKT

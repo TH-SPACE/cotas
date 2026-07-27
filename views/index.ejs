@@ -218,7 +218,12 @@
               <span class="barra-magnitude" aria-hidden="true"><span class="barra-magnitude-fill" style="width: <%= larguraBarra(linha.backlogInstalacoes, maxBacklogInstalacoes) %>%"></span></span>
             </td>
             <td class="<%= numCls('col-backlog', linha.previstoResolucao) %>"><%= linha.previstoResolucao %></td>
-            <td class="<%= numCls('col-backlog', linha.sugestao) %>"><%= linha.sugestao %></td>
+            <td class="<%= numCls('col-backlog', linha.sugestao) %>">
+              <%= linha.sugestao %>
+              <% if (linha.sugestao > linha.previstoResolucao) { %>
+                <svg class="volume-flag volume-flag-alerta" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" title="Sugestão maior que o Previsto"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+              <% } %>
+            </td>
             <% linha.janelas.forEach((qtd, i) => { %>
               <td class="<%= numCls('col-ordens', qtd) %> <%= i === 0 ? 'col-divider' : '' %>"><%= qtd %></td>
             <% }) %>
@@ -235,7 +240,12 @@
           <td colspan="2" title="Soma de todos os buckets do cluster GOIANIA">Total geral</td>
           <td class="<%= numCls('col-backlog', totalGeralInstalacoes) %> col-divider"><%= totalGeralInstalacoes %></td>
           <td class="<%= numCls('col-backlog', totalPrevistoInstalacoes) %>"><%= totalPrevistoInstalacoes %></td>
-          <td class="<%= numCls('col-backlog', totalSugestaoInstalacoes) %>"><%= totalSugestaoInstalacoes %></td>
+          <td class="<%= numCls('col-backlog', totalSugestaoInstalacoes) %>">
+            <%= totalSugestaoInstalacoes %>
+            <% if (totalSugestaoInstalacoes > totalPrevistoInstalacoes) { %>
+              <svg class="volume-flag volume-flag-alerta" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" title="Sugestão maior que o Previsto"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+            <% } %>
+          </td>
           <% totalJanelasInstalacoes.forEach((qtd, i) => { %>
             <td class="<%= numCls('col-ordens', qtd) %> <%= i === 0 ? 'col-divider' : '' %>"><%= qtd %></td>
           <% }) %>
@@ -375,7 +385,12 @@
               <span class="barra-magnitude" aria-hidden="true"><span class="barra-magnitude-fill" style="width: <%= larguraBarra(linha.backlogServicos, maxBacklogServicos) %>%"></span></span>
             </td>
             <td class="<%= numCls('col-backlog', linha.previstoResolucao) %>"><%= linha.previstoResolucao %></td>
-            <td class="<%= numCls('col-backlog', linha.sugestao) %>"><%= linha.sugestao %></td>
+            <td class="<%= numCls('col-backlog', linha.sugestao) %>">
+              <%= linha.sugestao %>
+              <% if (linha.sugestao > linha.previstoResolucao) { %>
+                <svg class="volume-flag volume-flag-alerta" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" title="Sugestão maior que o Previsto"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+              <% } %>
+            </td>
             <% linha.janelas.forEach((qtd, i) => { %>
               <td class="<%= numCls('col-ordens', qtd) %> <%= i === 0 ? 'col-divider' : '' %>"><%= qtd %></td>
             <% }) %>
@@ -392,7 +407,12 @@
           <td colspan="2" title="Soma de todos os buckets do cluster GOIANIA">Total geral</td>
           <td class="<%= numCls('col-backlog', totalGeralServicos) %> col-divider"><%= totalGeralServicos %></td>
           <td class="<%= numCls('col-backlog', totalPrevistoServicos) %>"><%= totalPrevistoServicos %></td>
-          <td class="<%= numCls('col-backlog', totalSugestaoServicos) %>"><%= totalSugestaoServicos %></td>
+          <td class="<%= numCls('col-backlog', totalSugestaoServicos) %>">
+            <%= totalSugestaoServicos %>
+            <% if (totalSugestaoServicos > totalPrevistoServicos) { %>
+              <svg class="volume-flag volume-flag-alerta" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" title="Sugestão maior que o Previsto"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+            <% } %>
+          </td>
           <% totalJanelasServicos.forEach((qtd, i) => { %>
             <td class="<%= numCls('col-ordens', qtd) %> <%= i === 0 ? 'col-divider' : '' %>"><%= qtd %></td>
           <% }) %>
@@ -532,7 +552,12 @@
               <span class="barra-magnitude" aria-hidden="true"><span class="barra-magnitude-fill" style="width: <%= larguraBarra(linha.backlogMe, maxBacklogMe) %>%"></span></span>
             </td>
             <td class="<%= numCls('col-backlog', linha.previstoResolucao) %>"><%= linha.previstoResolucao %></td>
-            <td class="<%= numCls('col-backlog', linha.sugestao) %>"><%= linha.sugestao %></td>
+            <td class="<%= numCls('col-backlog', linha.sugestao) %>">
+              <%= linha.sugestao %>
+              <% if (linha.sugestao > linha.previstoResolucao) { %>
+                <svg class="volume-flag volume-flag-alerta" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" title="Sugestão maior que o Previsto"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+              <% } %>
+            </td>
             <% linha.janelas.forEach((qtd, i) => { %>
               <td class="<%= numCls('col-ordens', qtd) %> <%= i === 0 ? 'col-divider' : '' %>"><%= qtd %></td>
             <% }) %>
@@ -549,7 +574,12 @@
           <td colspan="2" title="Soma de todos os buckets do cluster GOIANIA">Total geral</td>
           <td class="<%= numCls('col-backlog', totalGeralMe) %> col-divider"><%= totalGeralMe %></td>
           <td class="<%= numCls('col-backlog', totalPrevistoMe) %>"><%= totalPrevistoMe %></td>
-          <td class="<%= numCls('col-backlog', totalSugestaoMe) %>"><%= totalSugestaoMe %></td>
+          <td class="<%= numCls('col-backlog', totalSugestaoMe) %>">
+            <%= totalSugestaoMe %>
+            <% if (totalSugestaoMe > totalPrevistoMe) { %>
+              <svg class="volume-flag volume-flag-alerta" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" title="Sugestão maior que o Previsto"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+            <% } %>
+          </td>
           <% totalJanelasMe.forEach((qtd, i) => { %>
             <td class="<%= numCls('col-ordens', qtd) %> <%= i === 0 ? 'col-divider' : '' %>"><%= qtd %></td>
           <% }) %>
@@ -677,7 +707,12 @@
               <span class="barra-magnitude" aria-hidden="true"><span class="barra-magnitude-fill" style="width: <%= larguraBarra(linha.backlogReparos, maxBacklogReparos) %>%"></span></span>
             </td>
             <td class="<%= numCls('col-backlog', linha.previstoResolucao) %>"><%= linha.previstoResolucao %></td>
-            <td class="<%= numCls('col-backlog', linha.sugestao) %>"><%= linha.sugestao %></td>
+            <td class="<%= numCls('col-backlog', linha.sugestao) %>">
+              <%= linha.sugestao %>
+              <% if (linha.sugestao > linha.previstoResolucao) { %>
+                <svg class="volume-flag volume-flag-alerta" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" title="Sugestão maior que o Previsto"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+              <% } %>
+            </td>
             <td class="<%= numCls('col-ordens', linha.janelas[0]) %> col-divider"><%= linha.janelas[0] %></td>
             <td class="<%= numCls('col-ordens', linha.janelas[1]) %>"><%= linha.janelas[1] %></td>
             <td class="<%= numCls('col-minutos', linha.minutos[0]) %> col-divider"><%= linha.minutos[0] %></td>
@@ -692,7 +727,12 @@
           <td colspan="2" title="Soma de todos os buckets do cluster GOIANIA">Total geral</td>
           <td class="<%= numCls('col-backlog', totalGeral) %> col-divider"><%= totalGeral %></td>
           <td class="<%= numCls('col-backlog', totalPrevisto) %>"><%= totalPrevisto %></td>
-          <td class="<%= numCls('col-backlog', totalSugestao) %>"><%= totalSugestao %></td>
+          <td class="<%= numCls('col-backlog', totalSugestao) %>">
+            <%= totalSugestao %>
+            <% if (totalSugestao > totalPrevisto) { %>
+              <svg class="volume-flag volume-flag-alerta" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" title="Sugestão maior que o Previsto"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+            <% } %>
+          </td>
           <td class="<%= numCls('col-ordens', totalJanelas[0]) %> col-divider"><%= totalJanelas[0] %></td>
           <td class="<%= numCls('col-ordens', totalJanelas[1]) %>"><%= totalJanelas[1] %></td>
           <td class="<%= numCls('col-minutos', totalMinutos[0]) %> col-divider"><%= totalMinutos[0] %></td>

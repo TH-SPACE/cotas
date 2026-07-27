@@ -106,10 +106,10 @@
   <% }) %>
 
   <p class="tabela-nota">
-    <strong>Planejado D-1</strong> = <% if (planejadoDeHistorico) { %>planejamento de D-1 (snapshot das 9h de ontem)<% } else { %><strong class="aviso-atraso">sem snapshot de D-1 — valores zerados até o cron das 9h rodar</strong><% } %> ·
-    <strong>Status</strong> e <strong>D0</strong> = cota de hoje no ETA — se a base não for reenviada todo dia, o sistema ajusta sozinho e usa a linha Age=Dn certa do arquivo (veja o aviso acima da tabela quando isso acontecer) ·
+    <strong>Planejado</strong> = <% if (planejadoDeHistorico) { %>planejamento de D-1 (snapshot das 9h de ontem)<% } else { %><strong class="aviso-atraso">sem snapshot de D-1 — valores zerados até o cron das 9h rodar</strong><% } %> ·
+    <strong>Status</strong> e <strong>Cota Cadastrada</strong> = cota de hoje no ETA — se a base não for reenviada todo dia, o sistema ajusta sozinho e usa a linha Age=Dn certa do arquivo (veja o aviso acima da tabela quando isso acontecer) ·
     <strong>Consumo</strong> = Cota Usada do ETA na mesma linha ·
-    células com fundo destacado = Aberto no ETA com Cota Aberta = 0.
+    células com fundo destacado = Aberto no ETA com Cota Aberta = 0 · seta <svg class="volume-flag volume-flag-alerta" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"/></svg> = Consumo maior que a Cota Cadastrada.
     Use <strong>Ver em</strong> para alternar entre minutos e quantidade de ordens — a conversão é sempre
     o tempo do bucket (<code>depara_tempo_bucket</code>): minutos ÷ tempo = ordens.
   </p>

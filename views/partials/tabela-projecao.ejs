@@ -50,6 +50,11 @@ const _consumoOrdensDe = (linha, c) => {
 // inconsistência de cadastro no ETA, vale destacar.
 const _abertoCotaZero = (st, c) => st.rotulo === 'Aberto' && !!c && Number(c.cotaAberta) === 0;
 
+// Aviso "Consumo maior que a Cota Aberta": já usou mais do que o ETA tinha
+// registrado pra aquele bucket+dia -- seta pra cima animada na célula de Consumo.
+const _consumoAcimaDaCota = (c) => !!c && c.cotaUsada != null && c.cotaAberta != null
+  && Number(c.cotaUsada) > Number(c.cotaAberta);
+
 // Totais por dia. Cota Aberta/Consumo só somam quem tem valor (senão um bucket
 // sem cota naquele dia viraria zero e mentiria no rodapé); Status agrega os
 // contadores de todos os buckets antes de decidir Aberto/Fechado/Parcial.
@@ -142,6 +147,7 @@ const _totDetalhe = _dias.map(dia => _linhas
             <% const ord = _ordensDe(linha, c); %>
             <% const consumoOrd = _consumoOrdensDe(linha, c); %>
             <% const _alerta = _abertoCotaZero(st, c); %>
+            <% const _acima = _consumoAcimaDaCota(c); %>
             <% const _detalhe = st.classe === 'status-parcial' ? _detalheDe(linha.bucket, dia.age) : []; %>
             <% if (_detalhe.length > 1) { %>
               <td class="col-divider <%= st.classe %> tem-detalhe <%= _alerta ? 'cota-zero-aberto' : '' %>" data-detalhe="<%= JSON.stringify(_detalhe) %>" tabindex="0"><%= st.rotulo %></td>
@@ -149,7 +155,7 @@ const _totDetalhe = _dias.map(dia => _linhas
               <td class="col-divider <%= st.classe %> <%= _alerta ? 'cota-zero-aberto' : '' %>" title="<%= _alerta ? 'Aberto no ETA, mas Cota Aberta = 0' : st.titulo %>"><%= st.rotulo %></td>
             <% } %>
             <td class="num <%= _alerta ? 'cota-zero-aberto' : '' %>" title="<%= _alerta ? 'Aberto no ETA, mas Cota Aberta = 0' : '' %>"><span class="v-min"><%= c && c.cotaAberta != null ? c.cotaAberta : '—' %></span><span class="v-qtd"><%= ord != null ? ord : '—' %></span></td>
-            <td class="num celula-napplicavel"><span class="v-min"><%= c && c.cotaUsada != null ? c.cotaUsada : '—' %></span><span class="v-qtd"><%= consumoOrd != null ? consumoOrd : '—' %></span></td>
+            <td class="num celula-napplicavel"><span class="v-min"><%= c && c.cotaUsada != null ? c.cotaUsada : '—' %></span><span class="v-qtd"><%= consumoOrd != null ? consumoOrd : '—' %></span><% if (_acima) { %><svg class="volume-flag volume-flag-alerta" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" title="Consumo (<%= c.cotaUsada %>) maior que a Cota Aberta (<%= c.cotaAberta %>)"><path d="M12 19V5M5 12l7-7 7 7"/></svg><% } %></td>
           <% }) %>
         </tr>
       <% }) %>
@@ -164,7 +170,7 @@ const _totDetalhe = _dias.map(dia => _linhas
             <td class="col-divider <%= _totStatus[i].classe %>" title="<%= _totStatus[i].titulo %>"><%= _totStatus[i].rotulo %></td>
           <% } %>
           <td class="num"><span class="v-min"><%= _totCotaMin[i] != null ? _totCotaMin[i] : '—' %></span><span class="v-qtd"><%= _totCotaQtd[i] != null ? _totCotaQtd[i] : '—' %></span></td>
-          <td class="num celula-napplicavel"><span class="v-min"><%= _totConsMin[i] != null ? _totConsMin[i] : '—' %></span><span class="v-qtd"><%= _totConsQtd[i] != null ? _totConsQtd[i] : '—' %></span></td>
+          <td class="num celula-napplicavel"><span class="v-min"><%= _totConsMin[i] != null ? _totConsMin[i] : '—' %></span><span class="v-qtd"><%= _totConsQtd[i] != null ? _totConsQtd[i] : '—' %></span><% if (_totConsMin[i] != null && _totCotaMin[i] != null && _totConsMin[i] > _totCotaMin[i]) { %><svg class="volume-flag volume-flag-alerta" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" title="Consumo maior que a Cota Aberta"><path d="M12 19V5M5 12l7-7 7 7"/></svg><% } %></td>
         <% }) %>
       </tr>
     </tfoot>
