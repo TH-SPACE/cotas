@@ -115,6 +115,46 @@ async function getResumoBucketsMe(filtros) {
   return { linhas: rows, totalGeral };
 }
 
+// Uma linha por ORDEM (não agregada por bucket) com os mesmos filtros de
+// getResumoBucketsMe -- alimenta o "baixar CSV" ao clicar no Total geral da
+// home. Ver comentário equivalente em bucketService.js (getOrdensBacklog).
+async function getOrdensBacklogMe(filtros) {
+  const status = paraInClause(filtros.status);
+  const statusReason = paraInClause(filtros.statusReason);
+  const tecnologiaAcesso = paraInClause(filtros.tecnologiaAcesso);
+
+  const [rows] = await pool.query(
+    `SELECT
+       COALESCE(d.ALIADA, ?) AS aliada,
+       COALESCE(d.BKT, ?) AS bucket,
+       i.ID AS codigo,
+       i.ARMARIO AS armario,
+       i.STATUS AS status,
+       i.STATUS_REASON AS statusReason,
+       i.TECNOLOGIA_ACESSO AS tecnologia,
+       i.SPECIFICATION_TYPE AS especificacaoTipo,
+       i.SPECIFICATION_PRODUCT AS especificacaoProduto,
+       i.DATA_VENCIMENTO AS dataAgendamento,
+       i.TIME_SLOT AS timeSlot
+     FROM backlog_instalacoes i
+     LEFT JOIN depara_bucket d ON d.ARMARIO = i.ARMARIO
+     WHERE i.CLUSTER_ = ?
+       AND i.SPECIFICATION_PRODUCT LIKE ?
+       AND i.STATUS IN (?)
+       AND i.STATUS_REASON IN (?)
+       AND i.TECNOLOGIA_ACESSO IN (?)
+       AND i.ARMARIO IS NOT NULL AND i.ARMARIO <> ''
+       AND DATE(STR_TO_DATE(i.DATA_VENCIMENTO, '%d/%m/%Y %H:%i:%s')) != CURDATE()
+     ORDER BY aliada, bucket, i.ID`,
+    [
+      ALIADA_CURINGA, BUCKET_CURINGA,
+      CLUSTER_ESCOPO, SPECIFICATION_PRODUCT_CONTEM, status, statusReason, tecnologiaAcesso,
+    ]
+  );
+
+  return rows;
+}
+
 async function getPuProdutosMe() {
   const [rows] = await pool.query(
     `SELECT SPECIFICATION_PRODUCT AS produto, PU AS pu
@@ -146,6 +186,7 @@ async function atualizarPuProdutosMe(atualizacoes) {
 
 module.exports = {
   getResumoBucketsMe,
+  getOrdensBacklogMe,
   getFiltrosDisponiveisMe,
   getPuProdutosMe,
   atualizarPuProdutosMe,

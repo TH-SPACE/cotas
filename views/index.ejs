@@ -238,7 +238,7 @@
       <tfoot>
         <tr>
           <td colspan="2" title="Soma de todos os buckets do cluster GOIANIA">Total geral</td>
-          <td class="<%= numCls('col-backlog', totalGeralInstalacoes) %> col-divider"><%= totalGeralInstalacoes %></td>
+          <td class="<%= numCls('col-backlog', totalGeralInstalacoes) %> col-divider"><a href="<%= linkExportarInstalacao %>" class="total-backlog-link" title="Baixar em CSV as ordens que compõem este total, com os filtros atuais"><%= totalGeralInstalacoes %></a></td>
           <td class="<%= numCls('col-backlog', totalPrevistoInstalacoes) %>"><%= totalPrevistoInstalacoes %></td>
           <td class="<%= numCls('col-backlog', totalSugestaoInstalacoes) %>">
             <%= totalSugestaoInstalacoes %>
@@ -405,7 +405,7 @@
       <tfoot>
         <tr>
           <td colspan="2" title="Soma de todos os buckets do cluster GOIANIA">Total geral</td>
-          <td class="<%= numCls('col-backlog', totalGeralServicos) %> col-divider"><%= totalGeralServicos %></td>
+          <td class="<%= numCls('col-backlog', totalGeralServicos) %> col-divider"><a href="<%= linkExportarServico %>" class="total-backlog-link" title="Baixar em CSV as ordens que compõem este total, com os filtros atuais"><%= totalGeralServicos %></a></td>
           <td class="<%= numCls('col-backlog', totalPrevistoServicos) %>"><%= totalPrevistoServicos %></td>
           <td class="<%= numCls('col-backlog', totalSugestaoServicos) %>">
             <%= totalSugestaoServicos %>
@@ -572,7 +572,7 @@
       <tfoot>
         <tr>
           <td colspan="2" title="Soma de todos os buckets do cluster GOIANIA">Total geral</td>
-          <td class="<%= numCls('col-backlog', totalGeralMe) %> col-divider"><%= totalGeralMe %></td>
+          <td class="<%= numCls('col-backlog', totalGeralMe) %> col-divider"><a href="<%= linkExportarMe %>" class="total-backlog-link" title="Baixar em CSV as ordens que compõem este total, com os filtros atuais"><%= totalGeralMe %></a></td>
           <td class="<%= numCls('col-backlog', totalPrevistoMe) %>"><%= totalPrevistoMe %></td>
           <td class="<%= numCls('col-backlog', totalSugestaoMe) %>">
             <%= totalSugestaoMe %>
@@ -725,7 +725,7 @@
       <tfoot>
         <tr>
           <td colspan="2" title="Soma de todos os buckets do cluster GOIANIA">Total geral</td>
-          <td class="<%= numCls('col-backlog', totalGeral) %> col-divider"><%= totalGeral %></td>
+          <td class="<%= numCls('col-backlog', totalGeral) %> col-divider"><a href="<%= linkExportarReparo %>" class="total-backlog-link" title="Baixar em CSV as ordens que compõem este total, com os filtros atuais"><%= totalGeral %></a></td>
           <td class="<%= numCls('col-backlog', totalPrevisto) %>"><%= totalPrevisto %></td>
           <td class="<%= numCls('col-backlog', totalSugestao) %>">
             <%= totalSugestao %>

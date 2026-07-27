@@ -93,6 +93,47 @@ async function getResumoBuckets(tecnologias, filtros) {
   return { linhas: rows, totalGeral };
 }
 
+// Uma linha por ORDEM (não agregada por bucket) com os mesmos filtros de
+// getResumoBuckets -- alimenta o "baixar CSV" ao clicar no Total geral da home
+// (usuário pediu pra poder conferir o número contra o ELOS). Reaproveita
+// aliada = COALESCE(d.ALIADA, curinga) num LEFT JOIN só (sem UNION ALL, já que
+// aqui não precisa agregar): cobre os dois casos (ARMARIO mapeado e não
+// mapeado em depara_bucket) na mesma passada.
+async function getOrdensBacklog(tecnologias, filtros) {
+  const filtroTecnologia = tecnologias.length > 0 ? tecnologias : TECNOLOGIA_PADRAO;
+  const status = paraInClause(filtros.status);
+  const statusReason = paraInClause(filtros.statusReason);
+
+  const [rows] = await pool.query(
+    `SELECT
+       COALESCE(d.ALIADA, ?) AS aliada,
+       COALESCE(d.BKT, ?) AS bucket,
+       b.COD_SS AS codigo,
+       b.ARMARIO AS armario,
+       b.STATUS AS status,
+       b.STATUS_REASON AS statusReason,
+       b.PHYSICAL_LINK_MEDIA_TYPE AS tecnologia,
+       b.DATA_VENCIMENTO AS dataAgendamento,
+       b.TIME_SLOT AS timeSlot
+     FROM ${TABELA_BACKLOG_ELOS} b
+     LEFT JOIN depara_bucket d ON d.ARMARIO = b.ARMARIO
+     WHERE b.CLUSTER_ = ?
+       AND b.SPECIFICATION_TYPE = ?
+       AND b.PHYSICAL_LINK_MEDIA_TYPE IN (?)
+       AND b.STATUS IN (?)
+       AND b.STATUS_REASON IN (?)
+       AND b.ARMARIO IS NOT NULL AND b.ARMARIO <> ''
+       AND DATE(b.DATA_VENCIMENTO) != CURDATE()
+     ORDER BY aliada, bucket, b.COD_SS`,
+    [
+      ALIADA_CURINGA, BUCKET_CURINGA,
+      CLUSTER_ESCOPO, SPECIFICATION_TYPE_REPARO, filtroTecnologia, status, statusReason,
+    ]
+  );
+
+  return rows;
+}
+
 // Tecnologias distintas hoje em backlog_elos para o cluster (ex.: GPON, METALICO),
 // usadas para montar o filtro — assim o front não precisa hardcodar os valores.
 async function getTecnologiasDisponiveis() {
@@ -140,6 +181,7 @@ async function getDataCargaReparo() {
 
 module.exports = {
   getResumoBuckets,
+  getOrdensBacklog,
   getTecnologiasDisponiveis,
   TECNOLOGIA_PADRAO,
   getFiltrosDisponiveisReparo,

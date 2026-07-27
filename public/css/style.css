@@ -1052,6 +1052,22 @@ button.home-sidebar-btn {
   border-bottom: none;
 }
 
+/* Total geral do Backlog (home) é clicável -- baixa em CSV as ordens que
+   compõem aquele número, mesmos filtros da tela (pra conferir contra o ELOS).
+   Sublinhado pontilhado (mesma linguagem de ".tem-detalhe") avisa que dá pra
+   clicar sem precisar de um ícone extra numa célula já apertada. */
+.total-backlog-link {
+  color: inherit;
+  text-decoration: underline dotted;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+.total-backlog-link:hover {
+  color: var(--accent);
+  text-decoration: underline solid;
+}
+
 .cotas-table .num {
   text-align: center;
   font-variant-numeric: tabular-nums;

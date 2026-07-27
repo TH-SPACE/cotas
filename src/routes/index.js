@@ -2,6 +2,7 @@ const express = require('express');
 const multer = require('multer');
 const {
   getResumoBuckets,
+  getOrdensBacklog,
   getTecnologiasDisponiveis,
   TECNOLOGIA_PADRAO,
   getFiltrosDisponiveisReparo,
@@ -11,6 +12,7 @@ const {
 } = require('../services/bucketService');
 const {
   getResumoBucketsInstalacoes,
+  getOrdensBacklogInstalacoes,
   getFiltrosDisponiveisInstalacoes,
   getPuProdutos,
   atualizarPuProdutos,
@@ -20,6 +22,7 @@ const {
 } = require('../services/instalacaoBucketService');
 const {
   getResumoBucketsServicos,
+  getOrdensBacklogServicos,
   getFiltrosDisponiveisServicos,
   getPuProdutosServicos,
   atualizarPuProdutosServicos,
@@ -29,6 +32,7 @@ const {
 } = require('../services/servicoBucketService');
 const {
   getResumoBucketsMe,
+  getOrdensBacklogMe,
   getFiltrosDisponiveisMe,
   getPuProdutosMe,
   atualizarPuProdutosMe,
@@ -37,6 +41,7 @@ const {
   TECNOLOGIA_ACESSO_PADRAO: TECNOLOGIA_ACESSO_PADRAO_ME,
 } = require('../services/meBucketService');
 const { importarInstalacoes, getDataCargaInstalacoes } = require('../services/instalacoesService');
+const { paraCsv } = require('../services/csvUtils');
 const { importarReparos } = require('../services/reparosUploadService');
 const {
   importarCotas,
@@ -539,6 +544,11 @@ router.get('/', async (req, res, next) => {
     const linkConfiguracoes = `/configuracoes?${montarQueryStringEstado(req.query).toString()}`;
     const linkCotasPlanejadas = `/cotas-planejadas?${montarQueryStringEstado(req.query).toString()}`;
     const linkProjecaoD1D7 = `/projecao-d1-d7?${montarQueryStringEstado(req.query).toString()}`;
+    const queryEstado = montarQueryStringEstado(req.query).toString();
+    const linkExportarReparo = `/backlog/exportar/reparo?${queryEstado}`;
+    const linkExportarInstalacao = `/backlog/exportar/instalacao?${queryEstado}`;
+    const linkExportarServico = `/backlog/exportar/servico?${queryEstado}`;
+    const linkExportarMe = `/backlog/exportar/me?${queryEstado}`;
 
     res.render('index', {
       ...dados,
@@ -546,6 +556,10 @@ router.get('/', async (req, res, next) => {
       linkConfiguracoes,
       linkCotasPlanejadas,
       linkProjecaoD1D7,
+      linkExportarReparo,
+      linkExportarInstalacao,
+      linkExportarServico,
+      linkExportarMe,
       pathAtual: req.path,
       queryAtual: req.query,
     });
@@ -1231,6 +1245,93 @@ router.post('/api/snapshot-manual', async (req, res, next) => {
     const dados = await carregarDadosPainel({});
     await salvarSnapshot(dados, new Date());
     res.json({ ok: true });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Colunas do CSV de export por tipo -- rótulo (cabeçalho) + nome do campo nas
+// linhas devolvidas por getOrdensBacklog*.
+const COLUNAS_EXPORT_BASE = [
+  { rotulo: 'Aliada', campo: 'aliada' },
+  { rotulo: 'Bucket', campo: 'bucket' },
+  { rotulo: 'Código', campo: 'codigo' },
+  { rotulo: 'Armário', campo: 'armario' },
+  { rotulo: 'Status', campo: 'status' },
+  { rotulo: 'Status Reason', campo: 'statusReason' },
+  { rotulo: 'Tecnologia', campo: 'tecnologia' },
+];
+const COLUNAS_EXPORT_ESPECIFICACAO = [
+  { rotulo: 'Specification Type', campo: 'especificacaoTipo' },
+  { rotulo: 'Specification Product', campo: 'especificacaoProduto' },
+];
+const COLUNAS_EXPORT_FINAL = [
+  { rotulo: 'Data Agendamento', campo: 'dataAgendamento' },
+  { rotulo: 'Time Slot', campo: 'timeSlot' },
+];
+
+// Clique no número do Total geral (Backlog) na home -- baixa em CSV as ordens
+// individuais que compõem aquele total, com os MESMOS filtros aplicados na tela
+// (tecnologia/status/statusReason/tecnologiaAcesso/aliada), pra o usuário
+// conferir contra o ELOS. Reaproveita carregarDadosPainel só pra resolver a
+// seleção de filtros (mesma fonte de verdade da tela), sem duplicar a lógica de
+// normalizarListaComPadrao/normalizarTecnologias aqui.
+router.get('/backlog/exportar/:tipo', async (req, res, next) => {
+  try {
+    const tipo = req.params.tipo;
+    const dados = await carregarDadosPainel(req.query);
+
+    let linhas;
+    let nomeArquivo;
+    let colunas;
+    if (tipo === 'reparo') {
+      linhas = await getOrdensBacklog(dados.tecnologiasSelecionadas, {
+        status: dados.statusReparoSelecionados,
+        statusReason: dados.statusReasonReparoSelecionados,
+      });
+      nomeArquivo = 'backlog_reparos';
+      colunas = [...COLUNAS_EXPORT_BASE, ...COLUNAS_EXPORT_FINAL];
+    } else if (tipo === 'instalacao') {
+      linhas = await getOrdensBacklogInstalacoes({
+        status: dados.statusInstalacaoSelecionados,
+        statusReason: dados.statusReasonInstalacaoSelecionados,
+        tecnologiaAcesso: dados.tecnologiaAcessoSelecionadas,
+      });
+      nomeArquivo = 'backlog_instalacao';
+      colunas = [...COLUNAS_EXPORT_BASE, ...COLUNAS_EXPORT_FINAL];
+    } else if (tipo === 'servico') {
+      linhas = await getOrdensBacklogServicos({
+        status: dados.statusServicoSelecionados,
+        statusReason: dados.statusReasonServicoSelecionados,
+        tecnologiaAcesso: dados.tecnologiaAcessoServicoSelecionadas,
+      });
+      nomeArquivo = 'backlog_servico';
+      colunas = [...COLUNAS_EXPORT_BASE, ...COLUNAS_EXPORT_ESPECIFICACAO, ...COLUNAS_EXPORT_FINAL];
+    } else if (tipo === 'me') {
+      linhas = await getOrdensBacklogMe({
+        status: dados.statusMeSelecionados,
+        statusReason: dados.statusReasonMeSelecionados,
+        tecnologiaAcesso: dados.tecnologiaAcessoMeSelecionadas,
+      });
+      nomeArquivo = 'backlog_me';
+      colunas = [...COLUNAS_EXPORT_BASE, ...COLUNAS_EXPORT_ESPECIFICACAO, ...COLUNAS_EXPORT_FINAL];
+    } else {
+      return res.status(404).send('Tipo de backlog inválido.');
+    }
+
+    // Mesmo filtro de Aliada da tela -- aplicado aqui (não no SQL) porque a
+    // coluna "aliada" das queries de getOrdensBacklog* já vem resolvida via
+    // COALESCE(d.ALIADA, curinga), igual ao que carregarDadosPainel faz pras
+    // linhas agregadas.
+    const linhasFiltradas = linhas.filter(l => dados.aliadasSelecionadas.includes(l.aliada));
+
+    const hoje = new Date();
+    const dataArquivo = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}-${String(hoje.getDate()).padStart(2, '0')}`;
+    const csv = paraCsv(linhasFiltradas, colunas);
+
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="${nomeArquivo}_${dataArquivo}.csv"`);
+    res.send(csv);
   } catch (err) {
     next(err);
   }
