@@ -10,10 +10,13 @@ const CLUSTER_ESCOPO = 'GOIANIA';
 const SPECIFICATION_TYPE_INSTALACAO = 'INSTALAÇÃO';
 
 // Valores pré-marcados nos filtros do front na primeira carga (equivalentes à regra
-// antiga fixa: fora CANCELADA/ENCERRADA/EXECUCAO, fora motivo ENRIQUECIMENTO, só GPON).
-// O usuário pode mudar cada um livremente depois.
+// antiga fixa: fora CANCELADA/ENCERRADA/EXECUCAO, só GPON). O usuário pode mudar cada
+// um livremente depois.
 const STATUS_EXCLUIDOS_PADRAO = ['CANCELADA', 'ENCERRADA', 'EXECUCAO'];
-const STATUS_REASON_EXCLUIDOS_PADRAO = ['ENRIQUECIMENTO'];
+// Status Reason: lista de INCLUSÃO (não de exclusão) -- ver comentário completo em
+// bucketService.js. A home calcula pra D+1, então só motivo em branco ("(sem motivo)")
+// ou AGENDAMENTO contam por padrão.
+const STATUS_REASON_INCLUIDOS_PADRAO = ['', 'AGENDAMENTO'];
 const TECNOLOGIA_ACESSO_PADRAO = ['GPON'];
 
 // Mesmo bucket "curinga" dos Reparos: ARD (ARMARIO) sem linha em depara_bucket
@@ -146,7 +149,7 @@ module.exports = {
   getPuProdutos,
   atualizarPuProdutos,
   STATUS_EXCLUIDOS_PADRAO,
-  STATUS_REASON_EXCLUIDOS_PADRAO,
+  STATUS_REASON_INCLUIDOS_PADRAO,
   TECNOLOGIA_ACESSO_PADRAO,
   CLUSTER_ESCOPO,
   SPECIFICATION_TYPE_INSTALACAO,

@@ -25,10 +25,16 @@ const BUCKET_CURINGA = 'BKT_GOIANIA';
 const TECNOLOGIA_PADRAO = ['GPON'];
 
 // Valores pré-marcados nos filtros do front na primeira carga — equivalentes à regra
-// fixa antiga (fora CANCELADA/ENCERRADA/EXECUCAO, fora motivo ABERTA MASSIVA). O
-// usuário pode mudar cada um livremente depois (ver getFiltrosDisponiveisReparo).
+// fixa antiga (fora CANCELADA/ENCERRADA/EXECUCAO). O usuário pode mudar cada um
+// livremente depois (ver getFiltrosDisponiveisReparo).
 const STATUS_EXCLUIDOS_PADRAO = ['CANCELADA', 'ENCERRADA', 'EXECUCAO'];
-const STATUS_REASON_EXCLUIDOS_PADRAO = ['ABERTA MASSIVA'];
+// Status Reason: ao contrário de Status (lista de EXCLUSÃO -- tudo fora disso conta),
+// aqui o padrão é uma lista de INCLUSÃO -- só esses dois contam por padrão. Pedido do
+// usuário: a home calcula pra D+1, então só importa backlog sem motivo bloqueador
+// (`''`, "(sem motivo)" no front) ou já agendado (`AGENDAMENTO`); qualquer outro motivo
+// (aguardando peça, cliente ausente etc.) não é candidato a D+1 por padrão -- o usuário
+// pode marcar manualmente se quiser incluir outros motivos.
+const STATUS_REASON_INCLUIDOS_PADRAO = ['', 'AGENDAMENTO'];
 
 async function getResumoBuckets(tecnologias, filtros) {
   const filtroTecnologia = tecnologias.length > 0 ? tecnologias : TECNOLOGIA_PADRAO;
@@ -139,7 +145,7 @@ module.exports = {
   getFiltrosDisponiveisReparo,
   getDataCargaReparo,
   STATUS_EXCLUIDOS_PADRAO,
-  STATUS_REASON_EXCLUIDOS_PADRAO,
+  STATUS_REASON_INCLUIDOS_PADRAO,
   TABELA_BACKLOG_ELOS,
   SPECIFICATION_TYPE_REPARO,
 };

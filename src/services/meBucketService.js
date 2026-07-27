@@ -15,9 +15,10 @@ const SPECIFICATION_PRODUCT_CONTEM_TEXTO = 'MUDANÇA DE ENDEREÇO';
 const SPECIFICATION_PRODUCT_CONTEM = `%${SPECIFICATION_PRODUCT_CONTEM_TEXTO}%`;
 
 // Valores pré-marcados nos filtros do front na primeira carga (mesma convenção dos
-// outros painéis: fora CANCELADA/ENCERRADA/EXECUCAO, fora motivo ENRIQUECIMENTO, só GPON).
+// outros painéis: fora CANCELADA/ENCERRADA/EXECUCAO, só GPON).
 const STATUS_EXCLUIDOS_PADRAO = ['CANCELADA', 'ENCERRADA', 'EXECUCAO'];
-const STATUS_REASON_EXCLUIDOS_PADRAO = ['ENRIQUECIMENTO'];
+// Status Reason: lista de INCLUSÃO -- ver comentário completo em bucketService.js.
+const STATUS_REASON_INCLUIDOS_PADRAO = ['', 'AGENDAMENTO'];
 const TECNOLOGIA_ACESSO_PADRAO = ['GPON'];
 
 // Mesmo bucket "curinga" dos outros painéis: ARD (ARMARIO) sem linha em
@@ -148,7 +149,7 @@ module.exports = {
   getPuProdutosMe,
   atualizarPuProdutosMe,
   STATUS_EXCLUIDOS_PADRAO,
-  STATUS_REASON_EXCLUIDOS_PADRAO,
+  STATUS_REASON_INCLUIDOS_PADRAO,
   TECNOLOGIA_ACESSO_PADRAO,
   CLUSTER_ESCOPO,
   SPECIFICATION_PRODUCT_CONTEM,

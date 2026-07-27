@@ -106,7 +106,7 @@
         Dados atualizados em <strong><%= dataCargaInstalacoes %></strong>
       </p>
       <p class="hint">
-        Backlog em aberto = instalação (GOIANIA). Status, motivo e tecnologia são filtráveis abaixo (padrão: fora CANCELADA/ENCERRADA/EXECUCAO e motivo ENRIQUECIMENTO).
+        Backlog em aberto = instalação (GOIANIA). Status, motivo e tecnologia são filtráveis abaixo (padrão: fora CANCELADA/ENCERRADA/EXECUCAO; motivo só considera (sem motivo)/AGENDAMENTO — esta tela calcula para D+1).
       </p>
     </div>
   </div>
@@ -263,7 +263,7 @@
         Dados atualizados em <strong><%= dataCargaServicos %></strong>
       </p>
       <p class="hint">
-        Backlog em aberto = SPECIFICATION_TYPE diferente de INSTALAÇÃO e DESCONEXÃO, excluindo produtos "MUDANÇA DE ENDEREÇO*" (GOIANIA). Status, motivo e tecnologia são filtráveis abaixo (padrão: fora CANCELADA/ENCERRADA/EXECUCAO e motivo ENRIQUECIMENTO).
+        Backlog em aberto = SPECIFICATION_TYPE diferente de INSTALAÇÃO e DESCONEXÃO, excluindo produtos "MUDANÇA DE ENDEREÇO*" (GOIANIA). Status, motivo e tecnologia são filtráveis abaixo (padrão: fora CANCELADA/ENCERRADA/EXECUCAO; motivo só considera (sem motivo)/AGENDAMENTO — esta tela calcula para D+1).
       </p>
     </div>
   </div>
@@ -420,7 +420,7 @@
         Dados atualizados em <strong><%= dataCargaMe %></strong>
       </p>
       <p class="hint">
-        Backlog em aberto = SPECIFICATION_PRODUCT contém "MUDANÇA DE ENDEREÇO" (GOIANIA) — conta as duas linhas do CSV (desconexão do endereço antigo e alteração/instalação no novo). Status, motivo e tecnologia são filtráveis abaixo (padrão: fora CANCELADA/ENCERRADA/EXECUCAO e motivo ENRIQUECIMENTO).
+        Backlog em aberto = SPECIFICATION_PRODUCT contém "MUDANÇA DE ENDEREÇO" (GOIANIA) — conta as duas linhas do CSV (desconexão do endereço antigo e alteração/instalação no novo). Status, motivo e tecnologia são filtráveis abaixo (padrão: fora CANCELADA/ENCERRADA/EXECUCAO; motivo só considera (sem motivo)/AGENDAMENTO — esta tela calcula para D+1).
       </p>
     </div>
   </div>
@@ -577,7 +577,7 @@
         Dados atualizados em <strong><%= dataCargaReparo %></strong>
       </p>
       <p class="hint">
-        Backlog em aberto = defeito (GOIANIA). Status, motivo e tecnologia são filtráveis abaixo (padrão: fora CANCELADA/ENCERRADA/EXECUCAO e motivo ABERTA MASSIVA).
+        Backlog em aberto = defeito (GOIANIA). Status, motivo e tecnologia são filtráveis abaixo (padrão: fora CANCELADA/ENCERRADA/EXECUCAO; motivo só considera (sem motivo)/AGENDAMENTO — esta tela calcula para D+1).
       </p>
     </div>
   </div>

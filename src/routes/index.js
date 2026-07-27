@@ -7,7 +7,7 @@ const {
   getFiltrosDisponiveisReparo,
   getDataCargaReparo,
   STATUS_EXCLUIDOS_PADRAO: STATUS_EXCLUIDOS_PADRAO_REPARO,
-  STATUS_REASON_EXCLUIDOS_PADRAO: STATUS_REASON_EXCLUIDOS_PADRAO_REPARO,
+  STATUS_REASON_INCLUIDOS_PADRAO: STATUS_REASON_INCLUIDOS_PADRAO_REPARO,
 } = require('../services/bucketService');
 const {
   getResumoBucketsInstalacoes,
@@ -15,7 +15,7 @@ const {
   getPuProdutos,
   atualizarPuProdutos,
   STATUS_EXCLUIDOS_PADRAO: STATUS_EXCLUIDOS_PADRAO_INSTALACAO,
-  STATUS_REASON_EXCLUIDOS_PADRAO: STATUS_REASON_EXCLUIDOS_PADRAO_INSTALACAO,
+  STATUS_REASON_INCLUIDOS_PADRAO: STATUS_REASON_INCLUIDOS_PADRAO_INSTALACAO,
   TECNOLOGIA_ACESSO_PADRAO,
 } = require('../services/instalacaoBucketService');
 const {
@@ -24,7 +24,7 @@ const {
   getPuProdutosServicos,
   atualizarPuProdutosServicos,
   STATUS_EXCLUIDOS_PADRAO: STATUS_EXCLUIDOS_PADRAO_SERVICO,
-  STATUS_REASON_EXCLUIDOS_PADRAO: STATUS_REASON_EXCLUIDOS_PADRAO_SERVICO,
+  STATUS_REASON_INCLUIDOS_PADRAO: STATUS_REASON_INCLUIDOS_PADRAO_SERVICO,
   TECNOLOGIA_ACESSO_PADRAO: TECNOLOGIA_ACESSO_PADRAO_SERVICO,
 } = require('../services/servicoBucketService');
 const {
@@ -33,7 +33,7 @@ const {
   getPuProdutosMe,
   atualizarPuProdutosMe,
   STATUS_EXCLUIDOS_PADRAO: STATUS_EXCLUIDOS_PADRAO_ME,
-  STATUS_REASON_EXCLUIDOS_PADRAO: STATUS_REASON_EXCLUIDOS_PADRAO_ME,
+  STATUS_REASON_INCLUIDOS_PADRAO: STATUS_REASON_INCLUIDOS_PADRAO_ME,
   TECNOLOGIA_ACESSO_PADRAO: TECNOLOGIA_ACESSO_PADRAO_ME,
 } = require('../services/meBucketService');
 const { importarInstalacoes, getDataCargaInstalacoes } = require('../services/instalacoesService');
@@ -235,7 +235,7 @@ async function carregarDadosPainel(query) {
   );
   const statusReasonReparoSelecionados = normalizarListaComPadrao(
     query.statusReasonReparo,
-    filtrosDisponiveisReparo.statusReason.filter(v => !STATUS_REASON_EXCLUIDOS_PADRAO_REPARO.includes(v))
+    filtrosDisponiveisReparo.statusReason.filter(v => STATUS_REASON_INCLUIDOS_PADRAO_REPARO.includes(v))
   );
 
   const percentualInstalacao = normalizarPercentual(configGeral.percentualInstalacao, PERCENTUAL_INSTALACAO_PADRAO);
@@ -254,7 +254,7 @@ async function carregarDadosPainel(query) {
   );
   const statusReasonInstalacaoSelecionados = normalizarListaComPadrao(
     query.statusReasonInstalacao,
-    filtrosDisponiveisInstalacoes.statusReason.filter(v => !STATUS_REASON_EXCLUIDOS_PADRAO_INSTALACAO.includes(v))
+    filtrosDisponiveisInstalacoes.statusReason.filter(v => STATUS_REASON_INCLUIDOS_PADRAO_INSTALACAO.includes(v))
   );
   const tecnologiaAcessoSelecionadas = normalizarListaComPadrao(query.tecnologiaAcesso, TECNOLOGIA_ACESSO_PADRAO);
 
@@ -272,7 +272,7 @@ async function carregarDadosPainel(query) {
   );
   const statusReasonServicoSelecionados = normalizarListaComPadrao(
     query.statusReasonServico,
-    filtrosDisponiveisServicos.statusReason.filter(v => !STATUS_REASON_EXCLUIDOS_PADRAO_SERVICO.includes(v))
+    filtrosDisponiveisServicos.statusReason.filter(v => STATUS_REASON_INCLUIDOS_PADRAO_SERVICO.includes(v))
   );
   const tecnologiaAcessoServicoSelecionadas = normalizarListaComPadrao(query.tecnologiaAcessoServico, TECNOLOGIA_ACESSO_PADRAO_SERVICO);
 
@@ -290,7 +290,7 @@ async function carregarDadosPainel(query) {
   );
   const statusReasonMeSelecionados = normalizarListaComPadrao(
     query.statusReasonMe,
-    filtrosDisponiveisMe.statusReason.filter(v => !STATUS_REASON_EXCLUIDOS_PADRAO_ME.includes(v))
+    filtrosDisponiveisMe.statusReason.filter(v => STATUS_REASON_INCLUIDOS_PADRAO_ME.includes(v))
   );
   const tecnologiaAcessoMeSelecionadas = normalizarListaComPadrao(query.tecnologiaAcessoMe, TECNOLOGIA_ACESSO_PADRAO_ME);
 

@@ -11,11 +11,49 @@ const TABELAS = {
   reparo: 'cotas_reparo',
 };
 const TIPOS = Object.keys(TABELAS);
+const TIPO_LABEL = {
+  instalacao: 'Instalação',
+  servico: 'Serviço',
+  me: 'ME',
+  reparo: 'Reparos',
+};
 
 function tabelaDoTipo(tipo) {
   const tabela = TABELAS[tipo];
   if (!tabela) throw new Error(`Tipo de cotas inválido: ${tipo}. Use um de: ${TIPOS.join(', ')}.`);
   return tabela;
+}
+
+// Trava de segurança pro upload em /cotas-planejadas: como as 4 planilhas do
+// ETA têm exatamente o mesmo layout de colunas, um Excel de Serviço passa liso
+// nas validações de coluna do botão de Instalação (e vice-versa) -- e cada
+// upload faz TRUNCATE na tabela do tipo escolhido, então o arquivo errado
+// sobrescreve dados bons sem aviso nenhum. A coluna "Capacity Category" (já
+// importada, mas sem uso em nenhum cálculo) traz um valor que identifica o
+// tipo -- substring informada pelo usuário (o valor real do ETA parece vir com
+// prefixo/sufixo junto, por isso é `includes`, não igualdade exata).
+const CAPACITY_CATEGORY_ESPERADA = {
+  instalacao: 'INS',
+  servico: 'SERVICO',
+  me: 'MUD_END',
+  reparo: 'REPAROS',
+};
+
+// Só barra quando há evidência clara de tipo errado (algum valor preenchido, e
+// nenhum bate) -- se a coluna vier vazia no arquivo (ETA nem sempre preenche
+// tudo), não dá pra validar, então deixa passar em vez de bloquear upload
+// legítimo por falta de dado.
+function validarCapacityCategory(linhas, tipo) {
+  const esperado = CAPACITY_CATEGORY_ESPERADA[tipo];
+  if (!esperado) return;
+  const preenchidos = linhas.map(l => l.capacity).filter(Boolean);
+  if (preenchidos.length === 0) return;
+  const bate = preenchidos.some(v => v.toUpperCase().includes(esperado));
+  if (!bate) {
+    throw new Error(
+      `Este arquivo não parece ser de ${TIPO_LABEL[tipo]}: a coluna "Capacity Category" não contém "${esperado}" em nenhuma linha. Confira se o arquivo certo foi selecionado.`
+    );
+  }
 }
 
 // Colunas do export "Export" de cotas do ELOS. O casamento é por NOME (não por
@@ -237,6 +275,7 @@ async function inserirBatch(conn, tabela, linhas) {
 async function importarCotas(buffer, tipo) {
   const tabela = tabelaDoTipo(tipo);
   const linhas = extrairLinhas(parseXlsx(buffer));
+  validarCapacityCategory(linhas, tipo);
 
   const conn = await pool.getConnection();
   try {
