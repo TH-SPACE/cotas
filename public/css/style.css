@@ -111,6 +111,17 @@ body {
   }
 }
 
+.topbar-filtros {
+  padding: 0.6rem 2rem 0;
+  background: var(--panel-bg);
+  border-bottom: 1px solid var(--border);
+}
+
+.topbar-filtros .filtro-detalhes {
+  margin: 0 0 0.6rem;
+  max-width: max-content;
+}
+
 .badge {
   background: var(--accent);
   color: var(--accent-contrast);

@@ -20,6 +20,34 @@
     </div>
   </div>
 
+  <div class="kpi-row" title="Técnicos = PU ÷ Meta de PU por técnico de cada painel, arredondado pra cima">
+    <div class="kpi-tile">
+      <span class="kpi-label">Instalação</span>
+      <span class="kpi-value"><%= totalTecnicosInstalacao.toLocaleString('pt-BR') %></span>
+      <span class="kpi-sub">técnicos</span>
+    </div>
+    <div class="kpi-tile">
+      <span class="kpi-label">ME</span>
+      <span class="kpi-value"><%= totalTecnicosMe.toLocaleString('pt-BR') %></span>
+      <span class="kpi-sub">técnicos</span>
+    </div>
+    <div class="kpi-tile">
+      <span class="kpi-label">Serviços</span>
+      <span class="kpi-value"><%= totalTecnicosServico.toLocaleString('pt-BR') %></span>
+      <span class="kpi-sub">técnicos</span>
+    </div>
+    <div class="kpi-tile">
+      <span class="kpi-label">Reparos</span>
+      <span class="kpi-value"><%= totalTecnicosReparo.toLocaleString('pt-BR') %></span>
+      <span class="kpi-sub">técnicos</span>
+    </div>
+    <div class="kpi-tile kpi-tile-destaque">
+      <span class="kpi-label">Total de Técnicos</span>
+      <span class="kpi-value"><%= totalTecnicosGeral.toLocaleString('pt-BR') %></span>
+      <span class="kpi-sub">Instalação + ME + Serviços + Reparos</span>
+    </div>
+  </div>
+
   <div class="table-scroll">
     <table class="cotas-table">
       <colgroup>

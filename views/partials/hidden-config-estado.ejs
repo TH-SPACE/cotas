@@ -10,6 +10,9 @@
 */
 const _exceto = typeof exceto !== 'undefined' ? exceto : [];
 %>
+<% if (!_exceto.includes('aliada')) { %>
+  <% aliadasSelecionadas.forEach(v => { %><input type="hidden" name="aliada" value="<%= v %>" /><% }) %>
+<% } %>
 <% if (!_exceto.includes('tecnologia')) { %>
   <% tecnologiasSelecionadas.forEach(tec => { %><input type="hidden" name="tecnologia" value="<%= tec %>" /><% }) %>
 <% } %>

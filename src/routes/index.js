@@ -200,6 +200,7 @@ function normalizarListaComPadrao(valor, padrao) {
 // configuracoes_gerais (ver configGeralService.js), não na URL.
 function montarQueryStringEstado(body) {
   const params = new URLSearchParams();
+  [].concat(body.aliada || []).forEach(v => params.append('aliada', v));
   normalizarTecnologias(body.tecnologia).forEach(t => params.append('tecnologia', t));
   [].concat(body.statusReparo || []).forEach(v => params.append('statusReparo', v));
   [].concat(body.statusReasonReparo || []).forEach(v => params.append('statusReasonReparo', v));
@@ -296,16 +297,16 @@ async function carregarDadosPainel(query) {
   const tecnologiaAcessoMeSelecionadas = normalizarListaComPadrao(query.tecnologiaAcessoMe, TECNOLOGIA_ACESSO_PADRAO_ME);
 
   const [
-    { linhas, totalGeral },
+    { linhas: linhasReparoBruto },
     temposBucket,
     tecnologiasDisponiveis,
     dataCargaReparo,
-    { linhas: linhasInstalacoes, totalGeral: totalGeralInstalacoes },
+    { linhas: linhasInstalacoesBruto },
     puProdutos,
     dataCargaInstalacoes,
-    { linhas: linhasServicos, totalGeral: totalGeralServicos },
+    { linhas: linhasServicosBruto },
     puProdutosServicos,
-    { linhas: linhasMe, totalGeral: totalGeralMe },
+    { linhas: linhasMeBruto },
     puProdutosMe,
     elosCredenciais,
   ] = await Promise.all([
@@ -337,6 +338,32 @@ async function carregarDadosPainel(query) {
     getPuProdutosMe(),
     getElosCredenciais(),
   ]);
+
+  // Filtro de Aliada: único filtro compartilhado pelos 4 painéis ao mesmo tempo
+  // (diferente de tecnologia/status, que são por seção) -- widget global fica no
+  // head.ejs, presente em toda página. Disponíveis = união do que aparece hoje
+  // em qualquer um dos 4 painéis (normalmente ABILITY/ONDACOM/VIVO); aplica
+  // ANTES de Previsto/Sugestão pra recalcular o total geral de cada painel só
+  // com as aliadas selecionadas, igual aos outros filtros (não é só cosmético
+  // na tabela).
+  const aliadasDisponiveis = [...new Set([
+    ...linhasReparoBruto.map(l => l.aliada),
+    ...linhasInstalacoesBruto.map(l => l.aliada),
+    ...linhasServicosBruto.map(l => l.aliada),
+    ...linhasMeBruto.map(l => l.aliada),
+  ])].sort();
+  const aliadasSelecionadas = normalizarListaComPadrao(query.aliada, aliadasDisponiveis);
+
+  const filtrarPorAliada = (linhasSecao, campoBacklog) => {
+    const linhasFiltradas = linhasSecao.filter(l => aliadasSelecionadas.includes(l.aliada));
+    const totalGeralFiltrado = linhasFiltradas.reduce((acc, l) => acc + l[campoBacklog], 0);
+    return { linhas: linhasFiltradas, totalGeral: totalGeralFiltrado };
+  };
+
+  const { linhas, totalGeral } = filtrarPorAliada(linhasReparoBruto, 'backlogReparos');
+  const { linhas: linhasInstalacoes, totalGeral: totalGeralInstalacoes } = filtrarPorAliada(linhasInstalacoesBruto, 'backlogInstalacoes');
+  const { linhas: linhasServicos, totalGeral: totalGeralServicos } = filtrarPorAliada(linhasServicosBruto, 'backlogServicos');
+  const { linhas: linhasMe, totalGeral: totalGeralMe } = filtrarPorAliada(linhasMeBruto, 'backlogMe');
 
   const linhasComPrevistoBruto = calcularPrevisto(linhas, { percentual, campoBacklog: 'backlogReparos' });
   const totalPrevistoReparo = calcularTotalPrevisto(totalGeral, percentual);
@@ -398,6 +425,11 @@ async function carregarDadosPainel(query) {
   const totalSugestaoMe = totaisMe.totalSugestao;
 
   return {
+    // Aliada: filtro global (compartilhado pelos 4 painéis), widget fica no
+    // head.ejs e aparece em toda página.
+    aliadasDisponiveis,
+    aliadasSelecionadas,
+
     // Reparos
     linhas: linhasComPrevisto,
     totalGeral,
@@ -516,6 +548,8 @@ router.get('/', async (req, res, next) => {
       linkConfiguracoes,
       linkCotasPlanejadas,
       linkProjecaoD1D7,
+      pathAtual: req.path,
+      queryAtual: req.query,
     });
   } catch (err) {
     next(err);
@@ -548,6 +582,8 @@ router.get('/configuracoes', async (req, res, next) => {
       reparosUpload: req.query.reparosUpload,
       reparosUploadLinhas: req.query.reparosUploadLinhas,
       reparosUploadErro: req.query.reparosUploadErro,
+      pathAtual: req.path,
+      queryAtual: req.query,
     });
   } catch (err) {
     next(err);
@@ -596,6 +632,15 @@ router.get('/resumo-cotas', async (req, res, next) => {
       a.aliada.localeCompare(b.aliada) || a.bucket.localeCompare(b.bucket)
     );
 
+    // Total de técnicos do dia = soma dos 4 painéis (cada um já arredonda pra
+    // cima o próprio PU ÷ Meta antes de somar -- ver calcularTotais), pedido do
+    // usuário pra ter 1 número só de dimensionamento na página consolidada.
+    const totalTecnicosInstalacao = dados.totalTecnicosInstalacoes;
+    const totalTecnicosMe = dados.totalTecnicosMe;
+    const totalTecnicosServico = dados.totalTecnicosServicos;
+    const totalTecnicosReparo = dados.totalTecnicos;
+    const totalTecnicosGeral = totalTecnicosInstalacao + totalTecnicosMe + totalTecnicosServico + totalTecnicosReparo;
+
     res.render('resumo-cotas', {
       linkVoltar,
       linkResumoCotas,
@@ -611,8 +656,17 @@ router.get('/resumo-cotas', async (req, res, next) => {
       totalMinutosMe: dados.totalMinutosMe,
       totalMinutosServico: dados.totalMinutosServicos,
       totalMinutosReparo: dados.totalMinutos,
+      totalTecnicosInstalacao,
+      totalTecnicosMe,
+      totalTecnicosServico,
+      totalTecnicosReparo,
+      totalTecnicosGeral,
       aliadaCores: construirMapaCoresAliada(ALIADA_COR_QTD, linhasResumo),
       elosCredenciais: dados.elosCredenciais,
+      aliadasDisponiveis: dados.aliadasDisponiveis,
+      aliadasSelecionadas: dados.aliadasSelecionadas,
+      pathAtual: req.path,
+      queryAtual: req.query,
     });
   } catch (err) {
     next(err);
@@ -771,6 +825,10 @@ router.get('/cotas-planejadas', async (req, res, next) => {
       cotasUploadLinhas: req.query.cotasUploadLinhas,
       cotasUploadErro: req.query.cotasUploadErro,
       elosCredenciais: dados.elosCredenciais,
+      aliadasDisponiveis: dados.aliadasDisponiveis,
+      aliadasSelecionadas: dados.aliadasSelecionadas,
+      pathAtual: req.path,
+      queryAtual: req.query,
     });
   } catch (err) {
     next(err);
@@ -963,6 +1021,10 @@ router.get('/projecao-d1-d7', async (req, res, next) => {
       opcoesJanelaReparo: construirOpcoesJanela('janelaReparo', dados.janelasReparoLabels, janelaReparoSel),
       datasCargaCotas,
       diasAtrasoCotas,
+      aliadasDisponiveis: dados.aliadasDisponiveis,
+      aliadasSelecionadas: dados.aliadasSelecionadas,
+      pathAtual: req.path,
+      queryAtual: req.query,
     });
   } catch (err) {
     next(err);

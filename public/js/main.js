@@ -591,7 +591,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  const formsComFiltroAutoSubmit = ['filtro-tecnologia-form', 'filtro-instalacoes-form', 'filtro-servicos-form', 'filtro-me-form'];
+  const formsComFiltroAutoSubmit = ['filtro-tecnologia-form', 'filtro-instalacoes-form', 'filtro-servicos-form', 'filtro-me-form', 'filtro-aliada-form'];
   formsComFiltroAutoSubmit.forEach((formId) => {
     const form = document.getElementById(formId);
     if (!form) return;

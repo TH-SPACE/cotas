@@ -1,0 +1,18 @@
+<%
+/*
+  Réplica genérica de QUALQUER parâmetro hoje na query string atual (`queryAtual`,
+  passado por toda rota como req.query), exceto os listados em `exceto` -- usado
+  pelo filtro global de Aliada (head.ejs), que precisa funcionar em toda página
+  (index, configuracoes, resumo-cotas, cotas-planejadas, projecao-d1-d7) sem
+  conhecer os nomes dos filtros específicos de cada uma (statusReparo, janelaMe
+  etc.). Diferente de hidden-config-estado.ejs (que só cobre os filtros dos 4
+  painéis, por nome, e só existe em index/configuracoes).
+*/
+const _exceto = typeof exceto !== 'undefined' ? exceto : [];
+const _query = typeof queryAtual !== 'undefined' ? queryAtual : {};
+%>
+<% Object.keys(_query).forEach((chave) => { %>
+  <% if (!_exceto.includes(chave)) { %>
+    <% [].concat(_query[chave]).forEach((valor) => { %><input type="hidden" name="<%= chave %>" value="<%= valor %>" /><% }) %>
+  <% } %>
+<% }) %>
