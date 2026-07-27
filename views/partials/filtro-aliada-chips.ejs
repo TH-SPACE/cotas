@@ -1,0 +1,28 @@
+<%
+/*
+  Filtro de Aliada (ABILITY/ONDACOM/VIVO), estilo pill igual às abas de seção
+  (.secao-tab/.is-active) -- mas continua multi-seleção (cada pill é um
+  checkbox de verdade, mais de um pode ficar ativo ao mesmo tempo, diferente
+  das abas que são exclusivas). Usado nas 5 páginas, sempre dentro de um
+  .panel-header-actions ou .tabela-card-acoes, ao lado de outros controles do
+  cabeçalho. Na home vira 4 cópias (1 por seção) -- por isso usa CLASSE
+  (`filtro-aliada-chips-form`), não id, pro JS (main.js) conseguir ligar todas
+  via querySelectorAll em vez de getElementById (que só pegaria a 1ª).
+
+  Espera em escopo (locals do render, não precisa passar explícito):
+  aliadasDisponiveis, aliadasSelecionadas, pathAtual, queryAtual.
+*/
+%>
+<% if (typeof aliadasDisponiveis !== 'undefined' && aliadasDisponiveis.length > 0) { %>
+  <form method="get" action="<%= typeof pathAtual !== 'undefined' ? pathAtual : '/' %>" class="filtro-aliada-chips-form">
+    <div class="secao-tabs aliada-tabs" role="group" aria-label="Filtrar por Aliada">
+      <% aliadasDisponiveis.forEach(function (valor) { %>
+        <label class="secao-tab aliada-chip<%= aliadasSelecionadas.includes(valor) ? ' is-active' : '' %>">
+          <input type="checkbox" name="aliada" value="<%= valor %>" <%= aliadasSelecionadas.includes(valor) ? 'checked' : '' %> />
+          <%= valor %>
+        </label>
+      <% }) %>
+    </div>
+    <%- include('hidden-query-estado', { queryAtual: (typeof queryAtual !== 'undefined' ? queryAtual : {}), exceto: ['aliada'] }) %>
+  </form>
+<% } %>

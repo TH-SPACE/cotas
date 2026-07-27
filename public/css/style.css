@@ -111,17 +111,6 @@ body {
   }
 }
 
-.topbar-filtros {
-  padding: 0.6rem 2rem 0;
-  background: var(--panel-bg);
-  border-bottom: 1px solid var(--border);
-}
-
-.topbar-filtros .filtro-detalhes {
-  margin: 0 0 0.6rem;
-  max-width: max-content;
-}
-
 .badge {
   background: var(--accent);
   color: var(--accent-contrast);
@@ -1940,10 +1929,10 @@ button.is-loading::after {
   cursor: not-allowed;
 }
 
-/* Filtro de Aliada na home: mesma pill (.secao-tab/.is-active) das abas de
-   seção, mas continua multi-seleção -- cada pill é um checkbox de verdade (não
-   exclusivo como as abas), então mais de um pode ficar "is-active" ao mesmo
-   tempo. .panel-header-actions já separa este grupo do grupo de abas ao lado. */
+/* Filtro de Aliada (views/partials/filtro-aliada-chips.ejs), nas 5 páginas:
+   mesma pill (.secao-tab/.is-active) das abas de seção/unidade, mas continua
+   multi-seleção -- cada pill é um checkbox de verdade (não exclusivo como as
+   abas), então mais de um pode ficar "is-active" ao mesmo tempo. */
 .aliada-chip {
   display: inline-flex;
   align-items: center;

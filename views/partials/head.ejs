@@ -51,34 +51,6 @@
       </button>
     </div>
   </header>
-  <% // Filtro global de Aliada: único filtro que vale pros 4 painéis ao mesmo
-     // tempo (Instalação/ME/Serviços/Reparos usam o mesmo depara_bucket.ALIADA),
-     // por isso mora aqui no head.ejs em vez de duplicado em cada seção -- fica
-     // disponível em toda página do sistema. `aliadasDisponiveis` só existe nas
-     // páginas que chamam carregarDadosPainel (todas, hoje).
-     // Exceção: na home (`/`) o filtro já aparece dentro do cabeçalho de cada
-     // seção, ao lado das abas Instalação/Serviços/ME/Reparos (pedido do usuário,
-     // "igual esses... bem ali do lado") -- então não duplica aqui. %>
-  <% if (typeof aliadasDisponiveis !== 'undefined' && aliadasDisponiveis.length > 0 && !(typeof pathAtual !== 'undefined' && pathAtual === '/')) { %>
-    <div class="topbar-filtros">
-      <details class="filtro-detalhes filtro-aliada-detalhes" id="filtro-aliada-detalhes">
-        <summary title="Filtra os 4 painéis (Instalação, ME, Serviços e Reparos) pela empresa aliada responsável pelo bucket">
-          <svg class="filtro-icon" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z"/></svg>
-          Aliada
-          <span class="filtro-resumo"><%= aliadasSelecionadas.length %>/<%= aliadasDisponiveis.length %></span>
-        </summary>
-        <form method="get" action="<%= typeof pathAtual !== 'undefined' ? pathAtual : '/' %>" class="filtro-tecnologia" id="filtro-aliada-form">
-          <% aliadasDisponiveis.forEach(valor => { %>
-            <label class="filtro-tecnologia-item">
-              <input type="checkbox" name="aliada" value="<%= valor %>" <%= aliadasSelecionadas.includes(valor) ? 'checked' : '' %> />
-              <%= valor %>
-            </label>
-          <% }) %>
-          <%- include('hidden-query-estado', { queryAtual: (typeof queryAtual !== 'undefined' ? queryAtual : {}), exceto: ['aliada'] }) %>
-        </form>
-      </details>
-    </div>
-  <% } %>
   <dialog id="config-elos-modal" class="config-modal">
     <div class="modal-header">
       <h3 title="Login usado pela raspagem automática (elos-backlog-scraper) que baixa o backlog de Instalações do Elos a cada 10-25 min">Credenciais do Elos</h3>

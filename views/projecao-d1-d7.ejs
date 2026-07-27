@@ -91,6 +91,7 @@
           <button type="button" class="secao-tab unidade-tab" data-unidade="qtd" aria-pressed="false" title="Mostrar os valores em quantidade de ordens">Ordens</button>
         </div>
       </div>
+      <%- include('partials/filtro-aliada-chips') %>
       <nav class="secao-tabs" aria-label="Seção">
         <% secoes.forEach((secao, i) => { %>
           <button type="button" class="secao-tab secao-aba <%= i === 0 ? 'is-active' : '' %>" data-secao="<%= secao.id %>" aria-pressed="<%= i === 0 ? 'true' : 'false' %>"><%= secao.label %></button>

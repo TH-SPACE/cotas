@@ -55,15 +55,6 @@
   { id: 'reparos', label: 'Reparos' },
 ]; %>
 <% const navAbasSecao = (ativa) => `<nav class="secao-tabs" aria-label="Seção" data-storage-key="calc_secao_home">${SECOES_HOME.map(s => `<button type="button" class="secao-tab secao-aba${s.id === ativa ? ' is-active' : ''}" data-secao="${s.id}" aria-pressed="${s.id === ativa ? 'true' : 'false'}">${s.label}</button>`).join('')}</nav>`; %>
-<% // Filtro de Aliada, mesmo visual/posição das abas acima -- pedido do usuário
-   // ("igual esses... bem ali do lado"). Continua multi-seleção (não é exclusivo
-   // como as abas de seção): cada valor é um checkbox de verdade, só estilizado
-   // como pill (.secao-tab), podendo vários ficarem "is-active" ao mesmo tempo.
-   // Estado (aliadasDisponiveis/aliadasSelecionadas) é o mesmo de sempre, calculado
-   // 1x em carregarDadosPainel -- só o HTML de exibição é novo. %>
-<% const chipsAliadaHtml = (typeof aliadasDisponiveis !== 'undefined' && aliadasDisponiveis.length > 0)
-  ? `<div class="secao-tabs aliada-tabs" role="group" aria-label="Filtrar por Aliada">${aliadasDisponiveis.map(v => `<label class="secao-tab aliada-chip${aliadasSelecionadas.includes(v) ? ' is-active' : ''}"><input type="checkbox" name="aliada" value="${v}"${aliadasSelecionadas.includes(v) ? ' checked' : ''} />${v}</label>`).join('')}</div>`
-  : ''; %>
 
 <div class="home-layout">
   <aside class="home-sidebar" aria-label="Seções e configurações">
@@ -130,12 +121,7 @@
       </p>
     </div>
     <div class="panel-header-actions">
-      <% if (chipsAliadaHtml) { %>
-        <form method="get" action="/" class="filtro-aliada-secao-form">
-          <%- chipsAliadaHtml %>
-          <%- include('partials/hidden-query-estado', { queryAtual, exceto: ['aliada'] }) %>
-        </form>
-      <% } %>
+      <%- include('partials/filtro-aliada-chips') %>
       <%- navAbasSecao('instalacoes') %>
     </div>
   </div>
@@ -301,12 +287,7 @@
       </p>
     </div>
     <div class="panel-header-actions">
-      <% if (chipsAliadaHtml) { %>
-        <form method="get" action="/" class="filtro-aliada-secao-form">
-          <%- chipsAliadaHtml %>
-          <%- include('partials/hidden-query-estado', { queryAtual, exceto: ['aliada'] }) %>
-        </form>
-      <% } %>
+      <%- include('partials/filtro-aliada-chips') %>
       <%- navAbasSecao('servicos') %>
     </div>
   </div>
@@ -472,12 +453,7 @@
       </p>
     </div>
     <div class="panel-header-actions">
-      <% if (chipsAliadaHtml) { %>
-        <form method="get" action="/" class="filtro-aliada-secao-form">
-          <%- chipsAliadaHtml %>
-          <%- include('partials/hidden-query-estado', { queryAtual, exceto: ['aliada'] }) %>
-        </form>
-      <% } %>
+      <%- include('partials/filtro-aliada-chips') %>
       <%- navAbasSecao('me') %>
     </div>
   </div>
@@ -643,12 +619,7 @@
       </p>
     </div>
     <div class="panel-header-actions">
-      <% if (chipsAliadaHtml) { %>
-        <form method="get" action="/" class="filtro-aliada-secao-form">
-          <%- chipsAliadaHtml %>
-          <%- include('partials/hidden-query-estado', { queryAtual, exceto: ['aliada'] }) %>
-        </form>
-      <% } %>
+      <%- include('partials/filtro-aliada-chips') %>
       <%- navAbasSecao('reparos') %>
     </div>
   </div>

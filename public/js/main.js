@@ -596,7 +596,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  const formsComFiltroAutoSubmit = ['filtro-tecnologia-form', 'filtro-instalacoes-form', 'filtro-servicos-form', 'filtro-me-form', 'filtro-aliada-form'];
+  const formsComFiltroAutoSubmit = ['filtro-tecnologia-form', 'filtro-instalacoes-form', 'filtro-servicos-form', 'filtro-me-form'];
   formsComFiltroAutoSubmit.forEach((formId) => {
     const form = document.getElementById(formId);
     if (!form) return;
@@ -608,11 +608,12 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // Filtro de Aliada na home: 1 cópia por cabeçalho de seção (ver index.ejs,
-  // `chipsAliadaHtml`), então tem 4 <form> com o mesmo propósito -- por isso usa
-  // classe + querySelectorAll em vez do id único de formsComFiltroAutoSubmit
-  // acima (getElementById só pegaria a 1ª cópia, deixando as outras 3 mudas).
-  document.querySelectorAll('.filtro-aliada-secao-form').forEach((form) => {
+  // Filtro de Aliada (views/partials/filtro-aliada-chips.ejs), presente nas 5
+  // páginas -- na home vira 4 cópias (1 por cabeçalho de seção), por isso usa
+  // classe + querySelectorAll em vez de id único (getElementById só pegaria a
+  // 1ª cópia, deixando as outras mudas); nas outras páginas é só 1 cópia, mas o
+  // mesmo mecanismo serve pra todas sem precisar de caso especial.
+  document.querySelectorAll('.filtro-aliada-chips-form').forEach((form) => {
     form.querySelectorAll('input[type="checkbox"]').forEach((checkbox) => {
       checkbox.addEventListener('change', () => {
         sessionStorage.setItem(SCROLL_Y_KEY, String(window.scrollY));
