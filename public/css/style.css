@@ -377,6 +377,95 @@ button.home-sidebar-btn {
   font-weight: 600;
 }
 
+/* Aviso de base de cotas desatualizada (cotas-planejadas e projecao-d1-d7): mesma
+   cor de alerta usada em Parcial/Planejado-sem-snapshot, pra manter só uma
+   linguagem de "atenção" no sistema em vez de inventar uma cor nova. */
+.aviso-atraso {
+  color: var(--status-atencao-texto);
+}
+
+/* Célula "n/total" (Parcial) com popover de detalhe (Projeção D1-D7): sublinhado
+   pontilhado avisa que dá pra passar o mouse/focar pra ver o detalhe, sem
+   precisar de um ícone extra na célula (já é bem apertada). */
+.tem-detalhe {
+  cursor: help;
+  text-decoration: underline dotted;
+  text-underline-offset: 2px;
+}
+
+/* Popover de detalhe por janela/bucket: criado via JS (main.js) e anexado no
+   <body>, position:fixed -- não dá pra ser filho da própria célula porque
+   `.cotas-table td` tem overflow:hidden (ver comentário do pulso do Aberto) e
+   cortaria o popover. */
+.status-detalhe-popover {
+  position: fixed;
+  z-index: 300;
+  background: var(--panel-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: var(--table-shadow);
+  padding: 0.3rem 0.4rem;
+  font-size: 0.78rem;
+  pointer-events: none;
+}
+
+/* <table> de verdade em vez de divs com grid: colunas alinhadas entre linhas são
+   o que <table> já faz sozinho -- uma grid por linha (uma div independente por
+   item) deixava cada linha com sua própria largura de coluna, ficando torto
+   quando um valor (ex. "Fechado") era mais largo que os outros (ex. "Aberto"). */
+.status-detalhe-popover table {
+  border-collapse: collapse;
+}
+
+.status-detalhe-popover th,
+.status-detalhe-popover td {
+  padding: 0.2rem 0.5rem;
+  white-space: nowrap;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+
+.status-detalhe-popover tr:last-child td {
+  border-bottom: none;
+}
+
+.status-detalhe-popover th {
+  font-size: 0.66rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--muted);
+}
+
+.status-detalhe-popover th:first-child,
+.status-detalhe-popover td:first-child {
+  padding-left: 0.25rem;
+}
+
+.status-detalhe-popover th:last-child,
+.status-detalhe-popover td:last-child {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  padding-right: 0.25rem;
+}
+
+.detalhe-status-aberto {
+  color: var(--muted);
+}
+
+.detalhe-status-fechado {
+  color: var(--aliada-0-fg);
+  font-weight: 600;
+}
+
+/* Só aparece no popover do rodapé (Total geral): um bucket específico pode ele
+   mesmo ser Parcial (ex. "3/4") dentro da lista por bucket -- mesma cor de
+   Parcial usada na própria tabela. */
+.detalhe-status-parcial {
+  color: var(--status-atencao-texto);
+  font-weight: 600;
+}
+
 /* Cota aberta no Elos: ponto verde com pulso suave, marcando onde ainda dá pra
    agendar. Usa ::before (a célula continua sendo table-cell -- mudar o display
    do <td> quebraria a tabela) e anima só opacidade/escala, porque `.cotas-table
@@ -1617,6 +1706,7 @@ button.is-loading::after {
 }
 
 .secao-tab {
+  display: inline-block;
   padding: 0.4rem 0.85rem;
   border: none;
   border-radius: 7px;
@@ -1626,6 +1716,7 @@ button.is-loading::after {
   font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
+  text-decoration: none;
 }
 
 .secao-tab:hover:not(:disabled):not(.is-active) {
@@ -1656,6 +1747,17 @@ button.is-loading::after {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
+}
+
+/* Filtro de Janela da Projeção D1-D7: um por seção (cada tipo tem seu próprio
+   conjunto de janelas), fica acima da tabela daquela seção. Links (<a>), não
+   botões -- ao contrário de .secao-aba/.unidade-tab (troca client-side, sem
+   reload), a janela recalcula a agregação no servidor, então precisa navegar. */
+.janela-filtro {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.75rem;
 }
 
 .unidade-toggle-label {

@@ -327,6 +327,92 @@ document.addEventListener('DOMContentLoaded', () => {
     aplicarUnidade(sessionStorage.getItem(UNIDADE_KEY) === 'qtd' ? 'qtd' : 'min');
   }
 
+  // Popover de detalhe por janela/bucket (Projeção D1-D7): passar o mouse (ou
+  // focar via teclado) numa célula "n/total" (Parcial) mostra o status de cada
+  // janela (linhas de bucket) ou de cada bucket (linha "Total geral") que formou
+  // aquela soma. O popover é criado sob demanda e anexado no <body> -- não dá pra
+  // ser filho da célula porque `.cotas-table td` tem overflow:hidden e cortaria.
+  const celulasComDetalhe = document.querySelectorAll('[data-detalhe]');
+  if (celulasComDetalhe.length > 0) {
+    let popoverAtual = null;
+
+    const fecharPopover = () => {
+      if (popoverAtual) {
+        popoverAtual.remove();
+        popoverAtual = null;
+      }
+    };
+
+    const abrirPopover = (celula) => {
+      fecharPopover();
+      let itens;
+      try {
+        itens = JSON.parse(celula.dataset.detalhe);
+      } catch (e) {
+        return;
+      }
+      if (!Array.isArray(itens) || itens.length === 0) return;
+
+      // Tabela de verdade (não divs com grid): colunas alinhadas entre linhas são
+      // exatamente o que <table> já faz sozinho -- uma grid por linha (uma div
+      // independente por item) deixava cada linha com sua própria largura de
+      // coluna, ficando torto quando um valor (ex. "Fechado") era mais largo que
+      // os outros (ex. "Aberto").
+      const popover = document.createElement('div');
+      popover.className = 'status-detalhe-popover';
+      const tabela = document.createElement('table');
+
+      const linhaCabecalho = document.createElement('tr');
+      linhaCabecalho.appendChild(document.createElement('th'));
+      const thStatus = document.createElement('th');
+      thStatus.textContent = 'Status';
+      const thCota = document.createElement('th');
+      thCota.textContent = 'Cota Aberta';
+      linhaCabecalho.appendChild(thStatus);
+      linhaCabecalho.appendChild(thCota);
+      tabela.appendChild(linhaCabecalho);
+
+      itens.forEach((item) => {
+        const linha = document.createElement('tr');
+        const rotulo = document.createElement('td');
+        rotulo.textContent = item.rotulo;
+        const status = document.createElement('td');
+        status.textContent = item.status;
+        // No popover do rodapé (por bucket), o próprio bucket pode ser Parcial
+        // ("3/4") -- não é nem Aberto nem Fechado, então ganha a cor de alerta.
+        let classeStatus = 'detalhe-status-fechado';
+        if (item.status === 'Aberto') classeStatus = 'detalhe-status-aberto';
+        else if (item.status.includes('/')) classeStatus = 'detalhe-status-parcial';
+        status.className = classeStatus;
+        const cota = document.createElement('td');
+        cota.textContent = item.cotaAberta != null ? item.cotaAberta : '—';
+        linha.appendChild(rotulo);
+        linha.appendChild(status);
+        linha.appendChild(cota);
+        tabela.appendChild(linha);
+      });
+      popover.appendChild(tabela);
+      document.body.appendChild(popover);
+
+      const rectCelula = celula.getBoundingClientRect();
+      const rectPopover = popover.getBoundingClientRect();
+      let top = rectCelula.bottom + 6;
+      if (top + rectPopover.height > window.innerHeight) top = rectCelula.top - rectPopover.height - 6;
+      let left = rectCelula.left;
+      if (left + rectPopover.width > window.innerWidth) left = window.innerWidth - rectPopover.width - 8;
+      popover.style.top = `${Math.max(4, top)}px`;
+      popover.style.left = `${Math.max(4, left)}px`;
+      popoverAtual = popover;
+    };
+
+    celulasComDetalhe.forEach((celula) => {
+      celula.addEventListener('mouseenter', () => abrirPopover(celula));
+      celula.addEventListener('mouseleave', fecharPopover);
+      celula.addEventListener('focus', () => abrirPopover(celula));
+      celula.addEventListener('blur', fecharPopover);
+    });
+  }
+
   const formsComFiltroAutoSubmit = ['filtro-tecnologia-form', 'filtro-instalacoes-form', 'filtro-servicos-form', 'filtro-me-form'];
   formsComFiltroAutoSubmit.forEach((formId) => {
     const form = document.getElementById(formId);

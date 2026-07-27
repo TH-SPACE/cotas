@@ -14,6 +14,8 @@
       aliadaCores: aliadaCoresInstalacoes,
       mapaCotas: mapaCotasInstalacao,
       mapaConsumo: mapaConsumoInstalacao,
+      mapaDetalhe: mapaDetalheInstalacao,
+      opcoesJanela: opcoesJanelaInstalacao,
       campoTempo: 'tempoInstalacaoMinutos',
     },
     {
@@ -25,6 +27,8 @@
       aliadaCores: aliadaCoresServicos,
       mapaCotas: mapaCotasServico,
       mapaConsumo: mapaConsumoServico,
+      mapaDetalhe: mapaDetalheServico,
+      opcoesJanela: opcoesJanelaServico,
       campoTempo: 'tempoServicoMinutos',
     },
     {
@@ -36,6 +40,8 @@
       aliadaCores: aliadaCoresMe,
       mapaCotas: mapaCotasMe,
       mapaConsumo: mapaConsumoMe,
+      mapaDetalhe: mapaDetalheMe,
+      opcoesJanela: opcoesJanelaMe,
       campoTempo: 'tempoMeMinutos',
     },
     {
@@ -47,6 +53,8 @@
       aliadaCores: aliadaCoresReparos,
       mapaCotas: mapaCotasReparo,
       mapaConsumo: mapaConsumoReparo,
+      mapaDetalhe: mapaDetalheReparo,
+      opcoesJanela: opcoesJanelaReparo,
       campoTempo: 'tempoReparoMinutos',
     },
   ];
@@ -64,6 +72,16 @@
               · cotas do ETA de <strong><%= datasCargaCotas[secao.id] %></strong>
             <% } else { %>
               · <strong>cotas do ETA ainda não importadas</strong>
+            <% } %>
+            <% const _janelaAtiva = secao.opcoesJanela.find(op => op.ativo && op.rotulo !== 'Todas as janelas'); %>
+            <% if (_janelaAtiva) { %>
+              · janela <strong><%= _janelaAtiva.rotulo %></strong>
+            <% } %>
+            <% const _atraso = diasAtrasoCotas[secao.id]; %>
+            <% if (_atraso > 7) { %>
+              · <strong class="aviso-atraso" title="A base não tem AGE que cubra nenhum dos 7 dias seguintes (mais de 7 dias sem reenviar) -- todas as colunas de Status/Cota Aberta abaixo aparecem vazias de propósito, não é bug">base desatualizada há <%= _atraso %> dias — sem dado pra nenhum dos 7 dias</strong>
+            <% } else if (_atraso > 0) { %>
+              · <strong class="aviso-atraso" title="A base não foi reenviada hoje -- Status/Cota Aberta já foram ajustados sozinhos pra continuar batendo com a data real de cada coluna; só os últimos dias da tabela (D<%= 8 - _atraso %> em diante) ficam sem dado, por estarem fora do alcance do arquivo (que só vai até D7)">base desatualizada há <%= _atraso %> dia<%= _atraso > 1 ? 's' : '' %> (Status/Cota Aberta já ajustados; últimos dias sem dado)</strong>
             <% } %>
           </p>
         </div>
@@ -87,14 +105,23 @@
 
   <% secoes.forEach((secao, i) => { %>
     <div class="secao-painel" data-secao="<%= secao.id %>" <%= i === 0 ? '' : 'hidden' %>>
+      <div class="janela-filtro">
+        <span class="unidade-toggle-label">Janela</span>
+        <div class="secao-tabs" role="group" aria-label="Filtrar <%= secao.label %> por janela de horário">
+          <% secao.opcoesJanela.forEach(op => { %>
+            <a href="<%= op.href %>" class="secao-tab <%= op.ativo ? 'is-active' : '' %>" aria-pressed="<%= op.ativo ? 'true' : 'false' %>"><%= op.rotulo %></a>
+          <% }) %>
+        </div>
+      </div>
       <%- include('partials/tabela-projecao', { secao: secao, dias: dias }) %>
     </div>
   <% }) %>
 
   <p class="tabela-nota">
-    <strong>Status</strong> e <strong>Cota Aberta</strong> = rótulo <code>Age</code> (D1 a D7) do arquivo do ETA, somando/contando todas as janelas do bucket naquele dia · <strong>Parcial</strong> = nem todas as janelas do bucket concordam no Status ·
+    Use o filtro <strong>Janela</strong> (acima de cada tabela) pra ver só uma janela de horário específica em vez da soma de todas — com uma janela só selecionada, cada <strong>bucket</strong> vira sempre Aberto/Fechado (nunca Parcial); o "Total geral" ainda pode ser Parcial porque ali quem varia é o bucket, não a janela.
+    <strong>Status</strong> e <strong>Cota Aberta</strong> = rótulo <code>Age</code> (D1 a D7) do arquivo do ETA, somando/contando as janelas do bucket incluídas no filtro atual · <strong>Parcial</strong> = nem todas as janelas do bucket concordam no Status ·
     <strong>Consumo</strong> = ordens agendadas (<code>DATA_VENCIMENTO</code>) para a data real de cada dia, calculada a partir de hoje e contada na hora.
-    <strong>Atenção:</strong> Status/Cota Aberta só refletem a data ao lado do rótulo (D1, D2...) se a base tiver sido reenviada <em>hoje</em> — confira a data de carga do ETA acima de cada aba; se a base estiver desatualizada, o rótulo Dn pode não corresponder ao dia real.
+    <strong>Atenção:</strong> se a base não for reenviada todo dia, o sistema ajusta sozinho qual linha do arquivo (Age=D0..D7) corresponde a cada data real — mas o arquivo só cobre 7 dias a partir do dia em que foi gerado, então quanto mais desatualizada a base, menos dos 7 dias aqui aparecem com dado (os últimos ficam "—"). Confira o aviso acima de cada tabela quando isso acontecer.
     Use <strong>Ver em</strong> para alternar entre minutos e quantidade de ordens.
   </p>
 </section>

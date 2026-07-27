@@ -278,43 +278,102 @@ async function importarCotas(buffer, tipo) {
   }
 }
 
-// Cotas do dia (Age = D0) por bucket + janela de um tipo: a COTAS D0 e o Status da
-// tela vêm daqui. Agrega (SUM/MAX) por segurança caso um bucket tenha mais de uma
-// linha D0 na mesma janela (ex.: tecnologias diferentes) — pros 14 buckets de
-// GOIANIA hoje é 1 linha só, então a agregação é inofensiva.
+// O rótulo AGE (D0..D7) de um arquivo do ETA é relativo ao dia em que o PRÓPRIO
+// relatório foi gerado -- não se recalcula sozinho com o calendário. Se o upload
+// de hoje não for refeito amanhã, o AGE=D0 do arquivo continua sendo o dia em que
+// ele foi importado, não o dia de hoje (usuário reportou isso na prática: upload
+// de 24/07, sem reenviar, D0 "deveria" ser D3 três dias depois). `diasDesdeCarga`
+// mede esse atraso (dias entre IMPORTADO_EM e hoje); `ageEfetivo` soma esse atraso
+// ao offset REAL pedido (0 = hoje, 1..7 = D1..D7 da projeção) pra achar qual AGE
+// do arquivo representa aquele dia de verdade. Se cair fora de D0..D7 (base nunca
+// enviada, ou velha demais pro offset pedido), não existe dado -- melhor não
+// mostrar nada do que mostrar a linha errada.
+async function diasDesdeCarga(tabela) {
+  const [rows] = await pool.query(`SELECT MAX(IMPORTADO_EM) AS dataCarga FROM \`${tabela}\``);
+  const dataCarga = rows[0].dataCarga;
+  if (!dataCarga) return null;
+  const dataParte = dataCarga.split(' ')[0];
+  const hoje = new Date();
+  const hojeIso = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}-${String(hoje.getDate()).padStart(2, '0')}`;
+  return Math.round((Date.parse(hojeIso) - Date.parse(dataParte)) / 86400000);
+}
+
+function ageEfetivo(diasAtraso, offsetReal) {
+  if (diasAtraso == null) return null;
+  const n = diasAtraso + offsetReal;
+  return n >= 0 && n <= 7 ? `D${n}` : null;
+}
+
+// { instalacao, servico, me, reparo } -> dias desde a última carga (null se nunca
+// enviado) -- exposto pra rota avisar na tela quando a base está desatualizada,
+// usando a MESMA conta que ageEfetivo usa por baixo (uma só fonte de verdade).
+async function getDiasAtrasoCotas() {
+  const entradas = await Promise.all(TIPOS.map(async tipo => {
+    const tabela = tabelaDoTipo(tipo);
+    await criarTabela(tabela);
+    return [tipo, await diasDesdeCarga(tabela)];
+  }));
+  return Object.fromEntries(entradas);
+}
+
+// Cotas de "hoje de verdade" por bucket + janela de um tipo: a COTAS D0 e o
+// Status da tela vêm daqui. Em vez de fixar AGE='D0', usa `ageEfetivo` pra achar
+// a linha do arquivo que representa o dia de hoje mesmo se a base estiver
+// atrasada (ver comentário acima). Agrega (SUM/MAX) por segurança caso um bucket
+// tenha mais de uma linha na mesma janela (ex.: tecnologias diferentes) — pros 14
+// buckets de GOIANIA hoje é 1 linha só, então a agregação é inofensiva.
 async function getCotasD0(tipo) {
   const tabela = tabelaDoTipo(tipo);
   await criarTabela(tabela);
+  const age = ageEfetivo(await diasDesdeCarga(tabela), 0);
+  if (!age) return [];
   const [rows] = await pool.query(
     `SELECT BUCKET AS bucket, TIME_SLOT AS timeSlot,
             MAX(STATUS) AS status,
             SUM(COTA_ABERTA) AS cotaAberta,
             SUM(COTA_USADA) AS cotaUsada
      FROM \`${tabela}\`
-     WHERE AGE = 'D0'
-     GROUP BY BUCKET, TIME_SLOT`
+     WHERE AGE = ?
+     GROUP BY BUCKET, TIME_SLOT`,
+    [age]
   );
   return rows;
 }
 
-// Cotas de D1 a D7 (mesma tabela do D0, só muda o filtro de AGE) por bucket +
-// janela + dia: alimenta a página de projeção /projecao-d1-d7. Ao contrário de
-// getCotasD0, NÃO agrega por bucket sozinho -- devolve uma linha por
-// bucket+janela+age pra rota decidir como resumir (ex.: status pode divergir
-// entre janelas do mesmo bucket no mesmo dia).
+// Cotas dos 7 dias reais seguintes (D1..D7 de verdade, não do arquivo) por bucket
+// + janela + dia: alimenta a página de projeção /projecao-d1-d7. Pra cada offset
+// real 1..7, acha o AGE do arquivo que representa aquele dia (`ageEfetivo`) e já
+// devolve `age` REESCRITO pro rótulo real (D1..D7 relativo a hoje) -- assim a rota
+// (que agrupa por `r.age`) não precisa saber nada sobre o atraso da carga. Se o
+// atraso empurrar um offset pra fora de D0..D7, aquele dia simplesmente não entra
+// no resultado (sem dado, em vez de dado errado). Ao contrário de getCotasD0, NÃO
+// agrega por bucket sozinho -- devolve uma linha por bucket+janela+dia pra rota
+// decidir como resumir (ex.: status pode divergir entre janelas do mesmo bucket).
 async function getCotasD1aD7(tipo) {
   const tabela = tabelaDoTipo(tipo);
   await criarTabela(tabela);
+  const atraso = await diasDesdeCarga(tabela);
+  if (atraso == null) return [];
+
+  const offsetPorAge = {};
+  for (let offsetReal = 1; offsetReal <= 7; offsetReal++) {
+    const age = ageEfetivo(atraso, offsetReal);
+    if (age) offsetPorAge[age] = offsetReal;
+  }
+  const ages = Object.keys(offsetPorAge);
+  if (ages.length === 0) return [];
+
   const [rows] = await pool.query(
     `SELECT BUCKET AS bucket, TIME_SLOT AS timeSlot, AGE AS age,
             MAX(STATUS) AS status,
             SUM(COTA_ABERTA) AS cotaAberta,
             SUM(COTA_USADA) AS cotaUsada
      FROM \`${tabela}\`
-     WHERE AGE IN ('D1','D2','D3','D4','D5','D6','D7')
-     GROUP BY BUCKET, TIME_SLOT, AGE`
+     WHERE AGE IN (${ages.map(() => '?').join(',')})
+     GROUP BY BUCKET, TIME_SLOT, AGE`,
+    ages
   );
-  return rows;
+  return rows.map(r => ({ ...r, age: `D${offsetPorAge[r.age]}` }));
 }
 
 // Recorte de cada tipo no Consumo. As regras de negócio NÃO são reescritas aqui:
@@ -471,6 +530,7 @@ module.exports = {
   getConsumoHoje,
   getConsumoD1aD7,
   getDatasCargaCotas,
+  getDiasAtrasoCotas,
   parseXlsx,
   TIPOS,
 };

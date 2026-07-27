@@ -77,6 +77,12 @@
             <% } else { %>
               · <strong>cotas do ETA ainda não importadas</strong>
             <% } %>
+            <% const _atraso = diasAtrasoCotas[secao.id]; %>
+            <% if (_atraso > 7) { %>
+              · <strong class="aviso-atraso" title="A base não tem AGE que cubra hoje (mais de 7 dias sem reenviar) -- Status e D0 abaixo aparecem vazios de propósito, não é bug">base desatualizada há <%= _atraso %> dias — sem dado pra hoje</strong>
+            <% } else if (_atraso > 0) { %>
+              · <strong class="aviso-atraso" title="A base não foi reenviada hoje -- o sistema já ajustou sozinho, usando a linha Age=D<%= _atraso %> do arquivo (que corresponde a hoje) em vez do Age=D0 literal">base desatualizada há <%= _atraso %> dia<%= _atraso > 1 ? 's' : '' %> (usando Age=D<%= _atraso %> do arquivo como hoje)</strong>
+            <% } %>
           </p>
         </div>
       <% }) %>
@@ -104,8 +110,8 @@
   <% }) %>
 
   <p class="tabela-nota">
-    <strong>Planejado D-1</strong> = <%= planejadoDeHistorico ? 'planejamento de D-1 (snapshot das 9h de ontem)' : '<strong style="color:var(--cor-alerta,#b45309)">sem snapshot de D-1 — valores zerados até o cron das 9h rodar</strong>' %> ·
-    <strong>Status</strong> e <strong>D0</strong> = cota do dia no ETA (Age = D0) ·
+    <strong>Planejado D-1</strong> = <% if (planejadoDeHistorico) { %>planejamento de D-1 (snapshot das 9h de ontem)<% } else { %><strong class="aviso-atraso">sem snapshot de D-1 — valores zerados até o cron das 9h rodar</strong><% } %> ·
+    <strong>Status</strong> e <strong>D0</strong> = cota de hoje no ETA — se a base não for reenviada todo dia, o sistema ajusta sozinho e usa a linha Age=Dn certa do arquivo (veja o aviso acima da tabela quando isso acontecer) ·
     <strong>Consumo</strong> = ordens agendadas para hoje.
     Use <strong>Ver em</strong> para alternar entre minutos e quantidade de ordens — a conversão é sempre
     o tempo do bucket (<code>depara_tempo_bucket</code>): minutos ÷ tempo = ordens.

@@ -82,6 +82,26 @@
     cb.addEventListener('change', mostrarProgresso);
   });
 
+  // ---- Limpa da URL os parâmetros de "flash" (resultado de upload) ---------
+  // Rotas de upload redirecionam com ?cotasUpload=ok&... (ou instalacoesUpload/
+  // reparosUpload em /configuracoes) só pra mostrar o alerta/reabrir o modal uma
+  // vez. Sem isso, um F5 recarrega a MESMA url, o servidor lê os mesmos
+  // parâmetros de novo e o alerta/modal reabre sozinho pra sempre -- é exatamente
+  // o bug relatado com o modal "Analítico Disponibilidade e Consumo PB". replaceState
+  // só troca o que aparece na barra de endereço, sem navegar nem perder scroll.
+  (function () {
+    const PARAMS_FLASH = [
+      'cotasUpload', 'cotasUploadTipo', 'cotasUploadLinhas', 'cotasUploadErro',
+      'instalacoesUpload', 'instalacoesUploadLinhas', 'instalacoesUploadErro',
+      'reparosUpload', 'reparosUploadLinhas', 'reparosUploadErro',
+    ];
+    const urlAtual = new URL(window.location.href);
+    const temFlash = PARAMS_FLASH.some(function (p) { return urlAtual.searchParams.has(p); });
+    if (!temFlash) return;
+    PARAMS_FLASH.forEach(function (p) { urlAtual.searchParams.delete(p); });
+    window.history.replaceState(window.history.state, '', urlAtual);
+  })();
+
   // ---- Destaca na navbar a página atual -----------------------------------
   const aqui = window.location.pathname;
   document.querySelectorAll('.topbar-nav-item').forEach(function (item) {

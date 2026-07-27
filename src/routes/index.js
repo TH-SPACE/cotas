@@ -45,6 +45,7 @@ const {
   getConsumoHoje,
   getConsumoD1aD7,
   getDatasCargaCotas,
+  getDiasAtrasoCotas,
   TIPOS: TIPOS_COTAS,
 } = require('../services/cotasService');
 const { getTemposBucket, atualizarTemposBucket } = require('../services/temposBucketService');
@@ -668,6 +669,11 @@ router.get('/cotas-planejadas', async (req, res, next) => {
     Object.entries(datasCargaBrutas).forEach(([tipo, data]) => {
       datasCargaCotas[tipo] = data ? formatarDataCarga(data) : null;
     });
+    // Dias desde a última carga por tipo -- quando > 0, o Status/D0 mostrado NÃO
+    // é mais o AGE='D0' literal do arquivo (ver comentário em cotasService.js
+    // ageEfetivo): já foi ajustado pra continuar representando hoje de verdade,
+    // mas a tela avisa isso pra não passar a impressão de que a base está em dia.
+    const diasAtrasoCotas = await getDiasAtrasoCotas();
 
     res.render('cotas-planejadas', {
       // Sinaliza pro head.ejs mostrar o botão "Upload de cotas" na navbar só aqui
@@ -703,6 +709,7 @@ router.get('/cotas-planejadas', async (req, res, next) => {
       mapaCotasD0Reparo,
       mapaConsumoReparo,
       datasCargaCotas,
+      diasAtrasoCotas,
       // Indica ao template se o Planej. vem do histórico (D-1) ou do cálculo ao vivo.
       planejadoDeHistorico: temSnapshotD1,
       cotasUpload: req.query.cotasUpload,
@@ -745,10 +752,33 @@ router.get('/projecao-d1-d7', async (req, res, next) => {
     });
     const ageDaData = Object.fromEntries(dias.map(d => [d.dataIso, d.age]));
 
-    // bucket -> age -> { statusAberto, statusTotal, cotaAberta, cotaUsada }
-    const montarMapaCotasPorDia = (linhas) => {
+    // Normaliza o rótulo da janela tirando espaços (Excel usa "08:30-10:30", os
+    // labels do painel usam "08:30 - 10:30") -- mesmo truque da rota /cotas-planejadas.
+    const chaveJanela = (valor) => String(valor || '').replace(/\s/g, '');
+
+    // Filtro opcional por janela (TIME_SLOT), um por tipo -- só filtra o que já
+    // vem calculado, não refaz nenhum cálculo. `?janelaInstalacao=1` etc. (índice
+    // em janelasXxxLabels); ausente ou 'todas' = soma todas as janelas do bucket
+    // (comportamento padrão, "Total" continua igual a antes).
+    const janelaSelecionadaDe = (valorQuery, labels) => {
+      if (valorQuery === undefined || valorQuery === 'todas') return null;
+      const indice = Number(valorQuery);
+      if (!Number.isInteger(indice) || indice < 0 || indice >= labels.length) return null;
+      return { indice, chave: chaveJanela(labels[indice]) };
+    };
+    const janelaInstalacaoSel = janelaSelecionadaDe(req.query.janelaInstalacao, dados.janelasInstalacaoLabels);
+    const janelaServicoSel = janelaSelecionadaDe(req.query.janelaServico, dados.janelasServicoLabels);
+    const janelaMeSel = janelaSelecionadaDe(req.query.janelaMe, dados.janelasMeLabels);
+    const janelaReparoSel = janelaSelecionadaDe(req.query.janelaReparo, dados.janelasReparoLabels);
+
+    // bucket -> age -> { statusAberto, statusTotal, cotaAberta, cotaUsada }.
+    // `chaveFiltro`, se vier, restringe a soma a uma única janela (quando só sobra
+    // uma janela contribuindo, statusAberto sempre bate com statusTotal ou zera --
+    // "Parcial" só aparece mesmo quando várias janelas do bucket estão somadas).
+    const montarMapaCotasPorDia = (linhas, chaveFiltro) => {
       const mapa = {};
       linhas.forEach(r => {
+        if (chaveFiltro && chaveJanela(r.timeSlot) !== chaveFiltro) return;
         const porBucket = mapa[r.bucket] || (mapa[r.bucket] = {});
         const acc = porBucket[r.age] || (porBucket[r.age] = {
           statusAberto: 0, statusTotal: 0, cotaAberta: 0, cotaUsada: 0,
@@ -763,9 +793,10 @@ router.get('/projecao-d1-d7', async (req, res, next) => {
 
     // bucket -> age -> { qtdOrdens, consumo }. `r.data` (YYYY-MM-DD) é convertido
     // pro rótulo Dn comparando com a data real calculada acima.
-    const montarMapaConsumoPorDia = (linhas) => {
+    const montarMapaConsumoPorDia = (linhas, chaveFiltro) => {
       const mapa = {};
       linhas.forEach(r => {
+        if (chaveFiltro && chaveJanela(r.timeSlot) !== chaveFiltro) return;
         const age = ageDaData[r.data];
         if (!age) return;
         const porBucket = mapa[r.bucket] || (mapa[r.bucket] = {});
@@ -774,6 +805,52 @@ router.get('/projecao-d1-d7', async (req, res, next) => {
         acc.consumo += Number(r.consumo) || 0;
       });
       return mapa;
+    };
+
+    // bucket -> age -> [{ rotulo: <janela>, status, cotaAberta }] com o status e a
+    // Cota Aberta de CADA janela que entrou na soma daquele bucket+dia -- alimenta
+    // o popover de detalhe ao passar o mouse num "n/total" (Parcial) na tabela.
+    // `labels` traduz o TIME_SLOT cru do arquivo ("08:30-10:30") pro rótulo bonito
+    // da tela ("08:30 - 10:30"), igual ao resto da rota.
+    const montarMapaDetalheJanela = (linhas, labels, chaveFiltro) => {
+      const rotuloPorChave = Object.fromEntries(labels.map(l => [chaveJanela(l), l]));
+      const mapa = {};
+      linhas.forEach(r => {
+        const chave = chaveJanela(r.timeSlot);
+        if (chaveFiltro && chave !== chaveFiltro) return;
+        const porBucket = mapa[r.bucket] || (mapa[r.bucket] = {});
+        const porAge = porBucket[r.age] || (porBucket[r.age] = []);
+        porAge.push({ rotulo: rotuloPorChave[chave] || r.timeSlot, status: r.status, cotaAberta: Number(r.cotaAberta) || 0 });
+      });
+      return mapa;
+    };
+
+    // Monta as opções de botão "Todas as janelas" + uma por janela do tipo, cada
+    // uma um link que recarrega a página só trocando o parâmetro daquele tipo
+    // (preserva os filtros de tecnologia/status dos outros painéis e a janela
+    // escolhida nos OUTROS 3 tipos).
+    const paramsComEstadoEJanelas = () => {
+      const params = new URLSearchParams(montarQueryStringEstado(req.query).toString());
+      if (janelaInstalacaoSel) params.set('janelaInstalacao', String(janelaInstalacaoSel.indice));
+      if (janelaServicoSel) params.set('janelaServico', String(janelaServicoSel.indice));
+      if (janelaMeSel) params.set('janelaMe', String(janelaMeSel.indice));
+      if (janelaReparoSel) params.set('janelaReparo', String(janelaReparoSel.indice));
+      return params;
+    };
+    const construirOpcoesJanela = (paramTipo, labels, selecionado) => {
+      const base = paramsComEstadoEJanelas();
+      const linkSemParam = () => {
+        const p = new URLSearchParams(base);
+        p.delete(paramTipo);
+        return `/projecao-d1-d7?${p.toString()}`;
+      };
+      const opcaoTodas = { rotulo: 'Todas as janelas', ativo: !selecionado, href: linkSemParam() };
+      const opcoesJanela = labels.map((label, i) => {
+        const p = new URLSearchParams(base);
+        p.set(paramTipo, String(i));
+        return { rotulo: label, ativo: !!selecionado && selecionado.indice === i, href: `/projecao-d1-d7?${p.toString()}` };
+      });
+      return [opcaoTodas, ...opcoesJanela];
     };
 
     const [
@@ -793,6 +870,10 @@ router.get('/projecao-d1-d7', async (req, res, next) => {
     Object.entries(datasCargaBrutas).forEach(([tipo, data]) => {
       datasCargaCotas[tipo] = data ? formatarDataCarga(data) : null;
     });
+    // Dias desde a última carga por tipo -- Status/Cota Aberta já vêm ajustados
+    // pelo atraso (ver ageEfetivo em cotasService.js), mas a tela avisa isso pra
+    // não passar a impressão de que a base está em dia quando não está.
+    const diasAtrasoCotas = await getDiasAtrasoCotas();
 
     res.render('projecao-d1-d7', {
       paginaAtual: 'projecao-d1-d7',
@@ -804,21 +885,30 @@ router.get('/projecao-d1-d7', async (req, res, next) => {
       dias,
       linhasInstalacoes: dados.linhasInstalacoes,
       aliadaCoresInstalacoes: dados.aliadaCoresInstalacoes,
-      mapaCotasInstalacao: montarMapaCotasPorDia(cotasInstalacao),
-      mapaConsumoInstalacao: montarMapaConsumoPorDia(consumoInstalacao),
+      mapaCotasInstalacao: montarMapaCotasPorDia(cotasInstalacao, janelaInstalacaoSel && janelaInstalacaoSel.chave),
+      mapaConsumoInstalacao: montarMapaConsumoPorDia(consumoInstalacao, janelaInstalacaoSel && janelaInstalacaoSel.chave),
+      mapaDetalheInstalacao: montarMapaDetalheJanela(cotasInstalacao, dados.janelasInstalacaoLabels, janelaInstalacaoSel && janelaInstalacaoSel.chave),
+      opcoesJanelaInstalacao: construirOpcoesJanela('janelaInstalacao', dados.janelasInstalacaoLabels, janelaInstalacaoSel),
       linhasServicos: dados.linhasServicos,
       aliadaCoresServicos: dados.aliadaCoresServicos,
-      mapaCotasServico: montarMapaCotasPorDia(cotasServico),
-      mapaConsumoServico: montarMapaConsumoPorDia(consumoServico),
+      mapaCotasServico: montarMapaCotasPorDia(cotasServico, janelaServicoSel && janelaServicoSel.chave),
+      mapaConsumoServico: montarMapaConsumoPorDia(consumoServico, janelaServicoSel && janelaServicoSel.chave),
+      mapaDetalheServico: montarMapaDetalheJanela(cotasServico, dados.janelasServicoLabels, janelaServicoSel && janelaServicoSel.chave),
+      opcoesJanelaServico: construirOpcoesJanela('janelaServico', dados.janelasServicoLabels, janelaServicoSel),
       linhasMe: dados.linhasMe,
       aliadaCoresMe: dados.aliadaCoresMe,
-      mapaCotasMe: montarMapaCotasPorDia(cotasMe),
-      mapaConsumoMe: montarMapaConsumoPorDia(consumoMe),
+      mapaCotasMe: montarMapaCotasPorDia(cotasMe, janelaMeSel && janelaMeSel.chave),
+      mapaConsumoMe: montarMapaConsumoPorDia(consumoMe, janelaMeSel && janelaMeSel.chave),
+      mapaDetalheMe: montarMapaDetalheJanela(cotasMe, dados.janelasMeLabels, janelaMeSel && janelaMeSel.chave),
+      opcoesJanelaMe: construirOpcoesJanela('janelaMe', dados.janelasMeLabels, janelaMeSel),
       linhasReparos: dados.linhas,
       aliadaCoresReparos: dados.aliadaCores,
-      mapaCotasReparo: montarMapaCotasPorDia(cotasReparo),
-      mapaConsumoReparo: montarMapaConsumoPorDia(consumoReparo),
+      mapaCotasReparo: montarMapaCotasPorDia(cotasReparo, janelaReparoSel && janelaReparoSel.chave),
+      mapaConsumoReparo: montarMapaConsumoPorDia(consumoReparo, janelaReparoSel && janelaReparoSel.chave),
+      mapaDetalheReparo: montarMapaDetalheJanela(cotasReparo, dados.janelasReparoLabels, janelaReparoSel && janelaReparoSel.chave),
+      opcoesJanelaReparo: construirOpcoesJanela('janelaReparo', dados.janelasReparoLabels, janelaReparoSel),
       datasCargaCotas,
+      diasAtrasoCotas,
     });
   } catch (err) {
     next(err);

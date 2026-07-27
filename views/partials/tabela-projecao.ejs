@@ -14,9 +14,11 @@ const _linhas = secao.linhas || [];
 const _dias = dias || [];
 const _mapaCotas = secao.mapaCotas || {};
 const _mapaConsumo = secao.mapaConsumo || {};
+const _mapaDetalhe = secao.mapaDetalhe || {};
 
 const _cotasDe = (bucket, age) => (_mapaCotas[bucket] || {})[age] || null;
 const _consumoDe = (bucket, age) => (_mapaConsumo[bucket] || {})[age] || null;
+const _detalheDe = (bucket, age) => (_mapaDetalhe[bucket] || {})[age] || [];
 
 const _statusInfo = (c) => {
   if (!c || c.statusTotal === 0) return { rotulo: '—', classe: '', titulo: 'Sem dado de status' };
@@ -79,6 +81,16 @@ const _totStatus = _dias.map(dia => {
   });
   return _statusInfo({ statusAberto: aberto, statusTotal: total });
 });
+// Detalhe do "Total geral" quando ele mesmo é Parcial: aqui quem varia é o BUCKET
+// (não a janela), então o popover mostra o status já resolvido de cada bucket
+// (que pode ser "n/total" também, se aquele bucket específico for Parcial) e a
+// Cota Aberta somada daquele bucket naquele dia.
+const _totDetalhe = _dias.map(dia => _linhas
+  .map(l => {
+    const c = _cotasDe(l.bucket, dia.age);
+    return { rotulo: l.bucket, status: _statusInfo(c).rotulo, cotaAberta: c && c.cotaAberta != null ? c.cotaAberta : null };
+  })
+  .filter(item => item.status !== '—'));
 %>
 <div class="table-scroll">
   <table class="cotas-table cotas-table-compact">
@@ -97,9 +109,9 @@ const _totStatus = _dias.map(dia => {
       </tr>
       <tr>
         <% _dias.forEach(dia => { %>
-          <th class="num col-divider" title="Status da cota no ETA (Age = <%= dia.age %>) — resumo de todas as janelas do bucket nesse dia">Status</th>
-          <th class="num" title="Cota Aberta do ETA na linha Age = <%= dia.age %>, somada em todas as janelas do bucket">Cota Aberta</th>
-          <th class="num" title="Ordens agendadas para <%= dia.dataLabel %> (DATA_VENCIMENTO), somadas em todas as janelas do bucket">Consumo</th>
+          <th class="num col-divider" title="Status da cota no ETA (Age = <%= dia.age %>) — resumo das janelas do bucket incluídas no filtro de Janela acima da tabela">Status</th>
+          <th class="num" title="Cota Aberta do ETA na linha Age = <%= dia.age %>, somada nas janelas incluídas no filtro">Cota Aberta</th>
+          <th class="num" title="Ordens agendadas para <%= dia.dataLabel %> (DATA_VENCIMENTO), somadas nas janelas incluídas no filtro">Consumo</th>
         <% }) %>
       </tr>
     </thead>
@@ -115,7 +127,12 @@ const _totStatus = _dias.map(dia => {
             <% const consumo = _consumoDe(linha.bucket, dia.age); %>
             <% const st = _statusInfo(c); %>
             <% const ord = _ordensDe(linha, c); %>
-            <td class="col-divider <%= st.classe %>" title="<%= st.titulo %>"><%= st.rotulo %></td>
+            <% const _detalhe = st.classe === 'status-parcial' ? _detalheDe(linha.bucket, dia.age) : []; %>
+            <% if (_detalhe.length > 1) { %>
+              <td class="col-divider <%= st.classe %> tem-detalhe" data-detalhe="<%= JSON.stringify(_detalhe) %>" tabindex="0"><%= st.rotulo %></td>
+            <% } else { %>
+              <td class="col-divider <%= st.classe %>" title="<%= st.titulo %>"><%= st.rotulo %></td>
+            <% } %>
             <td class="num"><span class="v-min"><%= c && c.cotaAberta != null ? c.cotaAberta : '—' %></span><span class="v-qtd"><%= ord != null ? ord : '—' %></span></td>
             <td class="num celula-napplicavel" title="<%= consumo ? consumo.qtdOrdens + ' ordem(ns) agendada(s) para ' + dia.dataLabel : 'Sem ordens agendadas para ' + dia.dataLabel %>"><span class="v-min"><%= consumo ? consumo.consumo : '—' %></span><span class="v-qtd"><%= consumo ? consumo.qtdOrdens : '—' %></span></td>
           <% }) %>
@@ -126,7 +143,11 @@ const _totStatus = _dias.map(dia => {
       <tr>
         <td colspan="2" title="Soma de todos os buckets">Total geral</td>
         <% _dias.forEach((dia, i) => { %>
-          <td class="col-divider <%= _totStatus[i].classe %>" title="<%= _totStatus[i].titulo %>"><%= _totStatus[i].rotulo %></td>
+          <% if (_totStatus[i].classe === 'status-parcial' && _totDetalhe[i].length > 1) { %>
+            <td class="col-divider <%= _totStatus[i].classe %> tem-detalhe" data-detalhe="<%= JSON.stringify(_totDetalhe[i]) %>" tabindex="0"><%= _totStatus[i].rotulo %></td>
+          <% } else { %>
+            <td class="col-divider <%= _totStatus[i].classe %>" title="<%= _totStatus[i].titulo %>"><%= _totStatus[i].rotulo %></td>
+          <% } %>
           <td class="num"><span class="v-min"><%= _totCotaMin[i] != null ? _totCotaMin[i] : '—' %></span><span class="v-qtd"><%= _totCotaQtd[i] != null ? _totCotaQtd[i] : '—' %></span></td>
           <td class="num celula-napplicavel"><span class="v-min"><%= _totConsMin[i] != null ? _totConsMin[i] : '—' %></span><span class="v-qtd"><%= _totConsQtd[i] != null ? _totConsQtd[i] : '—' %></span></td>
         <% }) %>
