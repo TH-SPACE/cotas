@@ -42,8 +42,6 @@ const {
   importarCotas,
   getCotasD0,
   getCotasD1aD7,
-  getConsumoHoje,
-  getConsumoD1aD7,
   getDatasCargaCotas,
   getDiasAtrasoCotas,
   TIPOS: TIPOS_COTAS,
@@ -618,9 +616,15 @@ router.get('/resumo-cotas', async (req, res, next) => {
             me: new Array(qtdJanelasMe).fill(0),
             servico: new Array(qtdJanelasServico).fill(0),
             reparo: new Array(qtdJanelasReparo).fill(0),
+            instalacaoTecnicos: 0,
+            meTecnicos: 0,
+            servicoTecnicos: 0,
+            reparoTecnicos: 0,
           });
         }
-        porBucket.get(linha.bucket)[campo] = linha.minutos;
+        const linhaBucket = porBucket.get(linha.bucket);
+        linhaBucket[campo] = linha.minutos;
+        linhaBucket[`${campo}Tecnicos`] = linha.tecnicos;
       });
     };
     acumularSecao(dados.linhasInstalacoes, 'instalacao', qtdJanelasInstalacao);
@@ -628,18 +632,21 @@ router.get('/resumo-cotas', async (req, res, next) => {
     acumularSecao(dados.linhasServicos, 'servico', qtdJanelasServico);
     acumularSecao(dados.linhas, 'reparo', qtdJanelasReparo);
 
-    const linhasResumo = [...porBucket.values()].sort((a, b) =>
-      a.aliada.localeCompare(b.aliada) || a.bucket.localeCompare(b.bucket)
-    );
+    // Coluna Técnicos: por bucket, soma os 4 painéis (cada um já é PU ÷ Meta
+    // arredondado pra cima daquele bucket especificamente -- ver
+    // calcularDistribuicaoPorSugestao). Total geral do rodapé usa os totais já
+    // arredondados por painel (dados.totalTecnicos*), não a soma da coluna --
+    // evita que a tabela feche com um número diferente do "Técnicos" das outras
+    // páginas por causa de arredondamento por bucket vs por painel.
+    const linhasResumo = [...porBucket.values()]
+      .map(linha => ({
+        ...linha,
+        totalTecnicos: linha.instalacaoTecnicos + linha.meTecnicos + linha.servicoTecnicos + linha.reparoTecnicos,
+      }))
+      .sort((a, b) => a.aliada.localeCompare(b.aliada) || a.bucket.localeCompare(b.bucket));
 
-    // Total de técnicos do dia = soma dos 4 painéis (cada um já arredonda pra
-    // cima o próprio PU ÷ Meta antes de somar -- ver calcularTotais), pedido do
-    // usuário pra ter 1 número só de dimensionamento na página consolidada.
-    const totalTecnicosInstalacao = dados.totalTecnicosInstalacoes;
-    const totalTecnicosMe = dados.totalTecnicosMe;
-    const totalTecnicosServico = dados.totalTecnicosServicos;
-    const totalTecnicosReparo = dados.totalTecnicos;
-    const totalTecnicosGeral = totalTecnicosInstalacao + totalTecnicosMe + totalTecnicosServico + totalTecnicosReparo;
+    const totalTecnicosGeral = dados.totalTecnicos + dados.totalTecnicosInstalacoes
+      + dados.totalTecnicosServicos + dados.totalTecnicosMe;
 
     res.render('resumo-cotas', {
       linkVoltar,
@@ -656,10 +663,6 @@ router.get('/resumo-cotas', async (req, res, next) => {
       totalMinutosMe: dados.totalMinutosMe,
       totalMinutosServico: dados.totalMinutosServicos,
       totalMinutosReparo: dados.totalMinutos,
-      totalTecnicosInstalacao,
-      totalTecnicosMe,
-      totalTecnicosServico,
-      totalTecnicosReparo,
       totalTecnicosGeral,
       aliadaCores: construirMapaCoresAliada(ALIADA_COR_QTD, linhasResumo),
       elosCredenciais: dados.elosCredenciais,
@@ -706,18 +709,6 @@ router.get('/cotas-planejadas', async (req, res, next) => {
       return mapa;
     };
 
-    // bucket -> janela -> { minutos, qtdOrdens } das ordens agendadas para hoje.
-    const montarMapaConsumo = (linhas) => {
-      const mapa = {};
-      linhas.forEach(r => {
-        (mapa[r.bucket] || (mapa[r.bucket] = {}))[chaveJanela(r.timeSlot)] = {
-          minutos: r.consumo,
-          qtdOrdens: r.qtdOrdens,
-        };
-      });
-      return mapa;
-    };
-
     // Snapshot D-1: { instalacao: { bucket: [{label,minutos,ordens},...] }, ... }
     // Se vazio (primeiro uso), linhasXxx do painel ao vivo servem de fallback.
     const snapshotD1 = await getSnapshotD1();
@@ -750,27 +741,16 @@ router.get('/cotas-planejadas', async (req, res, next) => {
       'reparo', dados.linhas, dados.janelasReparoLabels
     );
 
-    const [
-      cotasD0, consumoHoje, cotasD0Servico, consumoHojeServico,
-      cotasD0Me, consumoHojeMe, cotasD0Reparo, consumoHojeReparo,
-    ] = await Promise.all([
+    const [cotasD0, cotasD0Servico, cotasD0Me, cotasD0Reparo] = await Promise.all([
       getCotasD0('instalacao'),
-      getConsumoHoje('instalacao'),
       getCotasD0('servico'),
-      getConsumoHoje('servico'),
       getCotasD0('me'),
-      getConsumoHoje('me'),
       getCotasD0('reparo'),
-      getConsumoHoje('reparo'),
     ]);
     const mapaCotasD0 = montarMapaD0(cotasD0);
-    const mapaConsumo = montarMapaConsumo(consumoHoje);
     const mapaCotasD0Servico = montarMapaD0(cotasD0Servico);
-    const mapaConsumoServico = montarMapaConsumo(consumoHojeServico);
     const mapaCotasD0Me = montarMapaD0(cotasD0Me);
-    const mapaConsumoMe = montarMapaConsumo(consumoHojeMe);
     const mapaCotasD0Reparo = montarMapaD0(cotasD0Reparo);
-    const mapaConsumoReparo = montarMapaConsumo(consumoHojeReparo);
 
     const datasCargaBrutas = await getDatasCargaCotas();
     const datasCargaCotas = {};
@@ -796,26 +776,22 @@ router.get('/cotas-planejadas', async (req, res, next) => {
       janelasInstalacaoLabels: dados.janelasInstalacaoLabels,
       aliadaCoresInstalacoes: dados.aliadaCoresInstalacoes,
       mapaCotasD0,
-      mapaConsumo,
       // Serviços: mesma estrutura, recorte/tempo próprios (depara_tempo_bucket.SERVICO).
       linhasServicos: linhasServicosComPlanej,
       janelasServicoLabels: dados.janelasServicoLabels,
       aliadaCoresServicos: dados.aliadaCoresServicos,
       mapaCotasD0Servico,
-      mapaConsumoServico,
       // ME: mesma estrutura, recorte/tempo próprios (depara_tempo_bucket.ALTERACAO).
       linhasMe: linhasMeComPlanej,
       janelasMeLabels: dados.janelasMeLabels,
       aliadaCoresMe: dados.aliadaCoresMe,
       mapaCotasD0Me,
-      mapaConsumoMe,
       // Reparos: único tipo em backlog_elos (não backlog_instalacoes); tempo
       // próprio (depara_tempo_bucket.REPARO), só 2 janelas (não 4).
       linhasReparos: linhasReparosComPlanej,
       janelasReparoLabels: dados.janelasReparoLabels,
       aliadaCoresReparos: dados.aliadaCores,
       mapaCotasD0Reparo,
-      mapaConsumoReparo,
       datasCargaCotas,
       diasAtrasoCotas,
       // Indica ao template se o Planej. vem do histórico (D-1) ou do cálculo ao vivo.
@@ -862,8 +838,6 @@ router.get('/projecao-d1-d7', async (req, res, next) => {
       const mm = String(d.getMonth() + 1).padStart(2, '0');
       return { age: `D${i + 1}`, dataIso: `${d.getFullYear()}-${mm}-${dd}`, dataLabel: `${dd}/${mm}` };
     });
-    const ageDaData = Object.fromEntries(dias.map(d => [d.dataIso, d.age]));
-
     // Normaliza o rótulo da janela tirando espaços (Excel usa "08:30-10:30", os
     // labels do painel usam "08:30 - 10:30") -- mesmo truque da rota /cotas-planejadas.
     const chaveJanela = (valor) => String(valor || '').replace(/\s/g, '');
@@ -899,22 +873,6 @@ router.get('/projecao-d1-d7', async (req, res, next) => {
         if (r.status === 'Aberto') acc.statusAberto += 1;
         acc.cotaAberta += Number(r.cotaAberta) || 0;
         acc.cotaUsada += Number(r.cotaUsada) || 0;
-      });
-      return mapa;
-    };
-
-    // bucket -> age -> { qtdOrdens, consumo }. `r.data` (YYYY-MM-DD) é convertido
-    // pro rótulo Dn comparando com a data real calculada acima.
-    const montarMapaConsumoPorDia = (linhas, chaveFiltro) => {
-      const mapa = {};
-      linhas.forEach(r => {
-        if (chaveFiltro && chaveJanela(r.timeSlot) !== chaveFiltro) return;
-        const age = ageDaData[r.data];
-        if (!age) return;
-        const porBucket = mapa[r.bucket] || (mapa[r.bucket] = {});
-        const acc = porBucket[age] || (porBucket[age] = { qtdOrdens: 0, consumo: 0 });
-        acc.qtdOrdens += Number(r.qtdOrdens) || 0;
-        acc.consumo += Number(r.consumo) || 0;
       });
       return mapa;
     };
@@ -965,16 +923,11 @@ router.get('/projecao-d1-d7', async (req, res, next) => {
       return [opcaoTodas, ...opcoesJanela];
     };
 
-    const [
-      cotasInstalacao, consumoInstalacao,
-      cotasServico, consumoServico,
-      cotasMe, consumoMe,
-      cotasReparo, consumoReparo,
-    ] = await Promise.all([
-      getCotasD1aD7('instalacao'), getConsumoD1aD7('instalacao'),
-      getCotasD1aD7('servico'), getConsumoD1aD7('servico'),
-      getCotasD1aD7('me'), getConsumoD1aD7('me'),
-      getCotasD1aD7('reparo'), getConsumoD1aD7('reparo'),
+    const [cotasInstalacao, cotasServico, cotasMe, cotasReparo] = await Promise.all([
+      getCotasD1aD7('instalacao'),
+      getCotasD1aD7('servico'),
+      getCotasD1aD7('me'),
+      getCotasD1aD7('reparo'),
     ]);
 
     const datasCargaBrutas = await getDatasCargaCotas();
@@ -998,25 +951,21 @@ router.get('/projecao-d1-d7', async (req, res, next) => {
       linhasInstalacoes: dados.linhasInstalacoes,
       aliadaCoresInstalacoes: dados.aliadaCoresInstalacoes,
       mapaCotasInstalacao: montarMapaCotasPorDia(cotasInstalacao, janelaInstalacaoSel && janelaInstalacaoSel.chave),
-      mapaConsumoInstalacao: montarMapaConsumoPorDia(consumoInstalacao, janelaInstalacaoSel && janelaInstalacaoSel.chave),
       mapaDetalheInstalacao: montarMapaDetalheJanela(cotasInstalacao, dados.janelasInstalacaoLabels, janelaInstalacaoSel && janelaInstalacaoSel.chave),
       opcoesJanelaInstalacao: construirOpcoesJanela('janelaInstalacao', dados.janelasInstalacaoLabels, janelaInstalacaoSel),
       linhasServicos: dados.linhasServicos,
       aliadaCoresServicos: dados.aliadaCoresServicos,
       mapaCotasServico: montarMapaCotasPorDia(cotasServico, janelaServicoSel && janelaServicoSel.chave),
-      mapaConsumoServico: montarMapaConsumoPorDia(consumoServico, janelaServicoSel && janelaServicoSel.chave),
       mapaDetalheServico: montarMapaDetalheJanela(cotasServico, dados.janelasServicoLabels, janelaServicoSel && janelaServicoSel.chave),
       opcoesJanelaServico: construirOpcoesJanela('janelaServico', dados.janelasServicoLabels, janelaServicoSel),
       linhasMe: dados.linhasMe,
       aliadaCoresMe: dados.aliadaCoresMe,
       mapaCotasMe: montarMapaCotasPorDia(cotasMe, janelaMeSel && janelaMeSel.chave),
-      mapaConsumoMe: montarMapaConsumoPorDia(consumoMe, janelaMeSel && janelaMeSel.chave),
       mapaDetalheMe: montarMapaDetalheJanela(cotasMe, dados.janelasMeLabels, janelaMeSel && janelaMeSel.chave),
       opcoesJanelaMe: construirOpcoesJanela('janelaMe', dados.janelasMeLabels, janelaMeSel),
       linhasReparos: dados.linhas,
       aliadaCoresReparos: dados.aliadaCores,
       mapaCotasReparo: montarMapaCotasPorDia(cotasReparo, janelaReparoSel && janelaReparoSel.chave),
-      mapaConsumoReparo: montarMapaConsumoPorDia(consumoReparo, janelaReparoSel && janelaReparoSel.chave),
       mapaDetalheReparo: montarMapaDetalheJanela(cotasReparo, dados.janelasReparoLabels, janelaReparoSel && janelaReparoSel.chave),
       opcoesJanelaReparo: construirOpcoesJanela('janelaReparo', dados.janelasReparoLabels, janelaReparoSel),
       datasCargaCotas,

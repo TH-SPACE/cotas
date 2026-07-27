@@ -22,7 +22,6 @@
       janelasLabels: janelasInstalacaoLabels,
       aliadaCores: aliadaCoresInstalacoes,
       mapaD0: mapaCotasD0,
-      mapaConsumo: mapaConsumo,
       campoTempo: 'tempoInstalacaoMinutos',
     },
     {
@@ -34,7 +33,6 @@
       janelasLabels: janelasServicoLabels,
       aliadaCores: aliadaCoresServicos,
       mapaD0: mapaCotasD0Servico,
-      mapaConsumo: mapaConsumoServico,
       campoTempo: 'tempoServicoMinutos',
     },
     {
@@ -46,7 +44,6 @@
       janelasLabels: janelasMeLabels,
       aliadaCores: aliadaCoresMe,
       mapaD0: mapaCotasD0Me,
-      mapaConsumo: mapaConsumoMe,
       campoTempo: 'tempoMeMinutos',
     },
     {
@@ -58,7 +55,6 @@
       janelasLabels: janelasReparoLabels,
       aliadaCores: aliadaCoresReparos,
       mapaD0: mapaCotasD0Reparo,
-      mapaConsumo: mapaConsumoReparo,
       campoTempo: 'tempoReparoMinutos',
     },
   ];
@@ -112,7 +108,8 @@
   <p class="tabela-nota">
     <strong>Planejado D-1</strong> = <% if (planejadoDeHistorico) { %>planejamento de D-1 (snapshot das 9h de ontem)<% } else { %><strong class="aviso-atraso">sem snapshot de D-1 — valores zerados até o cron das 9h rodar</strong><% } %> ·
     <strong>Status</strong> e <strong>D0</strong> = cota de hoje no ETA — se a base não for reenviada todo dia, o sistema ajusta sozinho e usa a linha Age=Dn certa do arquivo (veja o aviso acima da tabela quando isso acontecer) ·
-    <strong>Consumo</strong> = ordens agendadas para hoje.
+    <strong>Consumo</strong> = Cota Usada do ETA na mesma linha ·
+    células com fundo destacado = Aberto no ETA com Cota Aberta = 0.
     Use <strong>Ver em</strong> para alternar entre minutos e quantidade de ordens — a conversão é sempre
     o tempo do bucket (<code>depara_tempo_bucket</code>): minutos ÷ tempo = ordens.
   </p>

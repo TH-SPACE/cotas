@@ -20,39 +20,12 @@
     </div>
   </div>
 
-  <div class="kpi-row" title="Técnicos = PU ÷ Meta de PU por técnico de cada painel, arredondado pra cima">
-    <div class="kpi-tile">
-      <span class="kpi-label">Instalação</span>
-      <span class="kpi-value"><%= totalTecnicosInstalacao.toLocaleString('pt-BR') %></span>
-      <span class="kpi-sub">técnicos</span>
-    </div>
-    <div class="kpi-tile">
-      <span class="kpi-label">ME</span>
-      <span class="kpi-value"><%= totalTecnicosMe.toLocaleString('pt-BR') %></span>
-      <span class="kpi-sub">técnicos</span>
-    </div>
-    <div class="kpi-tile">
-      <span class="kpi-label">Serviços</span>
-      <span class="kpi-value"><%= totalTecnicosServico.toLocaleString('pt-BR') %></span>
-      <span class="kpi-sub">técnicos</span>
-    </div>
-    <div class="kpi-tile">
-      <span class="kpi-label">Reparos</span>
-      <span class="kpi-value"><%= totalTecnicosReparo.toLocaleString('pt-BR') %></span>
-      <span class="kpi-sub">técnicos</span>
-    </div>
-    <div class="kpi-tile kpi-tile-destaque">
-      <span class="kpi-label">Total de Técnicos</span>
-      <span class="kpi-value"><%= totalTecnicosGeral.toLocaleString('pt-BR') %></span>
-      <span class="kpi-sub">Instalação + ME + Serviços + Reparos</span>
-    </div>
-  </div>
-
   <div class="table-scroll">
-    <table class="cotas-table">
+    <table class="cotas-table cotas-table-compact">
       <colgroup>
         <col class="colw-aliada" />
         <col class="colw-bucket" />
+        <col class="colw-num" />
         <% janelasInstalacaoLabels.forEach(() => { %><col class="colw-num" /><% }) %>
         <% janelasMeLabels.forEach(() => { %><col class="colw-num" /><% }) %>
         <% janelasServicoLabels.forEach(() => { %><col class="colw-num" /><% }) %>
@@ -62,6 +35,7 @@
         <tr>
           <th rowspan="2" title="Empresa aliada responsável pelo bucket">Aliada</th>
           <th rowspan="2" title="Agrupamento de ARDs (armários) mapeado em depara_bucket">Bucket</th>
+          <th rowspan="2" class="col-divider" title="Técnicos necessários nesse bucket, somando Instalação + ME + Serviços + Reparos (PU ÷ Meta de PU por técnico de cada painel, arredondado pra cima)">Técnicos</th>
           <th colspan="<%= janelasInstalacaoLabels.length %>" class="group-header col-divider" title="COTAS(min) do painel de Instalações, por janela de horário">INSTALAÇÃO</th>
           <th colspan="<%= janelasMeLabels.length %>" class="group-header col-divider" title="COTAS(min) do painel de ME, por janela de horário">ME</th>
           <th colspan="<%= janelasServicoLabels.length %>" class="group-header col-divider" title="COTAS(min) do painel de Serviços, por janela de horário">SERVIÇOS</th>
@@ -89,6 +63,7 @@
           <tr class="<%= novaAliada ? 'group-start' : '' %>">
             <td><span class="aliada-badge aliada-color-<%= aliadaCores[linha.aliada] %>"><%= linha.aliada %></span></td>
             <td class="celula-truncada" title="<%= linha.bucket %>"><%= linha.bucket %></td>
+            <td class="<%= numCls(linha.totalTecnicos) %> col-divider"><%= linha.totalTecnicos %></td>
             <% linha.instalacao.forEach((min, i) => { %>
               <td class="<%= numCls(min) %> <%= i === 0 ? 'col-divider' : '' %>"><%= min %></td>
             <% }) %>
@@ -107,6 +82,7 @@
       <tfoot>
         <tr>
           <td colspan="2" title="Soma de todos os buckets">Total geral</td>
+          <td class="num col-divider"><%= totalTecnicosGeral %></td>
           <% totalMinutosInstalacao.forEach((min, i) => { %>
             <td class="<%= numCls(min) %> <%= i === 0 ? 'col-divider' : '' %>"><%= min %></td>
           <% }) %>

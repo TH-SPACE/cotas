@@ -1,23 +1,25 @@
 <%
 /*
   Tabela de projeção D1-D7 de UMA seção (Instalação, Serviços, ME, Reparos).
-  Recebe `secao` { id, rotuloColuna, linhas, aliadaCores, mapaCotas, mapaConsumo, campoTempo }
+  Recebe `secao` { id, rotuloColuna, linhas, aliadaCores, mapaCotas, mapaDetalhe, campoTempo }
   e `dias` (mesmo array pras 4 seções): [{ age, dataIso, dataLabel }, ...] (D1..D7).
 
   Status/Cota Aberta vêm do rótulo Age do arquivo do ETA (podem estar
-  desatualizados se a base não for reenviada -- ver aviso no rodapé da página);
-  Consumo é calculado por data de calendário real. Os dois são agregados por
-  bucket somando/contando todas as janelas daquele bucket no dia (um bucket pode
-  ter janelas com Status diferentes no mesmo dia -- daí "Parcial").
+  desatualizados se a base não for reenviada -- ver aviso no rodapé da página).
+  Consumo vem de COTA_USADA da mesma linha (ver mapaCotas/getCotasD1aD7 em
+  cotasService.js) -- ANTES vinha de uma contagem própria de ordens agendadas
+  em backlog_instalacoes/backlog_elos por data de calendário (getConsumoD1aD7),
+  que podia divergir do que o ETA já registrava como usado. Os dois (Cota
+  Aberta e Consumo) são agregados por bucket somando/contando todas as janelas
+  daquele bucket no dia (um bucket pode ter janelas com Status diferentes no
+  mesmo dia -- daí "Parcial").
 */
 const _linhas = secao.linhas || [];
 const _dias = dias || [];
 const _mapaCotas = secao.mapaCotas || {};
-const _mapaConsumo = secao.mapaConsumo || {};
 const _mapaDetalhe = secao.mapaDetalhe || {};
 
 const _cotasDe = (bucket, age) => (_mapaCotas[bucket] || {})[age] || null;
-const _consumoDe = (bucket, age) => (_mapaConsumo[bucket] || {})[age] || null;
 const _detalheDe = (bucket, age) => (_mapaDetalhe[bucket] || {})[age] || [];
 
 const _statusInfo = (c) => {
@@ -36,6 +38,17 @@ const _ordensDe = (linha, c) => {
   const tempo = Number(linha[secao.campoTempo]) || 0;
   return tempo > 0 ? Math.round(Number(c.cotaAberta) / tempo) : null;
 };
+
+const _consumoOrdensDe = (linha, c) => {
+  if (!c || c.cotaUsada == null) return null;
+  const tempo = Number(linha[secao.campoTempo]) || 0;
+  return tempo > 0 ? Math.round(Number(c.cotaUsada) / tempo) : null;
+};
+
+// Aviso "Aberto mas cota zerada": bucket com todas as janelas abertas nesse dia
+// (Status = "Aberto" cheio, não Parcial) mas Cota Aberta somada = 0 -- provável
+// inconsistência de cadastro no ETA, vale destacar.
+const _abertoCotaZero = (st, c) => st.rotulo === 'Aberto' && !!c && Number(c.cotaAberta) === 0;
 
 // Totais por dia. Cota Aberta/Consumo só somam quem tem valor (senão um bucket
 // sem cota naquele dia viraria zero e mentiria no rodapé); Status agrega os
@@ -60,16 +73,17 @@ const _totCotaQtd = _dias.map(dia => {
 const _totConsMin = _dias.map(dia => {
   let soma = 0, tem = false;
   _linhas.forEach(l => {
-    const c = _consumoDe(l.bucket, dia.age);
-    if (c) { soma += Number(c.consumo); tem = true; }
+    const c = _cotasDe(l.bucket, dia.age);
+    if (c && c.cotaUsada != null) { soma += Number(c.cotaUsada); tem = true; }
   });
   return tem ? soma : null;
 });
 const _totConsQtd = _dias.map(dia => {
   let soma = 0, tem = false;
   _linhas.forEach(l => {
-    const c = _consumoDe(l.bucket, dia.age);
-    if (c) { soma += Number(c.qtdOrdens); tem = true; }
+    const c = _cotasDe(l.bucket, dia.age);
+    const ord = _consumoOrdensDe(l, c);
+    if (ord != null) { soma += ord; tem = true; }
   });
   return tem ? soma : null;
 });
@@ -111,7 +125,7 @@ const _totDetalhe = _dias.map(dia => _linhas
         <% _dias.forEach(dia => { %>
           <th class="num col-divider" title="Status da cota no ETA (Age = <%= dia.age %>) — resumo das janelas do bucket incluídas no filtro de Janela acima da tabela">Status</th>
           <th class="num" title="Cota Aberta do ETA na linha Age = <%= dia.age %>, somada nas janelas incluídas no filtro">Cota Aberta</th>
-          <th class="num" title="Ordens agendadas para <%= dia.dataLabel %> (DATA_VENCIMENTO), somadas nas janelas incluídas no filtro">Consumo</th>
+          <th class="num" title="Cota Usada do ETA na linha Age = <%= dia.age %>, somada nas janelas incluídas no filtro">Consumo</th>
         <% }) %>
       </tr>
     </thead>
@@ -124,17 +138,18 @@ const _totDetalhe = _dias.map(dia => _linhas
           <td class="celula-truncada" title="<%= linha.bucket %>"><%= linha.bucket %></td>
           <% _dias.forEach(dia => { %>
             <% const c = _cotasDe(linha.bucket, dia.age); %>
-            <% const consumo = _consumoDe(linha.bucket, dia.age); %>
             <% const st = _statusInfo(c); %>
             <% const ord = _ordensDe(linha, c); %>
+            <% const consumoOrd = _consumoOrdensDe(linha, c); %>
+            <% const _alerta = _abertoCotaZero(st, c); %>
             <% const _detalhe = st.classe === 'status-parcial' ? _detalheDe(linha.bucket, dia.age) : []; %>
             <% if (_detalhe.length > 1) { %>
-              <td class="col-divider <%= st.classe %> tem-detalhe" data-detalhe="<%= JSON.stringify(_detalhe) %>" tabindex="0"><%= st.rotulo %></td>
+              <td class="col-divider <%= st.classe %> tem-detalhe <%= _alerta ? 'cota-zero-aberto' : '' %>" data-detalhe="<%= JSON.stringify(_detalhe) %>" tabindex="0"><%= st.rotulo %></td>
             <% } else { %>
-              <td class="col-divider <%= st.classe %>" title="<%= st.titulo %>"><%= st.rotulo %></td>
+              <td class="col-divider <%= st.classe %> <%= _alerta ? 'cota-zero-aberto' : '' %>" title="<%= _alerta ? 'Aberto no ETA, mas Cota Aberta = 0' : st.titulo %>"><%= st.rotulo %></td>
             <% } %>
-            <td class="num"><span class="v-min"><%= c && c.cotaAberta != null ? c.cotaAberta : '—' %></span><span class="v-qtd"><%= ord != null ? ord : '—' %></span></td>
-            <td class="num celula-napplicavel" title="<%= consumo ? consumo.qtdOrdens + ' ordem(ns) agendada(s) para ' + dia.dataLabel : 'Sem ordens agendadas para ' + dia.dataLabel %>"><span class="v-min"><%= consumo ? consumo.consumo : '—' %></span><span class="v-qtd"><%= consumo ? consumo.qtdOrdens : '—' %></span></td>
+            <td class="num <%= _alerta ? 'cota-zero-aberto' : '' %>" title="<%= _alerta ? 'Aberto no ETA, mas Cota Aberta = 0' : '' %>"><span class="v-min"><%= c && c.cotaAberta != null ? c.cotaAberta : '—' %></span><span class="v-qtd"><%= ord != null ? ord : '—' %></span></td>
+            <td class="num celula-napplicavel"><span class="v-min"><%= c && c.cotaUsada != null ? c.cotaUsada : '—' %></span><span class="v-qtd"><%= consumoOrd != null ? consumoOrd : '—' %></span></td>
           <% }) %>
         </tr>
       <% }) %>

@@ -13,7 +13,6 @@
       linhas: linhasInstalacoes,
       aliadaCores: aliadaCoresInstalacoes,
       mapaCotas: mapaCotasInstalacao,
-      mapaConsumo: mapaConsumoInstalacao,
       mapaDetalhe: mapaDetalheInstalacao,
       opcoesJanela: opcoesJanelaInstalacao,
       campoTempo: 'tempoInstalacaoMinutos',
@@ -26,7 +25,6 @@
       linhas: linhasServicos,
       aliadaCores: aliadaCoresServicos,
       mapaCotas: mapaCotasServico,
-      mapaConsumo: mapaConsumoServico,
       mapaDetalhe: mapaDetalheServico,
       opcoesJanela: opcoesJanelaServico,
       campoTempo: 'tempoServicoMinutos',
@@ -39,7 +37,6 @@
       linhas: linhasMe,
       aliadaCores: aliadaCoresMe,
       mapaCotas: mapaCotasMe,
-      mapaConsumo: mapaConsumoMe,
       mapaDetalhe: mapaDetalheMe,
       opcoesJanela: opcoesJanelaMe,
       campoTempo: 'tempoMeMinutos',
@@ -52,7 +49,6 @@
       linhas: linhasReparos,
       aliadaCores: aliadaCoresReparos,
       mapaCotas: mapaCotasReparo,
-      mapaConsumo: mapaConsumoReparo,
       mapaDetalhe: mapaDetalheReparo,
       opcoesJanela: opcoesJanelaReparo,
       campoTempo: 'tempoReparoMinutos',
@@ -119,8 +115,8 @@
 
   <p class="tabela-nota">
     Use o filtro <strong>Janela</strong> (acima de cada tabela) pra ver só uma janela de horário específica em vez da soma de todas — com uma janela só selecionada, cada <strong>bucket</strong> vira sempre Aberto/Fechado (nunca Parcial); o "Total geral" ainda pode ser Parcial porque ali quem varia é o bucket, não a janela.
-    <strong>Status</strong> e <strong>Cota Aberta</strong> = rótulo <code>Age</code> (D1 a D7) do arquivo do ETA, somando/contando as janelas do bucket incluídas no filtro atual · <strong>Parcial</strong> = nem todas as janelas do bucket concordam no Status ·
-    <strong>Consumo</strong> = ordens agendadas (<code>DATA_VENCIMENTO</code>) para a data real de cada dia, calculada a partir de hoje e contada na hora.
+    <strong>Status</strong>, <strong>Cota Aberta</strong> e <strong>Consumo</strong> = rótulo <code>Age</code> (D1 a D7) do arquivo do ETA, somando/contando as janelas do bucket incluídas no filtro atual (Consumo = Cota Usada) · <strong>Parcial</strong> = nem todas as janelas do bucket concordam no Status ·
+    células com fundo destacado = Aberto no ETA com Cota Aberta = 0.
     <strong>Atenção:</strong> se a base não for reenviada todo dia, o sistema ajusta sozinho qual linha do arquivo (Age=D0..D7) corresponde a cada data real — mas o arquivo só cobre 7 dias a partir do dia em que foi gerado, então quanto mais desatualizada a base, menos dos 7 dias aqui aparecem com dado (os últimos ficam "—"). Confira o aviso acima de cada tabela quando isso acontecer.
     Use <strong>Ver em</strong> para alternar entre minutos e quantidade de ordens.
   </p>

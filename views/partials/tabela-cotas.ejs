@@ -2,16 +2,20 @@
 /*
   Tabela de cotas de UMA seção (Instalação, Serviços, ME, e futuramente Reparos).
   Recebe `secao`:
-    { id, rotuloColuna, linhas, janelasLabels, aliadaCores, mapaD0, mapaConsumo, campoTempo }
+    { id, rotuloColuna, linhas, janelasLabels, aliadaCores, mapaD0, campoTempo }
 
   Cada célula numérica sai com os DOIS valores no HTML (<span class="v-min"> e
   <span class="v-qtd">); o toggle "Ver em" só troca qual aparece, via CSS.
   Ordens = minutos ÷ tempo do bucket daquele tipo (campoTempo).
+
+  Consumo vem de COTA_USADA (mesma linha Age=D0 do ETA que já dá Status/Cota
+  Aberta, ver mapaD0/getCotasD0 em cotasService.js) -- ANTES vinha de uma
+  contagem própria de ordens agendadas hoje em backlog_instalacoes/backlog_elos
+  (getConsumoHoje), que podia divergir do que o ETA já registrava como usado.
 */
 const _linhas = secao.linhas || [];
 const _janelas = secao.janelasLabels || [];
 const _mapaD0 = secao.mapaD0 || {};
-const _mapaConsumo = secao.mapaConsumo || {};
 const _chaves = _janelas.map(label => String(label).replace(/\s/g, ''));
 
 const _d0Ordens = (linha, chave) => {
@@ -20,6 +24,18 @@ const _d0Ordens = (linha, chave) => {
   const tempo = Number(linha[secao.campoTempo]) || 0;
   return tempo > 0 ? Math.round(Number(d0.cotaAberta) / tempo) : null;
 };
+
+const _consumoOrdens = (linha, chave) => {
+  const d0 = (_mapaD0[linha.bucket] || {})[chave];
+  if (!d0 || d0.cotaUsada == null) return null;
+  const tempo = Number(linha[secao.campoTempo]) || 0;
+  return tempo > 0 ? Math.round(Number(d0.cotaUsada) / tempo) : null;
+};
+
+// Aviso "Aberto mas cota zerada": o ETA marca a janela como Aberta mas libera
+// Cota Aberta = 0 pra ela -- provável inconsistência de cadastro, vale destacar
+// em vez de deixar passar como um "0" comum.
+const _abertoCotaZero = (d0) => !!d0 && d0.status === 'Aberto' && Number(d0.cotaAberta) === 0;
 
 // Totais por janela. Planejado soma sempre; D0/Consumo só somam quem tem valor
 // (senão um bucket sem cota viraria zero e mentiria no rodapé).
@@ -34,11 +50,11 @@ const _somaOuNulo = (obter) => _chaves.map(chave => {
   return tem ? soma : null;
 });
 const _d0De = (l, c) => { const d = (_mapaD0[l.bucket] || {})[c]; return d && d.cotaAberta != null ? d.cotaAberta : null; };
-const _consumoDe = (l, c) => (_mapaConsumo[l.bucket] || {})[c] || null;
+const _cotaUsadaDe = (l, c) => { const d = (_mapaD0[l.bucket] || {})[c]; return d && d.cotaUsada != null ? d.cotaUsada : null; };
 const _totD0Min = _somaOuNulo(_d0De);
 const _totD0Qtd = _somaOuNulo(_d0Ordens);
-const _totConsMin = _somaOuNulo((l, c) => { const v = _consumoDe(l, c); return v ? v.minutos : null; });
-const _totConsQtd = _somaOuNulo((l, c) => { const v = _consumoDe(l, c); return v ? v.qtdOrdens : null; });
+const _totConsMin = _somaOuNulo(_cotaUsadaDe);
+const _totConsQtd = _somaOuNulo(_consumoOrdens);
 %>
 <div class="table-scroll">
   <table class="cotas-table cotas-table-compact">
@@ -60,7 +76,7 @@ const _totConsQtd = _somaOuNulo((l, c) => { const v = _consumoDe(l, c); return v
           <th class="num col-divider" title="Status da cota do dia (D0) no ETA — <%= label %>">Status</th>
           <th class="num" title="Planejamento salvo no snapshot de D-1 (ontem às 9h) — <%= label %>">Planejado D-1</th>
           <th class="num" title="Cota Aberta do ETA na linha Age = D0 — <%= label %>">D0</th>
-          <th class="num" title="Ordens agendadas para hoje nesta janela — <%= label %>">Consumo</th>
+          <th class="num" title="Cota Usada do ETA na linha Age = D0 — <%= label %>">Consumo</th>
         <% }) %>
       </tr>
     </thead>
@@ -73,12 +89,13 @@ const _totConsQtd = _somaOuNulo((l, c) => { const v = _consumoDe(l, c); return v
           <td class="celula-truncada" title="<%= linha.bucket %>"><%= linha.bucket %></td>
           <% _chaves.forEach((chave, j) => { %>
             <% const d0 = (_mapaD0[linha.bucket] || {})[chave] || null; %>
-            <% const consumo = _consumoDe(linha, chave); %>
             <% const d0Qtd = _d0Ordens(linha, chave); %>
-            <td class="col-divider <%= d0 && d0.status === 'Fechado' ? 'status-fechado' : (d0 ? 'status-aberto' : '') %>"><%= d0 ? d0.status : '—' %></td>
+            <% const consumoQtd = _consumoOrdens(linha, chave); %>
+            <% const _alerta = _abertoCotaZero(d0); %>
+            <td class="col-divider <%= d0 && d0.status === 'Fechado' ? 'status-fechado' : (d0 ? 'status-aberto' : '') %> <%= _alerta ? 'cota-zero-aberto' : '' %>" title="<%= _alerta ? 'Aberto no ETA, mas Cota Aberta = 0' : '' %>"><%= d0 ? d0.status : '—' %></td>
             <td class="num"><span class="v-min"><%= linha.minutos[j] || 0 %></span><span class="v-qtd"><%= linha.janelas[j] || 0 %></span></td>
-            <td class="num"><span class="v-min"><%= d0 && d0.cotaAberta != null ? d0.cotaAberta : '—' %></span><span class="v-qtd"><%= d0Qtd != null ? d0Qtd : '—' %></span></td>
-            <td class="num celula-napplicavel" title="<%= consumo ? consumo.qtdOrdens + ' ordem(ns) agendada(s) para hoje' : 'Sem ordens agendadas para hoje' %>"><span class="v-min"><%= consumo ? consumo.minutos : '—' %></span><span class="v-qtd"><%= consumo ? consumo.qtdOrdens : '—' %></span></td>
+            <td class="num <%= _alerta ? 'cota-zero-aberto' : '' %>" title="<%= _alerta ? 'Aberto no ETA, mas Cota Aberta = 0' : '' %>"><span class="v-min"><%= d0 && d0.cotaAberta != null ? d0.cotaAberta : '—' %></span><span class="v-qtd"><%= d0Qtd != null ? d0Qtd : '—' %></span></td>
+            <td class="num celula-napplicavel"><span class="v-min"><%= d0 && d0.cotaUsada != null ? d0.cotaUsada : '—' %></span><span class="v-qtd"><%= consumoQtd != null ? consumoQtd : '—' %></span></td>
           <% }) %>
         </tr>
       <% }) %>
@@ -90,7 +107,7 @@ const _totConsQtd = _somaOuNulo((l, c) => { const v = _consumoDe(l, c); return v
           <td class="col-divider"></td>
           <td class="num"><span class="v-min"><%= _totPlanMin[j] %></span><span class="v-qtd"><%= _totPlanQtd[j] %></span></td>
           <td class="num"><span class="v-min"><%= _totD0Min[j] != null ? _totD0Min[j] : '—' %></span><span class="v-qtd"><%= _totD0Qtd[j] != null ? _totD0Qtd[j] : '—' %></span></td>
-          <td class="num celula-napplicavel" title="<%= _totConsQtd[j] != null ? _totConsQtd[j] + ' ordem(ns) agendada(s) para hoje' : 'Sem ordens agendadas para hoje' %>"><span class="v-min"><%= _totConsMin[j] != null ? _totConsMin[j] : '—' %></span><span class="v-qtd"><%= _totConsQtd[j] != null ? _totConsQtd[j] : '—' %></span></td>
+          <td class="num celula-napplicavel"><span class="v-min"><%= _totConsMin[j] != null ? _totConsMin[j] : '—' %></span><span class="v-qtd"><%= _totConsQtd[j] != null ? _totConsQtd[j] : '—' %></span></td>
         <% }) %>
       </tr>
     </tfoot>

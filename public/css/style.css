@@ -433,6 +433,14 @@ button.home-sidebar-btn {
   color: var(--status-atencao-texto);
 }
 
+/* Aviso "Aberto mas Cota Aberta = 0" (cotas-planejadas e projecao-d1-d7): bucket
+   que o ETA marca como aberto pra atendimento mas libera cota zero -- provável
+   inconsistência de cadastro, vale destacar. Reaproveita --aviso-bg (mesmo
+   fundo dos alerts semânticos de aviso) em vez de inventar uma cor nova. */
+.cotas-table td.cota-zero-aberto {
+  background: var(--aviso-bg);
+}
+
 /* Célula "n/total" (Parcial) com popover de detalhe (Projeção D1-D7): sublinhado
    pontilhado avisa que dá pra passar o mouse/focar pra ver o detalhe, sem
    precisar de um ícone extra na célula (já é bem apertada). */
