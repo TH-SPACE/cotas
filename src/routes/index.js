@@ -174,9 +174,14 @@ function normalizarMetaPuTecnico(valor, padrao) {
   return num;
 }
 
-function normalizarTecnologias(valor) {
+// `formEnviado` diferencia "usuário nunca tocou nesse filtro" (undefined, cai no
+// padrão) de "usuário desmarcou tudo de propósito" (form foi submetido, mas
+// checkbox desmarcado não viaja na query string -- sem essa flag, os dois casos
+// seriam indistinguíveis e o filtro voltaria sozinho pro padrão).
+function normalizarTecnologias(valor, formEnviado) {
   const lista = [].concat(valor || []).filter(Boolean);
-  return lista.length > 0 ? lista : TECNOLOGIA_PADRAO;
+  if (lista.length > 0) return lista;
+  return formEnviado ? [] : TECNOLOGIA_PADRAO;
 }
 
 // Formata 'YYYY-MM-DD HH:mm:ss' (retornado pelo MySQL, dateStrings:true) pro
@@ -190,11 +195,12 @@ function formatarDataCarga(valor) {
 
 // Diferente de normalizarTecnologias: aqui `valor` pode legitimamente conter uma
 // string vazia (ex.: STATUS_REASON em branco), então não dá pra usar filter(Boolean).
-// Só cai no padrão se o campo nem veio na query (usuário nunca marcou nada ainda).
-function normalizarListaComPadrao(valor, padrao) {
-  if (valor === undefined) return padrao;
-  const lista = [].concat(valor);
-  return lista.length > 0 ? lista : padrao;
+// `formEnviado` tem o mesmo papel de normalizarTecnologias: sem ela, desmarcar
+// todos os checkboxes de um grupo (nenhum viaja na query) é indistinguível de
+// nunca ter tocado no filtro, e o grupo "ressuscitava" sozinho no padrão.
+function normalizarListaComPadrao(valor, padrao, formEnviado) {
+  if (valor !== undefined) return [].concat(valor);
+  return formEnviado ? [] : padrao;
 }
 
 // Reconstrói a query string de estado (só os FILTROS dos quatro painéis) para os
@@ -204,7 +210,11 @@ function normalizarListaComPadrao(valor, padrao) {
 function montarQueryStringEstado(body) {
   const params = new URLSearchParams();
   [].concat(body.aliada || []).forEach(v => params.append('aliada', v));
-  normalizarTecnologias(body.tecnologia).forEach(t => params.append('tecnologia', t));
+  if (body.formReparoEnviado !== undefined) params.append('formReparoEnviado', '1');
+  if (body.formInstalacaoEnviado !== undefined) params.append('formInstalacaoEnviado', '1');
+  if (body.formServicoEnviado !== undefined) params.append('formServicoEnviado', '1');
+  if (body.formMeEnviado !== undefined) params.append('formMeEnviado', '1');
+  normalizarTecnologias(body.tecnologia, body.formReparoEnviado !== undefined).forEach(t => params.append('tecnologia', t));
   [].concat(body.statusReparo || []).forEach(v => params.append('statusReparo', v));
   [].concat(body.statusReasonReparo || []).forEach(v => params.append('statusReasonReparo', v));
   [].concat(body.statusInstalacao || []).forEach(v => params.append('statusInstalacao', v));
@@ -229,18 +239,28 @@ async function carregarDadosPainel(query) {
   const puReparo = normalizarPu(configGeral.puReparo, PU_REPARO_PADRAO);
   const metaPuTecnico = normalizarMetaPuTecnico(configGeral.metaPuTecnico, META_PU_TECNICO_PADRAO);
   const cargaReparo = normalizarPu(configGeral.cargaReparo, CARGA_REPARO_PADRAO);
-  const tecnologiasSelecionadas = normalizarTecnologias(query.tecnologia);
+
+  // Marcadores de "esse form de filtro foi submetido" (ver normalizarListaComPadrao)
+  // -- precisam ser lidos antes de resolver qualquer filtro dos 4 painéis.
+  const formReparoEnviado = query.formReparoEnviado !== undefined;
+  const formInstalacaoEnviado = query.formInstalacaoEnviado !== undefined;
+  const formServicoEnviado = query.formServicoEnviado !== undefined;
+  const formMeEnviado = query.formMeEnviado !== undefined;
+
+  const tecnologiasSelecionadas = normalizarTecnologias(query.tecnologia, formReparoEnviado);
 
   // Mesmo raciocínio do bloco de Instalações: os valores disponíveis (e o padrão
   // pré-marcado) dependem do que existe hoje em backlog_elos.
   const filtrosDisponiveisReparo = await getFiltrosDisponiveisReparo();
   const statusReparoSelecionados = normalizarListaComPadrao(
     query.statusReparo,
-    filtrosDisponiveisReparo.status.filter(v => !STATUS_EXCLUIDOS_PADRAO_REPARO.includes(v))
+    filtrosDisponiveisReparo.status.filter(v => !STATUS_EXCLUIDOS_PADRAO_REPARO.includes(v)),
+    formReparoEnviado
   );
   const statusReasonReparoSelecionados = normalizarListaComPadrao(
     query.statusReasonReparo,
-    filtrosDisponiveisReparo.statusReason.filter(v => STATUS_REASON_INCLUIDOS_PADRAO_REPARO.includes(v))
+    filtrosDisponiveisReparo.statusReason.filter(v => STATUS_REASON_INCLUIDOS_PADRAO_REPARO.includes(v)),
+    formReparoEnviado
   );
 
   const percentualInstalacao = normalizarPercentual(configGeral.percentualInstalacao, PERCENTUAL_INSTALACAO_PADRAO);
@@ -255,13 +275,15 @@ async function carregarDadosPainel(query) {
   const filtrosDisponiveisInstalacoes = await getFiltrosDisponiveisInstalacoes();
   const statusInstalacaoSelecionados = normalizarListaComPadrao(
     query.statusInstalacao,
-    filtrosDisponiveisInstalacoes.status.filter(v => !STATUS_EXCLUIDOS_PADRAO_INSTALACAO.includes(v))
+    filtrosDisponiveisInstalacoes.status.filter(v => !STATUS_EXCLUIDOS_PADRAO_INSTALACAO.includes(v)),
+    formInstalacaoEnviado
   );
   const statusReasonInstalacaoSelecionados = normalizarListaComPadrao(
     query.statusReasonInstalacao,
-    filtrosDisponiveisInstalacoes.statusReason.filter(v => STATUS_REASON_INCLUIDOS_PADRAO_INSTALACAO.includes(v))
+    filtrosDisponiveisInstalacoes.statusReason.filter(v => STATUS_REASON_INCLUIDOS_PADRAO_INSTALACAO.includes(v)),
+    formInstalacaoEnviado
   );
-  const tecnologiaAcessoSelecionadas = normalizarListaComPadrao(query.tecnologiaAcesso, TECNOLOGIA_ACESSO_PADRAO);
+  const tecnologiaAcessoSelecionadas = normalizarListaComPadrao(query.tecnologiaAcesso, TECNOLOGIA_ACESSO_PADRAO, formInstalacaoEnviado);
 
   const percentualServico = normalizarPercentual(configGeral.percentualServico, PERCENTUAL_SERVICO_PADRAO);
   const percentualJanela1Servico = normalizarPercentual(configGeral.percentualJanela1Servico, PERCENTUAL_JANELA1_SERVICO_PADRAO);
@@ -273,13 +295,15 @@ async function carregarDadosPainel(query) {
   const filtrosDisponiveisServicos = await getFiltrosDisponiveisServicos();
   const statusServicoSelecionados = normalizarListaComPadrao(
     query.statusServico,
-    filtrosDisponiveisServicos.status.filter(v => !STATUS_EXCLUIDOS_PADRAO_SERVICO.includes(v))
+    filtrosDisponiveisServicos.status.filter(v => !STATUS_EXCLUIDOS_PADRAO_SERVICO.includes(v)),
+    formServicoEnviado
   );
   const statusReasonServicoSelecionados = normalizarListaComPadrao(
     query.statusReasonServico,
-    filtrosDisponiveisServicos.statusReason.filter(v => STATUS_REASON_INCLUIDOS_PADRAO_SERVICO.includes(v))
+    filtrosDisponiveisServicos.statusReason.filter(v => STATUS_REASON_INCLUIDOS_PADRAO_SERVICO.includes(v)),
+    formServicoEnviado
   );
-  const tecnologiaAcessoServicoSelecionadas = normalizarListaComPadrao(query.tecnologiaAcessoServico, TECNOLOGIA_ACESSO_PADRAO_SERVICO);
+  const tecnologiaAcessoServicoSelecionadas = normalizarListaComPadrao(query.tecnologiaAcessoServico, TECNOLOGIA_ACESSO_PADRAO_SERVICO, formServicoEnviado);
 
   const percentualMe = normalizarPercentual(configGeral.percentualMe, PERCENTUAL_ME_PADRAO);
   const percentualJanela1Me = normalizarPercentual(configGeral.percentualJanela1Me, PERCENTUAL_JANELA1_ME_PADRAO);
@@ -291,13 +315,15 @@ async function carregarDadosPainel(query) {
   const filtrosDisponiveisMe = await getFiltrosDisponiveisMe();
   const statusMeSelecionados = normalizarListaComPadrao(
     query.statusMe,
-    filtrosDisponiveisMe.status.filter(v => !STATUS_EXCLUIDOS_PADRAO_ME.includes(v))
+    filtrosDisponiveisMe.status.filter(v => !STATUS_EXCLUIDOS_PADRAO_ME.includes(v)),
+    formMeEnviado
   );
   const statusReasonMeSelecionados = normalizarListaComPadrao(
     query.statusReasonMe,
-    filtrosDisponiveisMe.statusReason.filter(v => STATUS_REASON_INCLUIDOS_PADRAO_ME.includes(v))
+    filtrosDisponiveisMe.statusReason.filter(v => STATUS_REASON_INCLUIDOS_PADRAO_ME.includes(v)),
+    formMeEnviado
   );
-  const tecnologiaAcessoMeSelecionadas = normalizarListaComPadrao(query.tecnologiaAcessoMe, TECNOLOGIA_ACESSO_PADRAO_ME);
+  const tecnologiaAcessoMeSelecionadas = normalizarListaComPadrao(query.tecnologiaAcessoMe, TECNOLOGIA_ACESSO_PADRAO_ME, formMeEnviado);
 
   const [
     { linhas: linhasReparoBruto },

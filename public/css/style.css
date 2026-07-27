@@ -1841,51 +1841,6 @@ button.is-loading::after {
   --status-critico: #d03b3b;
 }
 
-.kpi-row {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(112px, 1fr));
-  gap: 0.45rem;
-  margin: 0 0 0.75rem;
-}
-
-.kpi-tile {
-  display: flex;
-  flex-direction: column;
-  gap: 0.05rem;
-  padding: 0.4rem 0.6rem;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--bg);
-}
-
-.kpi-label {
-  font-size: 0.6rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--muted);
-}
-
-.kpi-value {
-  font-size: 1.15rem;
-  font-weight: 600;
-  line-height: 1.15;
-  color: var(--text);
-}
-
-.kpi-sub {
-  font-size: 0.62rem;
-  line-height: 1.3;
-  color: var(--muted);
-}
-
-/* Destaque do tile principal pela moldura, não pintando o número: texto usa
-   token de tinta, nunca a cor do dado. */
-.kpi-tile-destaque {
-  border-color: var(--viz-serie);
-  background: var(--col-backlog-bg);
-}
-
 /* Barra de magnitude dentro da célula: quadrada na linha de base, ponta
    arredondada. aria-hidden porque o número na própria célula já carrega o valor. */
 .barra-magnitude {
@@ -1983,6 +1938,21 @@ button.is-loading::after {
 .secao-tab:disabled {
   opacity: 0.45;
   cursor: not-allowed;
+}
+
+/* Filtro de Aliada na home: mesma pill (.secao-tab/.is-active) das abas de
+   seção, mas continua multi-seleção -- cada pill é um checkbox de verdade (não
+   exclusivo como as abas), então mais de um pode ficar "is-active" ao mesmo
+   tempo. .panel-header-actions já separa este grupo do grupo de abas ao lado. */
+.aliada-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.aliada-chip input[type="checkbox"] {
+  margin: 0;
+  accent-color: var(--accent);
 }
 
 /* Toggle Minutos/Ordens: os dois valores já estão no HTML; o clique só troca

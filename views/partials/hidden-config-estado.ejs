@@ -9,10 +9,14 @@
   precisam mais viajar escondidos de formulário em formulário.
 */
 const _exceto = typeof exceto !== 'undefined' ? exceto : [];
+const _query = typeof queryAtual !== 'undefined' ? queryAtual : {};
 %>
 <% if (!_exceto.includes('aliada')) { %>
   <% aliadasSelecionadas.forEach(v => { %><input type="hidden" name="aliada" value="<%= v %>" /><% }) %>
 <% } %>
+<% ['formReparoEnviado', 'formInstalacaoEnviado', 'formServicoEnviado', 'formMeEnviado'].forEach((marcador) => { %>
+  <% if (!_exceto.includes(marcador) && _query[marcador] !== undefined) { %><input type="hidden" name="<%= marcador %>" value="1" /><% } %>
+<% }) %>
 <% if (!_exceto.includes('tecnologia')) { %>
   <% tecnologiasSelecionadas.forEach(tec => { %><input type="hidden" name="tecnologia" value="<%= tec %>" /><% }) %>
 <% } %>

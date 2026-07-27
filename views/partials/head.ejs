@@ -55,8 +55,11 @@
      // tempo (Instalação/ME/Serviços/Reparos usam o mesmo depara_bucket.ALIADA),
      // por isso mora aqui no head.ejs em vez de duplicado em cada seção -- fica
      // disponível em toda página do sistema. `aliadasDisponiveis` só existe nas
-     // páginas que chamam carregarDadosPainel (todas, hoje). %>
-  <% if (typeof aliadasDisponiveis !== 'undefined' && aliadasDisponiveis.length > 0) { %>
+     // páginas que chamam carregarDadosPainel (todas, hoje).
+     // Exceção: na home (`/`) o filtro já aparece dentro do cabeçalho de cada
+     // seção, ao lado das abas Instalação/Serviços/ME/Reparos (pedido do usuário,
+     // "igual esses... bem ali do lado") -- então não duplica aqui. %>
+  <% if (typeof aliadasDisponiveis !== 'undefined' && aliadasDisponiveis.length > 0 && !(typeof pathAtual !== 'undefined' && pathAtual === '/')) { %>
     <div class="topbar-filtros">
       <details class="filtro-detalhes filtro-aliada-detalhes" id="filtro-aliada-detalhes">
         <summary title="Filtra os 4 painéis (Instalação, ME, Serviços e Reparos) pela empresa aliada responsável pelo bucket">

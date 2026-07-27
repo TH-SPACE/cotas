@@ -450,13 +450,18 @@ document.addEventListener('DOMContentLoaded', () => {
     janelasModal.addEventListener('click', (e) => { if (e.target === janelasModal) fecharJanelasModal(); });
   }
 
-  // Abas de seção (Instalação / Serviços / ...) da página de Cotas Planejadas.
-  // Todas as tabelas já vêm renderizadas; a aba só mostra/esconde o painel e o
-  // cabeçalho correspondentes (troca instantânea, sem recarregar). A seção
-  // escolhida fica guardada na sessão.
+  // Abas de seção (Instalação / Serviços / ...) -- reaproveitado por Cotas
+  // Planejadas e pela home (tabs no topo + atalhos na sidebar, ambos com a
+  // classe .secao-aba). Todo o conteúdo já vem renderizado; a aba só
+  // mostra/esconde o painel (e o cabeçalho, quando existir) correspondente
+  // (troca instantânea, sem recarregar). A seção escolhida fica guardada na
+  // sessão -- cada página usa sua própria chave (`data-storage-key` no
+  // primeiro elemento com abas) pra não misturar a aba ativa de uma página
+  // com a da outra.
   const abasDeSecao = document.querySelectorAll('.secao-aba');
   if (abasDeSecao.length > 0) {
-    const SECAO_KEY = 'calc_secao_cotas';
+    const elementoComChave = document.querySelector('[data-storage-key]');
+    const SECAO_KEY = (elementoComChave && elementoComChave.dataset.storageKey) || 'calc_secao_cotas';
 
     const aplicarSecao = (id) => {
       document.querySelectorAll('.secao-painel[data-secao], .secao-cabecalho[data-secao]').forEach((el) => {
@@ -595,6 +600,19 @@ document.addEventListener('DOMContentLoaded', () => {
   formsComFiltroAutoSubmit.forEach((formId) => {
     const form = document.getElementById(formId);
     if (!form) return;
+    form.querySelectorAll('input[type="checkbox"]').forEach((checkbox) => {
+      checkbox.addEventListener('change', () => {
+        sessionStorage.setItem(SCROLL_Y_KEY, String(window.scrollY));
+        form.submit();
+      });
+    });
+  });
+
+  // Filtro de Aliada na home: 1 cópia por cabeçalho de seção (ver index.ejs,
+  // `chipsAliadaHtml`), então tem 4 <form> com o mesmo propósito -- por isso usa
+  // classe + querySelectorAll em vez do id único de formsComFiltroAutoSubmit
+  // acima (getElementById só pegaria a 1ª cópia, deixando as outras 3 mudas).
+  document.querySelectorAll('.filtro-aliada-secao-form').forEach((form) => {
     form.querySelectorAll('input[type="checkbox"]').forEach((checkbox) => {
       checkbox.addEventListener('change', () => {
         sessionStorage.setItem(SCROLL_Y_KEY, String(window.scrollY));

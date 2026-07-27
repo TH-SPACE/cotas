@@ -44,26 +44,46 @@
    // valor fixo; Instalação/Serviço/ME usam PU por Specification Product,
    // tabela própria que não cabe aqui), a Meta é 1 campo só nas 4 seções. %>
 <% const exemploMetaPu = (lista) => ({ pu: (lista[0] || {}).pu || 0, nome: (lista[0] || {}).bucket || '' }); %>
+<% // Abas de seção no canto direito do cabeçalho de cada painel -- mesma posição/
+   // estilo de Cotas Planejadas (.tabela-card-acoes > .secao-tabs), em vez de uma
+   // barra solta acima dos painéis. Gerada 1x por seção (só a do painel visível
+   // aparece; o JS genérico de abas mantém as 4 cópias em sincronia). %>
+<% const SECOES_HOME = [
+  { id: 'instalacoes', label: 'Instalação' },
+  { id: 'servicos', label: 'Serviços' },
+  { id: 'me', label: 'ME' },
+  { id: 'reparos', label: 'Reparos' },
+]; %>
+<% const navAbasSecao = (ativa) => `<nav class="secao-tabs" aria-label="Seção" data-storage-key="calc_secao_home">${SECOES_HOME.map(s => `<button type="button" class="secao-tab secao-aba${s.id === ativa ? ' is-active' : ''}" data-secao="${s.id}" aria-pressed="${s.id === ativa ? 'true' : 'false'}">${s.label}</button>`).join('')}</nav>`; %>
+<% // Filtro de Aliada, mesmo visual/posição das abas acima -- pedido do usuário
+   // ("igual esses... bem ali do lado"). Continua multi-seleção (não é exclusivo
+   // como as abas de seção): cada valor é um checkbox de verdade, só estilizado
+   // como pill (.secao-tab), podendo vários ficarem "is-active" ao mesmo tempo.
+   // Estado (aliadasDisponiveis/aliadasSelecionadas) é o mesmo de sempre, calculado
+   // 1x em carregarDadosPainel -- só o HTML de exibição é novo. %>
+<% const chipsAliadaHtml = (typeof aliadasDisponiveis !== 'undefined' && aliadasDisponiveis.length > 0)
+  ? `<div class="secao-tabs aliada-tabs" role="group" aria-label="Filtrar por Aliada">${aliadasDisponiveis.map(v => `<label class="secao-tab aliada-chip${aliadasSelecionadas.includes(v) ? ' is-active' : ''}"><input type="checkbox" name="aliada" value="${v}"${aliadasSelecionadas.includes(v) ? ' checked' : ''} />${v}</label>`).join('')}</div>`
+  : ''; %>
 
 <div class="home-layout">
   <aside class="home-sidebar" aria-label="Seções e configurações">
     <span class="home-sidebar-titulo">Seções</span>
-    <a href="#secao-instalacoes" class="home-sidebar-item" title="Ir para o backlog de Instalações">
+    <button type="button" class="home-sidebar-item home-sidebar-btn secao-aba" data-secao="instalacoes" title="Mostrar o backlog de Instalações">
       <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94z"/></svg>
       <span>Instalações</span>
-    </a>
-    <a href="#secao-servicos" class="home-sidebar-item" title="Ir para o backlog de Serviços">
+    </button>
+    <button type="button" class="home-sidebar-item home-sidebar-btn secao-aba" data-secao="servicos" title="Mostrar o backlog de Serviços">
       <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/><circle cx="12" cy="12" r="3"/></svg>
       <span>Serviços</span>
-    </a>
-    <a href="#secao-me" class="home-sidebar-item" title="Ir para o backlog de ME (Mudança de Endereço)">
+    </button>
+    <button type="button" class="home-sidebar-item home-sidebar-btn secao-aba" data-secao="me" title="Mostrar o backlog de ME (Mudança de Endereço)">
       <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
       <span>ME</span>
-    </a>
-    <a href="#secao-reparos" class="home-sidebar-item" title="Ir para o backlog de Reparos">
+    </button>
+    <button type="button" class="home-sidebar-item home-sidebar-btn secao-aba" data-secao="reparos" title="Mostrar o backlog de Reparos">
       <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/></svg>
       <span>Reparos</span>
-    </a>
+    </button>
     <div class="home-sidebar-sep"></div>
     <a href="<%= linkConfiguracoes %>" class="home-sidebar-item" title="Configurações: previsto, janelas, Carga, PU, tempos e upload de backlog">
       <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.65 1.65 0 0 0-1.8-.3 1.65 1.65 0 0 0-1 1.5V21a2 2 0 0 1-4 0v-.1A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.65 1.65 0 0 0 .3-1.8 1.65 1.65 0 0 0-1.5-1H3a2 2 0 0 1 0-4h.1A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.65 1.65 0 0 0 1.8.3H9a1.65 1.65 0 0 0 1-1.5V3a2 2 0 0 1 4 0v.1a1.65 1.65 0 0 0 1 1.5 1.65 1.65 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.65 1.65 0 0 0-.3 1.8V9a1.65 1.65 0 0 0 1.5 1H21a2 2 0 0 1 0 4h-.1a1.65 1.65 0 0 0-1.5 1z"/></svg>
@@ -93,7 +113,7 @@
   </aside>
   <div class="home-content">
 
-<section class="panel" id="secao-instalacoes">
+<section class="panel secao-painel" id="secao-instalacoes" data-secao="instalacoes">
   <div class="panel-header panel-header-row">
     <div>
       <h2 title="Backlog de instalações agrupado por Aliada e Bucket, cruzando depara_bucket com backlog_instalacoes pelo ARD (ARMARIO)">
@@ -109,6 +129,15 @@
         Backlog em aberto = instalação (GOIANIA). Status, motivo e tecnologia são filtráveis abaixo (padrão: fora CANCELADA/ENCERRADA/EXECUCAO; motivo só considera (sem motivo)/AGENDAMENTO — esta tela calcula para D+1).
       </p>
     </div>
+    <div class="panel-header-actions">
+      <% if (chipsAliadaHtml) { %>
+        <form method="get" action="/" class="filtro-aliada-secao-form">
+          <%- chipsAliadaHtml %>
+          <%- include('partials/hidden-query-estado', { queryAtual, exceto: ['aliada'] }) %>
+        </form>
+      <% } %>
+      <%- navAbasSecao('instalacoes') %>
+    </div>
   </div>
 
   <details class="filtro-detalhes" id="filtro-instalacoes-detalhes">
@@ -122,6 +151,7 @@
       </span>
     </summary>
     <form method="get" action="/" class="filtro-tecnologia filtro-tecnologia-colunas" id="filtro-instalacoes-form">
+      <input type="hidden" name="formInstalacaoEnviado" value="1" />
       <div class="filtro-grupo">
         <span class="filtro-tecnologia-label">Status:</span>
         <% filtrosDisponiveisInstalacoes.status.forEach(valor => { %>
@@ -149,15 +179,9 @@
           </label>
         <% }) %>
       </div>
-      <%- include('partials/hidden-config-estado', { exceto: ['statusInstalacao', 'statusReasonInstalacao', 'tecnologiaAcesso'] }) %>
+      <%- include('partials/hidden-config-estado', { exceto: ['statusInstalacao', 'statusReasonInstalacao', 'tecnologiaAcesso', 'formInstalacaoEnviado'] }) %>
     </form>
   </details>
-
-  <%- include('partials/kpi-secao', { kpi: {
-    backlog: totalGeralInstalacoes, previsto: totalPrevistoInstalacoes, percentual: percentualInstalacao,
-    sugestao: totalSugestaoInstalacoes, minutos: totalMinutosInstalacoes,
-    tecnicos: totalTecnicosInstalacoes, pu: totalPuInstalacoes,
-  } }) %>
 
   <% const produtosInstalacoesSemPu = calcularProdutosSemPu(puProdutos); %>
   <% if (produtosInstalacoesSemPu.length > 0) { %>
@@ -260,7 +284,7 @@
   </div>
 </section>
 
-<section class="panel" id="secao-servicos">
+<section class="panel secao-painel" id="secao-servicos" data-secao="servicos" hidden>
   <div class="panel-header panel-header-row">
     <div>
       <h2 title="Backlog de serviços agrupado por Aliada e Bucket, cruzando depara_bucket com backlog_instalacoes pelo ARD (ARMARIO)">
@@ -276,6 +300,15 @@
         Backlog em aberto = SPECIFICATION_TYPE diferente de INSTALAÇÃO e DESCONEXÃO, excluindo produtos "MUDANÇA DE ENDEREÇO*" (GOIANIA). Status, motivo e tecnologia são filtráveis abaixo (padrão: fora CANCELADA/ENCERRADA/EXECUCAO; motivo só considera (sem motivo)/AGENDAMENTO — esta tela calcula para D+1).
       </p>
     </div>
+    <div class="panel-header-actions">
+      <% if (chipsAliadaHtml) { %>
+        <form method="get" action="/" class="filtro-aliada-secao-form">
+          <%- chipsAliadaHtml %>
+          <%- include('partials/hidden-query-estado', { queryAtual, exceto: ['aliada'] }) %>
+        </form>
+      <% } %>
+      <%- navAbasSecao('servicos') %>
+    </div>
   </div>
 
   <details class="filtro-detalhes" id="filtro-servicos-detalhes">
@@ -289,6 +322,7 @@
       </span>
     </summary>
     <form method="get" action="/" class="filtro-tecnologia filtro-tecnologia-colunas" id="filtro-servicos-form">
+      <input type="hidden" name="formServicoEnviado" value="1" />
       <div class="filtro-grupo">
         <span class="filtro-tecnologia-label">Status:</span>
         <% filtrosDisponiveisServicos.status.forEach(valor => { %>
@@ -316,15 +350,9 @@
           </label>
         <% }) %>
       </div>
-      <%- include('partials/hidden-config-estado', { exceto: ['statusServico', 'statusReasonServico', 'tecnologiaAcessoServico'] }) %>
+      <%- include('partials/hidden-config-estado', { exceto: ['statusServico', 'statusReasonServico', 'tecnologiaAcessoServico', 'formServicoEnviado'] }) %>
     </form>
   </details>
-
-  <%- include('partials/kpi-secao', { kpi: {
-    backlog: totalGeralServicos, previsto: totalPrevistoServicos, percentual: percentualServico,
-    sugestao: totalSugestaoServicos, minutos: totalMinutosServicos,
-    tecnicos: totalTecnicosServicos, pu: totalPuServicos,
-  } }) %>
 
   <% const produtosServicosSemPu = calcularProdutosSemPu(puProdutosServicos); %>
   <% if (produtosServicosSemPu.length > 0) { %>
@@ -427,7 +455,7 @@
   </div>
 </section>
 
-<section class="panel" id="secao-me">
+<section class="panel secao-painel" id="secao-me" data-secao="me" hidden>
   <div class="panel-header panel-header-row">
     <div>
       <h2 title="Backlog de Mudança de Endereço agrupado por Aliada e Bucket, cruzando depara_bucket com backlog_instalacoes pelo ARD (ARMARIO)">
@@ -443,6 +471,15 @@
         Backlog em aberto = SPECIFICATION_PRODUCT contém "MUDANÇA DE ENDEREÇO" (GOIANIA) — conta as duas linhas do CSV (desconexão do endereço antigo e alteração/instalação no novo). Status, motivo e tecnologia são filtráveis abaixo (padrão: fora CANCELADA/ENCERRADA/EXECUCAO; motivo só considera (sem motivo)/AGENDAMENTO — esta tela calcula para D+1).
       </p>
     </div>
+    <div class="panel-header-actions">
+      <% if (chipsAliadaHtml) { %>
+        <form method="get" action="/" class="filtro-aliada-secao-form">
+          <%- chipsAliadaHtml %>
+          <%- include('partials/hidden-query-estado', { queryAtual, exceto: ['aliada'] }) %>
+        </form>
+      <% } %>
+      <%- navAbasSecao('me') %>
+    </div>
   </div>
 
   <details class="filtro-detalhes" id="filtro-me-detalhes">
@@ -456,6 +493,7 @@
       </span>
     </summary>
     <form method="get" action="/" class="filtro-tecnologia filtro-tecnologia-colunas" id="filtro-me-form">
+      <input type="hidden" name="formMeEnviado" value="1" />
       <div class="filtro-grupo">
         <span class="filtro-tecnologia-label">Status:</span>
         <% filtrosDisponiveisMe.status.forEach(valor => { %>
@@ -483,15 +521,9 @@
           </label>
         <% }) %>
       </div>
-      <%- include('partials/hidden-config-estado', { exceto: ['statusMe', 'statusReasonMe', 'tecnologiaAcessoMe'] }) %>
+      <%- include('partials/hidden-config-estado', { exceto: ['statusMe', 'statusReasonMe', 'tecnologiaAcessoMe', 'formMeEnviado'] }) %>
     </form>
   </details>
-
-  <%- include('partials/kpi-secao', { kpi: {
-    backlog: totalGeralMe, previsto: totalPrevistoMe, percentual: percentualMe,
-    sugestao: totalSugestaoMe, minutos: totalMinutosMe,
-    tecnicos: totalTecnicosMe, pu: totalPuMe,
-  } }) %>
 
   <% const produtosMeSemPu = calcularProdutosSemPu(puProdutosMe); %>
   <% if (produtosMeSemPu.length > 0) { %>
@@ -594,7 +626,7 @@
   </div>
 </section>
 
-<section class="panel" id="secao-reparos">
+<section class="panel secao-painel" id="secao-reparos" data-secao="reparos" hidden>
   <div class="panel-header panel-header-row">
     <div>
       <h2 title="Backlog de reparos agrupado por Aliada e Bucket, cruzando depara_bucket com backlog_elos">
@@ -610,6 +642,15 @@
         Backlog em aberto = defeito (GOIANIA). Status, motivo e tecnologia são filtráveis abaixo (padrão: fora CANCELADA/ENCERRADA/EXECUCAO; motivo só considera (sem motivo)/AGENDAMENTO — esta tela calcula para D+1).
       </p>
     </div>
+    <div class="panel-header-actions">
+      <% if (chipsAliadaHtml) { %>
+        <form method="get" action="/" class="filtro-aliada-secao-form">
+          <%- chipsAliadaHtml %>
+          <%- include('partials/hidden-query-estado', { queryAtual, exceto: ['aliada'] }) %>
+        </form>
+      <% } %>
+      <%- navAbasSecao('reparos') %>
+    </div>
   </div>
 
   <details class="filtro-detalhes" id="filtro-tecnologia-detalhes">
@@ -623,6 +664,7 @@
       </span>
     </summary>
     <form method="get" action="/" class="filtro-tecnologia filtro-tecnologia-colunas" id="filtro-tecnologia-form">
+      <input type="hidden" name="formReparoEnviado" value="1" />
       <div class="filtro-grupo">
         <span class="filtro-tecnologia-label">Status:</span>
         <% filtrosDisponiveisReparo.status.forEach(valor => { %>
@@ -650,15 +692,9 @@
           </label>
         <% }) %>
       </div>
-      <%- include('partials/hidden-config-estado', { exceto: ['statusReparo', 'statusReasonReparo', 'tecnologia'] }) %>
+      <%- include('partials/hidden-config-estado', { exceto: ['statusReparo', 'statusReasonReparo', 'tecnologia', 'formReparoEnviado'] }) %>
     </form>
   </details>
-
-  <%- include('partials/kpi-secao', { kpi: {
-    backlog: totalGeral, previsto: totalPrevisto, percentual: percentual,
-    sugestao: totalSugestao, minutos: totalMinutos,
-    tecnicos: totalTecnicos, pu: totalPu,
-  } }) %>
 
   <div class="table-scroll">
     <table class="cotas-table">
