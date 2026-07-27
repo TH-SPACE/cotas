@@ -99,6 +99,60 @@ const JANELAS_ME = ['08:30 - 10:30', '10:30 - 12:30', '14:00 - 16:00', '16:00 - 
 
 const ALIADA_COR_QTD = 4;
 
+// Mapas tipo -> chave/padrão usados pelos botões "Previsto (X%)" e "Sugestão"
+// da home (edição rápida de 1 campo só, sem precisar abrir a página de
+// Configurações inteira) -- ver POST /config/rapido, mais abaixo.
+const PERCENTUAL_CONFIG_POR_TIPO = {
+  reparo: { chave: 'percentual', padrao: PERCENTUAL_PADRAO },
+  instalacao: { chave: 'percentualInstalacao', padrao: PERCENTUAL_INSTALACAO_PADRAO },
+  servico: { chave: 'percentualServico', padrao: PERCENTUAL_SERVICO_PADRAO },
+  me: { chave: 'percentualMe', padrao: PERCENTUAL_ME_PADRAO },
+};
+
+const CARGA_CONFIG_POR_TIPO = {
+  reparo: { chave: 'cargaReparo', padrao: CARGA_REPARO_PADRAO },
+  instalacao: { chave: 'cargaInstalacao', padrao: CARGA_INSTALACAO_PADRAO },
+  servico: { chave: 'cargaServico', padrao: CARGA_SERVICO_PADRAO },
+  me: { chave: 'cargaMe', padrao: CARGA_ME_PADRAO },
+};
+
+// Meta de PU por técnico -- ao contrário do peso de PU em si (fixo só em
+// Reparos; Instalação/Serviço/ME usam PU por Specification Product, tabela
+// própria que não cabe num campo só), a Meta É um valor único nas 4 seções.
+// É o que o botão "PU" do cabeçalho edita (afeta a coluna Técnicos = PU ÷ Meta).
+const META_PU_CONFIG_POR_TIPO = {
+  reparo: { chave: 'metaPuTecnico', padrao: META_PU_TECNICO_PADRAO },
+  instalacao: { chave: 'metaPuTecnicoInstalacao', padrao: META_PU_TECNICO_INSTALACAO_PADRAO },
+  servico: { chave: 'metaPuTecnicoServico', padrao: META_PU_TECNICO_SERVICO_PADRAO },
+  me: { chave: 'metaPuTecnicoMe', padrao: META_PU_TECNICO_ME_PADRAO },
+};
+
+// campo (do <select>/hidden do modal) -> qual mapa usar e qual normalizador
+// (Previsto é 0-100%, Carga/Meta de PU são quantidades livres > 0).
+const CONFIG_RAPIDO_POR_CAMPO = {
+  previsto: { mapa: PERCENTUAL_CONFIG_POR_TIPO, normalizar: normalizarPercentual },
+  carga: { mapa: CARGA_CONFIG_POR_TIPO, normalizar: normalizarPu },
+  metaPu: { mapa: META_PU_CONFIG_POR_TIPO, normalizar: normalizarMetaPuTecnico },
+};
+
+// Todas as % de janela possíveis (as 10 chaves: 1 de Reparos + 3 de cada uma
+// das outras 3 seções) -- usado pelo botão "ORDENS" no cabeçalho da home (edita
+// as janelas de 1 seção por vez). A última janela de cada seção nunca aparece
+// aqui: é sempre o restante (100 - as editáveis), calculado no cliente e no
+// service (calculoBacklogService.js), nunca persistido.
+const JANELA_CAMPOS_PADRAO = {
+  percentualJanela: PERCENTUAL_JANELA_PADRAO,
+  percentualJanela1Instalacao: PERCENTUAL_JANELA1_INSTALACAO_PADRAO,
+  percentualJanela2Instalacao: PERCENTUAL_JANELA2_INSTALACAO_PADRAO,
+  percentualJanela3Instalacao: PERCENTUAL_JANELA3_INSTALACAO_PADRAO,
+  percentualJanela1Servico: PERCENTUAL_JANELA1_SERVICO_PADRAO,
+  percentualJanela2Servico: PERCENTUAL_JANELA2_SERVICO_PADRAO,
+  percentualJanela3Servico: PERCENTUAL_JANELA3_SERVICO_PADRAO,
+  percentualJanela1Me: PERCENTUAL_JANELA1_ME_PADRAO,
+  percentualJanela2Me: PERCENTUAL_JANELA2_ME_PADRAO,
+  percentualJanela3Me: PERCENTUAL_JANELA3_ME_PADRAO,
+};
+
 function normalizarPercentual(valor, padrao) {
   const num = Number(valor);
   if (!Number.isFinite(num)) return padrao;
@@ -970,6 +1024,51 @@ router.post('/config/geral', async (req, res, next) => {
     await salvarConfiguracoesGerais(valores);
 
     res.redirect(`/configuracoes?${montarQueryStringEstado(req.body).toString()}`);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Edição rápida de 1 só campo (Previsto % ou Carga), pelos botões "Previsto (X%)"
+// e "Sugestão" no cabeçalho da tabela da home -- evita ter que abrir
+// Configurações só pra mudar um desses dois. `campo` escolhe o mapa/normalizador
+// certo (Previsto é percentual 0-100, Carga é uma quantidade livre >= 0).
+// Reaproveita salvarConfiguracoesGerais (upsert por chave), então não mexe nos
+// outros campos de configuracoes_gerais.
+router.post('/config/rapido', async (req, res, next) => {
+  try {
+    const grupo = CONFIG_RAPIDO_POR_CAMPO[req.body.campo];
+    const cfg = grupo && grupo.mapa[req.body.tipo];
+    if (!cfg) return res.redirect('/');
+
+    const valor = grupo.normalizar(req.body.valor, cfg.padrao);
+    await salvarConfiguracoesGerais({ [cfg.chave]: valor });
+
+    res.redirect(`/?${montarQueryStringEstado(req.body).toString()}`);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Edição rápida das % de janela de 1 seção por vez, pelo botão "ORDENS" no
+// cabeçalho da tabela da home. O modal só manda as janelas EDITÁVEIS daquela
+// seção (ex.: percentualJanela1Instalacao/2/3, nunca a 4ª) -- grava só as
+// chaves que vieram no body, ignorando as outras 7 de JANELA_CAMPOS_PADRAO
+// (não precisa de `tipo` pra saber quais são: os nomes dos campos já dizem).
+router.post('/config/janelas', async (req, res, next) => {
+  try {
+    const valores = {};
+    Object.keys(JANELA_CAMPOS_PADRAO).forEach((campo) => {
+      if (req.body[campo] !== undefined) {
+        valores[campo] = normalizarPercentual(req.body[campo], JANELA_CAMPOS_PADRAO[campo]);
+      }
+    });
+
+    if (Object.keys(valores).length > 0) {
+      await salvarConfiguracoesGerais(valores);
+    }
+
+    res.redirect(`/?${montarQueryStringEstado(req.body).toString()}`);
   } catch (err) {
     next(err);
   }

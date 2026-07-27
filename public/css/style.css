@@ -304,6 +304,44 @@ button.home-sidebar-btn {
   font-size: 0.85rem;
 }
 
+/* Fórmula da Sugestão no modal de Carga (#config-rapido-dica): fração empilhada
+   via CSS puro (numerador/traço/denominador), sem lib de matemática -- fica com
+   cara de fórmula de verdade em vez de texto corrido com ÷/×. */
+.formula-linha {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0 0 0.6rem;
+  font-size: 0.88rem;
+}
+
+.formula-linha.formula-exemplo {
+  color: var(--muted);
+}
+
+.formula-destaque {
+  color: var(--text);
+}
+
+.fracao {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  line-height: 1.3;
+  vertical-align: middle;
+}
+
+.fracao-cima {
+  padding: 0 0.35rem 0.15rem;
+  border-bottom: 1.5px solid currentColor;
+}
+
+.fracao-baixo {
+  padding: 0.15rem 0.35rem 0;
+}
+
 .icon-btn {
   display: inline-flex;
   align-items: center;
@@ -610,6 +648,36 @@ button.home-sidebar-btn {
   color: var(--text);
 }
 
+/* Só 1 campo (Previsto % ou Carga) -- não precisa da largura padrão de 760px
+   dos modais com tabela/upload dentro. */
+#config-rapido-modal {
+  width: min(460px, 92vw);
+}
+
+/* Lista curta de campos (no máx. 4 janelas) -- mesma ideia do modal acima. */
+#janelas-edit-modal {
+  width: min(380px, 90vw);
+}
+
+#janelas-edit-lista .field-row {
+  margin-bottom: 0.7rem;
+}
+
+#janelas-edit-lista .field-row:last-child {
+  margin-bottom: 0;
+}
+
+#janelas-edit-lista input {
+  width: 4.5rem;
+  text-align: center;
+}
+
+#janelas-edit-lista input[readonly] {
+  background: var(--border);
+  color: var(--muted);
+  cursor: not-allowed;
+}
+
 .config-modal::backdrop {
   background: rgba(0, 0, 0, 0.4);
 }
@@ -650,6 +718,34 @@ button.home-sidebar-btn {
 .config-page-panel {
   padding: 0;
   overflow: hidden;
+}
+
+/* Upload manual de backlog e Previsto/Janelas/PU/Carga viraram <details>
+   recolhidos por padrão (menos usados agora que dá pra editar Previsto/Carga/
+   Janelas/Meta de PU direto na home) -- o <summary> reaproveita a classe
+   .modal-header (mesmo layout/borda das outras seções), só ganha a setinha e
+   perde o marcador padrão do navegador. */
+.config-page-panel > summary {
+  cursor: pointer;
+  list-style: none;
+}
+
+.config-page-panel > summary::-webkit-details-marker {
+  display: none;
+}
+
+.config-page-panel > summary::after {
+  content: '\25B8';
+  color: var(--muted);
+  transition: transform 0.15s ease;
+}
+
+.config-page-panel[open] > summary::after {
+  transform: rotate(90deg);
+}
+
+.config-page-panel:not([open]) > summary {
+  border-bottom: none;
 }
 
 .field-row {
@@ -697,6 +793,7 @@ button.home-sidebar-btn {
   border-top: 1px solid var(--border);
   display: flex;
   justify-content: flex-end;
+  gap: 0.6rem;
 }
 
 .config-modal .modal-footer button,
@@ -942,6 +1039,115 @@ button.home-sidebar-btn {
 
 .cotas-table tbody td.num {
   font-weight: 500;
+}
+
+/* Cabeçalhos "Previsto (X%)", "Sugestão", "ORDENS" e "PU" clicáveis (edição
+   rápida sem abrir Configurações). Depois de 2 rodadas de feedback (1ª: "cara
+   de link" -> virou chip com borda+ícone; 2ª: "não gostei, tire o ícone,
+   diminui a altura, ficou muito largo") o design pousou num meio-termo: sem
+   ícone (só o `title=""` explica o clique), sem borda (só uma mancha de fundo
+   sutil pra não competir com o resto do header escuro) e SEM altura mínima
+   forçada -- cada botão fica do tamanho do próprio texto (igual o header
+   sempre foi), só um pouco mais claro que o texto ao redor + cursor de
+   ponteiro + hover/focus mais visível. Cada botão tem sua PRÓPRIA classe pro
+   JS (`.config-rapido-btn` abre o modal de 1 campo, `.ordens-editar-btn` abre
+   o de janelas) -- nunca as duas juntas no mesmo elemento, senão os dois
+   listeners disparam e abrem os 2 modais ao mesmo tempo. */
+.config-rapido-btn,
+.ordens-editar-btn {
+  display: inline-block;
+  max-width: 100%;
+  background: rgba(255, 255, 255, 0.12);
+  border: none;
+  border-radius: 4px;
+  padding: 0.05rem 0.3rem;
+  margin: 0 -0.3rem;
+  font: inherit;
+  color: inherit;
+  text-transform: inherit;
+  letter-spacing: inherit;
+  line-height: 1.3;
+  white-space: normal;
+  cursor: pointer;
+  /* Sublinhado pontilhado -- mesmo recurso já usado em .tem-detalhe (popover da
+     Projeção D1-D7) pra marcar "isto tem mais interação" sem ícone/borda. É o
+     indício PERMANENTE de que dá pra clicar (o pulso abaixo é só um empurrão
+     inicial, alguns segundos depois de carregar a página). Cor âmbar
+     (`--status-atencao`, já usado em avisos no resto do app) em vez de branco
+     -- branco sobre o header roxo-escuro passava quase despercebido; usuário
+     reportou "não vejo nada" na 1ª versão (branco 55%). */
+  text-decoration: underline dotted;
+  text-underline-offset: 2px;
+  text-decoration-color: rgba(250, 178, 25, 0.75);
+  /* Pulso (3x, mais forte que a 1ª tentativa) no carregamento da página --
+     preenche o próprio fundo do botão com o âmbar (não só um anel fino), fica
+     impossível de não notar mesmo de relance. Reduced-motion zera (mesma
+     convenção da camada de UX em ui.js/main.js) -- quem tiver isso ativo no SO
+     só vê o sublinhado permanente, sem o pulso. */
+  animation: pulso-clicavel 1.1s ease-in-out 3;
+  transition: background-color 0.15s ease, text-decoration-color 0.15s ease;
+}
+
+.config-rapido-btn:hover,
+.ordens-editar-btn:hover {
+  background: rgba(255, 255, 255, 0.24);
+  text-decoration-color: rgba(250, 178, 25, 1);
+}
+
+.config-rapido-btn:active,
+.ordens-editar-btn:active {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.config-rapido-btn:focus-visible,
+.ordens-editar-btn:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
+@keyframes pulso-clicavel {
+  0%, 100% {
+    background-color: rgba(255, 255, 255, 0.12);
+    box-shadow: 0 0 0 0 rgba(250, 178, 25, 0);
+  }
+  50% {
+    background-color: rgba(250, 178, 25, 0.55);
+    box-shadow: 0 0 0 4px rgba(250, 178, 25, 0.3);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .config-rapido-btn,
+  .ordens-editar-btn {
+    animation: none;
+  }
+}
+
+/* A área clicável cobre a CÉLULA inteira do cabeçalho, não só o texto do botão
+   -- o th perde o padding próprio (`th-clicavel`, marcado em index.ejs em cada
+   <th> que tem um desses botões). `height:100%` no botão NÃO funciona aqui
+   (testado: um <th> de tabela tem altura "auto" pro layout da tabela, e
+   porcentagem de altura não resolve contra um container "auto" -- ficou preso
+   na altura do próprio texto mesmo com height:100% setado). Troquei por
+   `position:absolute; inset:0` (o th vira `position:relative`) -- isso resolve
+   contra a caixa já calculada do th (não depende de %), então preenche a
+   célula de verdade e clique em qualquer canto abre o modal. */
+.cotas-table th.th-clicavel {
+  padding: 0;
+  position: relative;
+}
+
+.th-clicavel .config-rapido-btn,
+.th-clicavel .ordens-editar-btn {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 0.55rem 0.6rem;
+  margin: 0;
+  box-sizing: border-box;
 }
 
 /* Preto mesmo no corpo da tabela — só valor 0 (.valor-zero, mais abaixo) fica

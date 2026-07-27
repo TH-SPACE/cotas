@@ -8,7 +8,7 @@
         Configurações
       </h2>
       <p class="hint">
-        Upload manual do backlog, Previsto/Janelas/PU/Carga e Tempos por bucket em tabelas únicas (coluna por seção) + PU por Specification Product de cada seção.
+        Tempos por bucket e PU por Specification Product em tabelas únicas (coluna por seção). Upload manual de backlog e Previsto/Janelas/PU/Carga (menos usados agora que dá pra editar direto na página inicial) ficam recolhidos no final.
       </p>
     </div>
     <div class="panel-header-actions">
@@ -17,142 +17,6 @@
       </a>
     </div>
   </div>
-</section>
-
-<section class="panel config-page-panel" id="config-upload">
-  <div class="modal-header">
-    <h3 title="Envia manualmente o export diário do ELOS para as tabelas backlog_instalacoes e backlog_elos">Upload manual de backlog</h3>
-  </div>
-
-  <% if (instalacoesUpload === 'ok') { %>
-    <p class="alert alert-ok" data-auto-dismiss style="margin: 1.25rem 1.25rem 0;">Arquivo de instalações importado: <strong><%= instalacoesUploadLinhas %></strong> linhas gravadas em <code>backlog_instalacoes</code>.</p>
-  <% } else if (instalacoesUpload === 'erro') { %>
-    <p class="alert alert-erro" data-auto-dismiss style="margin: 1.25rem 1.25rem 0;">Falha ao importar instalações: <%= instalacoesUploadErro %></p>
-  <% } %>
-  <% if (reparosUpload === 'ok') { %>
-    <p class="alert alert-ok" data-auto-dismiss style="margin: 1.25rem 1.25rem 0;">Arquivo de reparos importado: <strong><%= reparosUploadLinhas %></strong> linhas gravadas em <code>backlog_elos</code>.</p>
-  <% } else if (reparosUpload === 'erro') { %>
-    <p class="alert alert-erro" data-auto-dismiss style="margin: 1.25rem 1.25rem 0;">Falha ao importar reparos: <%= reparosUploadErro %></p>
-  <% } %>
-
-  <div class="upload-compact-grid">
-    <form class="cota-upload-item" method="post" action="/instalacoes/upload" enctype="multipart/form-data" data-loading="Enviando e processando o arquivo…">
-      <div class="cota-upload-head">
-        <span class="cota-upload-tipo">Instalações / ME / Serviços</span>
-        <span class="cota-upload-data" title="Última carga registrada"><%= dataCargaInstalacoes %></span>
-      </div>
-      <div class="cota-upload-row">
-        <input type="file" name="arquivo" accept=".csv,.txt" required aria-label="CSV de Instalações / ME / Serviços" />
-        <button type="submit" title="Envia e substitui os dados de backlog_instalacoes">Enviar</button>
-      </div>
-      <p class="cota-upload-hint">CSV <code>BackLogDiario_*.csv</code> — substitui <code>backlog_instalacoes</code>.</p>
-    </form>
-
-    <form class="cota-upload-item" method="post" action="/reparos/upload" enctype="multipart/form-data" data-loading="Enviando e processando o arquivo…">
-      <div class="cota-upload-head">
-        <span class="cota-upload-tipo">Reparos</span>
-        <span class="cota-upload-data" title="Última carga registrada"><%= dataCargaReparo %></span>
-      </div>
-      <div class="cota-upload-row">
-        <input type="file" name="arquivo" accept=".csv,.txt" required aria-label="CSV de Reparos" />
-        <button type="submit" title="Envia e substitui os dados de backlog_elos">Enviar</button>
-      </div>
-      <p class="cota-upload-hint cota-upload-hint-warn">⚠ Substitui <code>backlog_elos</code> — tabela compartilhada com outro sistema: arquivo errado apaga dados que não são deste app.</p>
-    </form>
-  </div>
-</section>
-
-<section class="panel config-page-panel" id="config-previsto">
-  <div class="modal-header">
-    <h3 title="Previsto de resolução, janelas de horário, Meta de PU por técnico e Carga (usada na coluna Sugestão) de cada seção">Previsto, Janelas, PU e Carga</h3>
-  </div>
-
-  <form method="post" action="/config/geral" class="modal-section" data-loading="Salvando configurações…">
-    <%- include('partials/hidden-config-estado', { exceto: [] }) %>
-    <div class="modal-body">
-      <table class="tempo-table">
-        <thead>
-          <tr>
-            <th>Configuração</th>
-            <th class="num">Instalação</th>
-            <th class="num">Serviço</th>
-            <th class="num">ME</th>
-            <th class="num">Reparos</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>Previsto de resolução (%)</td>
-            <td class="num"><input type="number" id="percentualInstalacao" name="percentualInstalacao" min="0" max="100" step="1" value="<%= percentualInstalacao %>" title="Percentual do backlog de Instalações considerado resolvível" /></td>
-            <td class="num"><input type="number" id="percentualServico" name="percentualServico" min="0" max="100" step="1" value="<%= percentualServico %>" title="Percentual do backlog de Serviços considerado resolvível" /></td>
-            <td class="num"><input type="number" id="percentualMe" name="percentualMe" min="0" max="100" step="1" value="<%= percentualMe %>" title="Percentual do backlog de ME considerado resolvível" /></td>
-            <td class="num"><input type="number" id="percentual" name="percentual" min="0" max="100" step="1" value="<%= percentual %>" title="Percentual do backlog de Reparos considerado resolvível" /></td>
-          </tr>
-          <tr>
-            <td>08:30 - 10:30 (%)</td>
-            <td class="num"><input type="number" id="percentualJanela1Instalacao" name="percentualJanela1Instalacao" min="0" max="100" step="1" value="<%= percentualJanela1Instalacao %>" title="Instalação: janela 08:30 - 10:30" /></td>
-            <td class="num"><input type="number" id="percentualJanela1Servico" name="percentualJanela1Servico" min="0" max="100" step="1" value="<%= percentualJanela1Servico %>" title="Serviço: janela 08:30 - 10:30" /></td>
-            <td class="num"><input type="number" id="percentualJanela1Me" name="percentualJanela1Me" min="0" max="100" step="1" value="<%= percentualJanela1Me %>" title="ME: janela 08:30 - 10:30" /></td>
-            <td class="num">
-              <input type="number" id="percentualJanela" name="percentualJanela" min="0" max="100" step="1" value="<%= percentualJanela %>" title="Reparos: janela 08:30 - 12:30" />
-              <span class="tempo-table-subcaption">08:30-12:30</span>
-            </td>
-          </tr>
-          <tr>
-            <td>10:30 - 12:30 (%)</td>
-            <td class="num"><input type="number" id="percentualJanela2Instalacao" name="percentualJanela2Instalacao" min="0" max="100" step="1" value="<%= percentualJanela2Instalacao %>" title="Instalação: janela 10:30 - 12:30" /></td>
-            <td class="num"><input type="number" id="percentualJanela2Servico" name="percentualJanela2Servico" min="0" max="100" step="1" value="<%= percentualJanela2Servico %>" title="Serviço: janela 10:30 - 12:30" /></td>
-            <td class="num"><input type="number" id="percentualJanela2Me" name="percentualJanela2Me" min="0" max="100" step="1" value="<%= percentualJanela2Me %>" title="ME: janela 10:30 - 12:30" /></td>
-            <td class="num">
-              <input type="number" id="percentualJanelaTarde" min="0" max="100" step="1" value="<%= 100 - percentualJanela %>" title="Reparos: janela 12:30 - 18:00 — calculada (100% menos a janela 08:30-12:30)" readonly tabindex="-1" />
-              <span class="tempo-table-subcaption">12:30-18:00, calculada</span>
-            </td>
-          </tr>
-          <tr>
-            <td>14:00 - 16:00 (%)</td>
-            <td class="num"><input type="number" id="percentualJanela3Instalacao" name="percentualJanela3Instalacao" min="0" max="100" step="1" value="<%= percentualJanela3Instalacao %>" title="Instalação: janela 14:00 - 16:00" /></td>
-            <td class="num"><input type="number" id="percentualJanela3Servico" name="percentualJanela3Servico" min="0" max="100" step="1" value="<%= percentualJanela3Servico %>" title="Serviço: janela 14:00 - 16:00" /></td>
-            <td class="num"><input type="number" id="percentualJanela3Me" name="percentualJanela3Me" min="0" max="100" step="1" value="<%= percentualJanela3Me %>" title="ME: janela 14:00 - 16:00" /></td>
-            <td class="num celula-napplicavel" title="Reparos só tem 2 janelas (08:30-12:30 e 12:30-18:00)">—</td>
-          </tr>
-          <tr>
-            <td>16:00 - 18:00 (%, calculada)</td>
-            <td class="num"><input type="number" id="percentualJanela4Instalacao" min="0" max="100" step="1" value="<%= Math.max(0, 100 - percentualJanela1Instalacao - percentualJanela2Instalacao - percentualJanela3Instalacao) %>" title="Instalação: janela 16:00 - 18:00 — calculada" readonly tabindex="-1" /></td>
-            <td class="num"><input type="number" id="percentualJanela4Servico" min="0" max="100" step="1" value="<%= Math.max(0, 100 - percentualJanela1Servico - percentualJanela2Servico - percentualJanela3Servico) %>" title="Serviço: janela 16:00 - 18:00 — calculada" readonly tabindex="-1" /></td>
-            <td class="num"><input type="number" id="percentualJanela4Me" min="0" max="100" step="1" value="<%= Math.max(0, 100 - percentualJanela1Me - percentualJanela2Me - percentualJanela3Me) %>" title="ME: janela 16:00 - 18:00 — calculada" readonly tabindex="-1" /></td>
-            <td class="num celula-napplicavel" title="Reparos só tem 2 janelas (08:30-12:30 e 12:30-18:00)">—</td>
-          </tr>
-          <tr>
-            <td>Meta de PU por técnico</td>
-            <td class="num"><input type="number" id="metaPuTecnicoInstalacao" name="metaPuTecnicoInstalacao" min="0.1" step="0.1" value="<%= metaPuTecnicoInstalacao %>" title="PU que 1 técnico de Instalações entrega" /></td>
-            <td class="num"><input type="number" id="metaPuTecnicoServico" name="metaPuTecnicoServico" min="0.1" step="0.1" value="<%= metaPuTecnicoServico %>" title="PU que 1 técnico de Serviços entrega" /></td>
-            <td class="num"><input type="number" id="metaPuTecnicoMe" name="metaPuTecnicoMe" min="0.1" step="0.1" value="<%= metaPuTecnicoMe %>" title="PU que 1 técnico de ME entrega" /></td>
-            <td class="num"><input type="number" id="metaPuTecnico" name="metaPuTecnico" min="0.1" step="0.1" value="<%= metaPuTecnico %>" title="PU que 1 técnico de Reparos entrega" /></td>
-          </tr>
-          <tr>
-            <td>Carga (coluna Sugestão)</td>
-            <td class="num"><input type="number" id="cargaInstalacao" name="cargaInstalacao" min="0" step="0.01" value="<%= cargaInstalacao %>" title="Carga a distribuir entre os buckets de Instalação" /></td>
-            <td class="num"><input type="number" id="cargaServico" name="cargaServico" min="0" step="0.01" value="<%= cargaServico %>" title="Carga a distribuir entre os buckets de Serviço" /></td>
-            <td class="num"><input type="number" id="cargaMe" name="cargaMe" min="0" step="0.01" value="<%= cargaMe %>" title="Carga a distribuir entre os buckets de ME" /></td>
-            <td class="num"><input type="number" id="cargaReparo" name="cargaReparo" min="0" step="0.01" value="<%= cargaReparo %>" title="Carga a distribuir entre os buckets de Reparos" /></td>
-          </tr>
-          <tr>
-            <td>PU do reparo (peso fixo)</td>
-            <td class="num celula-napplicavel" title="Instalação usa PU por Specification Product (tabela própria abaixo)">—</td>
-            <td class="num celula-napplicavel" title="Serviço usa PU por Specification Product (tabela própria abaixo)">—</td>
-            <td class="num celula-napplicavel" title="ME usa PU por Specification Product (tabela própria abaixo)">—</td>
-            <td class="num"><input type="number" id="puReparo" name="puReparo" min="0" step="0.01" value="<%= puReparo %>" title="PU gerado por cada reparo sugerido" /></td>
-          </tr>
-        </tbody>
-      </table>
-      <p class="hint">Instalação/Serviço/ME usam as 4 janelas do rótulo da linha (somam 100% — as 3 primeiras editáveis, a última calculada). Reparos tem horários diferentes e só 2 janelas (08:30-12:30 e 12:30-18:00, indicadas embaixo do campo, também somando 100% entre si) — por isso não usa as linhas de 14:00-16:00 e 16:00-18:00.</p>
-      <p class="hint">Sugestão (por bucket, em cada seção) = (Previsto do bucket ÷ Previsto total da seção) × Carga. Ordens, Cotas(min), PU e Técnicos são todos calculados a partir da Sugestão — Previsto é só a referência usada para ratear a Carga.</p>
-    </div>
-
-    <div class="modal-footer">
-      <button type="submit" title="Grava estes valores em configuracoes_gerais">Aplicar</button>
-    </div>
-  </form>
 </section>
 
 <section class="panel config-page-panel" id="config-tempos">
@@ -288,5 +152,141 @@
     </div>
   </form>
 </section>
+
+<details class="panel config-page-panel" id="config-upload">
+  <summary class="modal-header">
+    <h3 title="Envia manualmente o export diário do ELOS para as tabelas backlog_instalacoes e backlog_elos">Upload manual de backlog</h3>
+  </summary>
+
+  <% if (instalacoesUpload === 'ok') { %>
+    <p class="alert alert-ok" data-auto-dismiss style="margin: 1.25rem 1.25rem 0;">Arquivo de instalações importado: <strong><%= instalacoesUploadLinhas %></strong> linhas gravadas em <code>backlog_instalacoes</code>.</p>
+  <% } else if (instalacoesUpload === 'erro') { %>
+    <p class="alert alert-erro" data-auto-dismiss style="margin: 1.25rem 1.25rem 0;">Falha ao importar instalações: <%= instalacoesUploadErro %></p>
+  <% } %>
+  <% if (reparosUpload === 'ok') { %>
+    <p class="alert alert-ok" data-auto-dismiss style="margin: 1.25rem 1.25rem 0;">Arquivo de reparos importado: <strong><%= reparosUploadLinhas %></strong> linhas gravadas em <code>backlog_elos</code>.</p>
+  <% } else if (reparosUpload === 'erro') { %>
+    <p class="alert alert-erro" data-auto-dismiss style="margin: 1.25rem 1.25rem 0;">Falha ao importar reparos: <%= reparosUploadErro %></p>
+  <% } %>
+
+  <div class="upload-compact-grid">
+    <form class="cota-upload-item" method="post" action="/instalacoes/upload" enctype="multipart/form-data" data-loading="Enviando e processando o arquivo…">
+      <div class="cota-upload-head">
+        <span class="cota-upload-tipo">Instalações / ME / Serviços</span>
+        <span class="cota-upload-data" title="Última carga registrada"><%= dataCargaInstalacoes %></span>
+      </div>
+      <div class="cota-upload-row">
+        <input type="file" name="arquivo" accept=".csv,.txt" required aria-label="CSV de Instalações / ME / Serviços" />
+        <button type="submit" title="Envia e substitui os dados de backlog_instalacoes">Enviar</button>
+      </div>
+      <p class="cota-upload-hint">CSV <code>BackLogDiario_*.csv</code> — substitui <code>backlog_instalacoes</code>.</p>
+    </form>
+
+    <form class="cota-upload-item" method="post" action="/reparos/upload" enctype="multipart/form-data" data-loading="Enviando e processando o arquivo…">
+      <div class="cota-upload-head">
+        <span class="cota-upload-tipo">Reparos</span>
+        <span class="cota-upload-data" title="Última carga registrada"><%= dataCargaReparo %></span>
+      </div>
+      <div class="cota-upload-row">
+        <input type="file" name="arquivo" accept=".csv,.txt" required aria-label="CSV de Reparos" />
+        <button type="submit" title="Envia e substitui os dados de backlog_elos">Enviar</button>
+      </div>
+      <p class="cota-upload-hint cota-upload-hint-warn">⚠ Substitui <code>backlog_elos</code> — tabela compartilhada com outro sistema: arquivo errado apaga dados que não são deste app.</p>
+    </form>
+  </div>
+</details>
+
+<details class="panel config-page-panel" id="config-previsto">
+  <summary class="modal-header">
+    <h3 title="Previsto de resolução, janelas de horário, Meta de PU por técnico e Carga (usada na coluna Sugestão) de cada seção">Previsto, Janelas, PU e Carga</h3>
+  </summary>
+
+  <form method="post" action="/config/geral" class="modal-section" data-loading="Salvando configurações…">
+    <%- include('partials/hidden-config-estado', { exceto: [] }) %>
+    <div class="modal-body">
+      <table class="tempo-table">
+        <thead>
+          <tr>
+            <th>Configuração</th>
+            <th class="num">Instalação</th>
+            <th class="num">Serviço</th>
+            <th class="num">ME</th>
+            <th class="num">Reparos</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Previsto de resolução (%)</td>
+            <td class="num"><input type="number" id="percentualInstalacao" name="percentualInstalacao" min="0" max="100" step="1" value="<%= percentualInstalacao %>" title="Percentual do backlog de Instalações considerado resolvível" /></td>
+            <td class="num"><input type="number" id="percentualServico" name="percentualServico" min="0" max="100" step="1" value="<%= percentualServico %>" title="Percentual do backlog de Serviços considerado resolvível" /></td>
+            <td class="num"><input type="number" id="percentualMe" name="percentualMe" min="0" max="100" step="1" value="<%= percentualMe %>" title="Percentual do backlog de ME considerado resolvível" /></td>
+            <td class="num"><input type="number" id="percentual" name="percentual" min="0" max="100" step="1" value="<%= percentual %>" title="Percentual do backlog de Reparos considerado resolvível" /></td>
+          </tr>
+          <tr>
+            <td>08:30 - 10:30 (%)</td>
+            <td class="num"><input type="number" id="percentualJanela1Instalacao" name="percentualJanela1Instalacao" min="0" max="100" step="1" value="<%= percentualJanela1Instalacao %>" title="Instalação: janela 08:30 - 10:30" /></td>
+            <td class="num"><input type="number" id="percentualJanela1Servico" name="percentualJanela1Servico" min="0" max="100" step="1" value="<%= percentualJanela1Servico %>" title="Serviço: janela 08:30 - 10:30" /></td>
+            <td class="num"><input type="number" id="percentualJanela1Me" name="percentualJanela1Me" min="0" max="100" step="1" value="<%= percentualJanela1Me %>" title="ME: janela 08:30 - 10:30" /></td>
+            <td class="num">
+              <input type="number" id="percentualJanela" name="percentualJanela" min="0" max="100" step="1" value="<%= percentualJanela %>" title="Reparos: janela 08:30 - 12:30" />
+              <span class="tempo-table-subcaption">08:30-12:30</span>
+            </td>
+          </tr>
+          <tr>
+            <td>10:30 - 12:30 (%)</td>
+            <td class="num"><input type="number" id="percentualJanela2Instalacao" name="percentualJanela2Instalacao" min="0" max="100" step="1" value="<%= percentualJanela2Instalacao %>" title="Instalação: janela 10:30 - 12:30" /></td>
+            <td class="num"><input type="number" id="percentualJanela2Servico" name="percentualJanela2Servico" min="0" max="100" step="1" value="<%= percentualJanela2Servico %>" title="Serviço: janela 10:30 - 12:30" /></td>
+            <td class="num"><input type="number" id="percentualJanela2Me" name="percentualJanela2Me" min="0" max="100" step="1" value="<%= percentualJanela2Me %>" title="ME: janela 10:30 - 12:30" /></td>
+            <td class="num">
+              <input type="number" id="percentualJanelaTarde" min="0" max="100" step="1" value="<%= 100 - percentualJanela %>" title="Reparos: janela 12:30 - 18:00 — calculada (100% menos a janela 08:30-12:30)" readonly tabindex="-1" />
+              <span class="tempo-table-subcaption">12:30-18:00, calculada</span>
+            </td>
+          </tr>
+          <tr>
+            <td>14:00 - 16:00 (%)</td>
+            <td class="num"><input type="number" id="percentualJanela3Instalacao" name="percentualJanela3Instalacao" min="0" max="100" step="1" value="<%= percentualJanela3Instalacao %>" title="Instalação: janela 14:00 - 16:00" /></td>
+            <td class="num"><input type="number" id="percentualJanela3Servico" name="percentualJanela3Servico" min="0" max="100" step="1" value="<%= percentualJanela3Servico %>" title="Serviço: janela 14:00 - 16:00" /></td>
+            <td class="num"><input type="number" id="percentualJanela3Me" name="percentualJanela3Me" min="0" max="100" step="1" value="<%= percentualJanela3Me %>" title="ME: janela 14:00 - 16:00" /></td>
+            <td class="num celula-napplicavel" title="Reparos só tem 2 janelas (08:30-12:30 e 12:30-18:00)">—</td>
+          </tr>
+          <tr>
+            <td>16:00 - 18:00 (%, calculada)</td>
+            <td class="num"><input type="number" id="percentualJanela4Instalacao" min="0" max="100" step="1" value="<%= Math.max(0, 100 - percentualJanela1Instalacao - percentualJanela2Instalacao - percentualJanela3Instalacao) %>" title="Instalação: janela 16:00 - 18:00 — calculada" readonly tabindex="-1" /></td>
+            <td class="num"><input type="number" id="percentualJanela4Servico" min="0" max="100" step="1" value="<%= Math.max(0, 100 - percentualJanela1Servico - percentualJanela2Servico - percentualJanela3Servico) %>" title="Serviço: janela 16:00 - 18:00 — calculada" readonly tabindex="-1" /></td>
+            <td class="num"><input type="number" id="percentualJanela4Me" min="0" max="100" step="1" value="<%= Math.max(0, 100 - percentualJanela1Me - percentualJanela2Me - percentualJanela3Me) %>" title="ME: janela 16:00 - 18:00 — calculada" readonly tabindex="-1" /></td>
+            <td class="num celula-napplicavel" title="Reparos só tem 2 janelas (08:30-12:30 e 12:30-18:00)">—</td>
+          </tr>
+          <tr>
+            <td>Meta de PU por técnico</td>
+            <td class="num"><input type="number" id="metaPuTecnicoInstalacao" name="metaPuTecnicoInstalacao" min="0.1" step="0.1" value="<%= metaPuTecnicoInstalacao %>" title="PU que 1 técnico de Instalações entrega" /></td>
+            <td class="num"><input type="number" id="metaPuTecnicoServico" name="metaPuTecnicoServico" min="0.1" step="0.1" value="<%= metaPuTecnicoServico %>" title="PU que 1 técnico de Serviços entrega" /></td>
+            <td class="num"><input type="number" id="metaPuTecnicoMe" name="metaPuTecnicoMe" min="0.1" step="0.1" value="<%= metaPuTecnicoMe %>" title="PU que 1 técnico de ME entrega" /></td>
+            <td class="num"><input type="number" id="metaPuTecnico" name="metaPuTecnico" min="0.1" step="0.1" value="<%= metaPuTecnico %>" title="PU que 1 técnico de Reparos entrega" /></td>
+          </tr>
+          <tr>
+            <td>Carga (coluna Sugestão)</td>
+            <td class="num"><input type="number" id="cargaInstalacao" name="cargaInstalacao" min="0" step="0.01" value="<%= cargaInstalacao %>" title="Carga a distribuir entre os buckets de Instalação" /></td>
+            <td class="num"><input type="number" id="cargaServico" name="cargaServico" min="0" step="0.01" value="<%= cargaServico %>" title="Carga a distribuir entre os buckets de Serviço" /></td>
+            <td class="num"><input type="number" id="cargaMe" name="cargaMe" min="0" step="0.01" value="<%= cargaMe %>" title="Carga a distribuir entre os buckets de ME" /></td>
+            <td class="num"><input type="number" id="cargaReparo" name="cargaReparo" min="0" step="0.01" value="<%= cargaReparo %>" title="Carga a distribuir entre os buckets de Reparos" /></td>
+          </tr>
+          <tr>
+            <td>PU do reparo (peso fixo)</td>
+            <td class="num celula-napplicavel" title="Instalação usa PU por Specification Product (tabela própria abaixo)">—</td>
+            <td class="num celula-napplicavel" title="Serviço usa PU por Specification Product (tabela própria abaixo)">—</td>
+            <td class="num celula-napplicavel" title="ME usa PU por Specification Product (tabela própria abaixo)">—</td>
+            <td class="num"><input type="number" id="puReparo" name="puReparo" min="0" step="0.01" value="<%= puReparo %>" title="PU gerado por cada reparo sugerido" /></td>
+          </tr>
+        </tbody>
+      </table>
+      <p class="hint">Instalação/Serviço/ME usam as 4 janelas do rótulo da linha (somam 100% — as 3 primeiras editáveis, a última calculada). Reparos tem horários diferentes e só 2 janelas (08:30-12:30 e 12:30-18:00, indicadas embaixo do campo, também somando 100% entre si) — por isso não usa as linhas de 14:00-16:00 e 16:00-18:00.</p>
+      <p class="hint">Sugestão (por bucket, em cada seção) = (Previsto do bucket ÷ Previsto total da seção) × Carga. Ordens, Cotas(min), PU e Técnicos são todos calculados a partir da Sugestão — Previsto é só a referência usada para ratear a Carga.</p>
+    </div>
+
+    <div class="modal-footer">
+      <button type="submit" title="Grava estes valores em configuracoes_gerais">Aplicar</button>
+    </div>
+  </form>
+</details>
 
 <%- include('partials/footer') %>

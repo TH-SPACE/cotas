@@ -234,6 +234,111 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  // Botões "Previsto (X%)" e "Sugestão" no cabeçalho de cada seção (home): abrem
+  // um modal pequeno pra editar Previsto ou Carga sem precisar ir em
+  // Configurações -- `data-campo` no botão escolhe qual dos dois campos é
+  // (rótulo/min/max/step e a rota POST/config/rapido dependem dele).
+  const configRapidoModal = document.getElementById('config-rapido-modal');
+  if (configRapidoModal) {
+    const rapidoTipoInput = document.getElementById('config-rapido-tipo');
+    const rapidoCampoInput = document.getElementById('config-rapido-campo');
+    const rapidoValorInput = document.getElementById('config-rapido-input');
+    const rapidoTitulo = document.getElementById('config-rapido-titulo');
+    const rapidoRotulo = document.getElementById('config-rapido-rotulo');
+    const rapidoDica = document.getElementById('config-rapido-dica');
+    const rapidoCloseBtn = document.getElementById('config-rapido-close-btn');
+    const rapidoCancelBtn = document.getElementById('config-rapido-cancel-btn');
+
+    const CONFIG_RAPIDO_CAMPOS = {
+      previsto: {
+        titulo: 'Editar Previsto',
+        rotulo: 'Previsto (%)',
+        min: 0, max: 100, step: 1,
+        dica: 'Percentual do backlog desta seção considerado resolvível — o mesmo campo da página de Configurações.',
+      },
+      carga: {
+        titulo: 'Editar Carga',
+        rotulo: 'Carga',
+        min: 0, max: null, step: 0.01,
+        // Fração empilhada via CSS (sem lib de matemática) pra ficar com cara de
+        // fórmula de verdade, não só texto corrido com ÷/×. `.formula-linha`/
+        // `.fracao`/`.fracao-cima`/`.fracao-baixo` em style.css. O exemplo usa
+        // dado REAL (Previsto do 1º bucket da seção + Previsto total, vindos do
+        // botão via data-exemplo-*) simulado com a Carga atual, em vez de
+        // números inventados.
+        dica: (dataset) => {
+          const bucketPrevisto = Number(dataset.exemploBucket) || 0;
+          const total = Number(dataset.exemploTotal) || 0;
+          const cargaAtual = Number(dataset.valor) || 0;
+          const sugestao = total > 0 ? (bucketPrevisto / total) * cargaAtual : 0;
+          const rotuloExemplo = dataset.exemploNome ? `Exemplo (${dataset.exemploNome}):` : 'Exemplo:';
+
+          return '<span class="formula-linha">'
+            + '<strong class="formula-destaque">Sugestão</strong> <span>=</span> '
+            + '<span class="fracao"><span class="fracao-cima">Previsto do bucket</span><span class="fracao-baixo">Previsto total da seção</span></span> '
+            + '<span>×</span> <strong class="formula-destaque">Carga</strong>'
+            + '</span>'
+            + '<span class="formula-linha formula-exemplo">'
+            + `<span>${rotuloExemplo}</span> `
+            + `<span class="fracao"><span class="fracao-cima">${bucketPrevisto}</span><span class="fracao-baixo">${total}</span></span> `
+            + `<span>× ${cargaAtual} =</span> <strong class="formula-destaque">${sugestao.toFixed(1)}</strong>`
+            + '</span>';
+        },
+      },
+      metaPu: {
+        titulo: 'Editar Meta de PU',
+        rotulo: 'Meta de PU por técnico',
+        min: 0.1, max: null, step: 0.1,
+        // Mesma ideia do Carga (fração empilhada + exemplo com dado real), só
+        // que aqui a fórmula é a da coluna Técnicos (PU ÷ Meta, arredondado pra
+        // cima) -- é essa Meta que o botão "PU" do cabeçalho edita, não o peso
+        // de PU em si (só Reparos tem 1 valor fixo pra isso; Instalação/Serviço/
+        // ME usam PU por Specification Product, tabela própria).
+        dica: (dataset) => {
+          const puExemplo = dataset.exemploPu || '0';
+          const metaAtual = dataset.valor || '0';
+          const tecnicos = Number(metaAtual) > 0 ? Math.ceil(Number(puExemplo) / Number(metaAtual)) : 0;
+          const rotuloExemplo = dataset.exemploNome ? `Exemplo (${dataset.exemploNome}):` : 'Exemplo:';
+
+          return '<span class="formula-linha">'
+            + '<strong class="formula-destaque">Técnicos</strong> <span>=</span> '
+            + '<span class="fracao"><span class="fracao-cima">PU</span><span class="fracao-baixo">Meta de PU por técnico</span></span> '
+            + '<span>(arredondado pra cima)</span>'
+            + '</span>'
+            + '<span class="formula-linha formula-exemplo">'
+            + `<span>${rotuloExemplo}</span> `
+            + `<span class="fracao"><span class="fracao-cima">${puExemplo}</span><span class="fracao-baixo">${metaAtual}</span></span> `
+            + `<span>=</span> <strong class="formula-destaque">${tecnicos}</strong>`
+            + '</span>';
+        },
+      },
+    };
+
+    document.querySelectorAll('.config-rapido-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const cfg = CONFIG_RAPIDO_CAMPOS[btn.dataset.campo] || CONFIG_RAPIDO_CAMPOS.previsto;
+        rapidoTipoInput.value = btn.dataset.tipo;
+        rapidoCampoInput.value = btn.dataset.campo;
+        rapidoValorInput.value = btn.dataset.valor;
+        rapidoValorInput.min = cfg.min;
+        if (cfg.max === null) rapidoValorInput.removeAttribute('max');
+        else rapidoValorInput.max = cfg.max;
+        rapidoValorInput.step = cfg.step;
+        rapidoTitulo.textContent = `${cfg.titulo} — ${btn.dataset.label}`;
+        rapidoRotulo.textContent = cfg.rotulo;
+        rapidoDica.innerHTML = typeof cfg.dica === 'function' ? cfg.dica(btn.dataset) : cfg.dica;
+        configRapidoModal.showModal();
+        rapidoValorInput.focus();
+        rapidoValorInput.select();
+      });
+    });
+
+    const fecharConfigRapidoModal = () => configRapidoModal.close();
+    if (rapidoCloseBtn) rapidoCloseBtn.addEventListener('click', fecharConfigRapidoModal);
+    if (rapidoCancelBtn) rapidoCancelBtn.addEventListener('click', fecharConfigRapidoModal);
+    configRapidoModal.addEventListener('click', (e) => { if (e.target === configRapidoModal) fecharConfigRapidoModal(); });
+  }
+
   const clamp = (valor) => {
     if (Number.isNaN(valor)) return 0;
     return Math.min(100, Math.max(0, valor));
@@ -271,6 +376,79 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     editaveis.forEach(el => el.addEventListener('input', recalcularRestante));
   });
+
+  // Botão "ORDENS" no cabeçalho de cada seção (home): abre um modal com as %
+  // de janela daquela seção (as editáveis vêm em `data-janelas`, já incluindo
+  // a última -- sempre o restante, só exibida/recalculada, nunca enviada).
+  // Mesma ideia dos grupos acima (clamp/recalcularRestante), só que o modal é
+  // 1 só pras 4 seções e os campos são montados na hora via JS, não fixos no HTML.
+  const janelasModal = document.getElementById('janelas-edit-modal');
+  if (janelasModal) {
+    const janelasLabel = document.getElementById('janelas-edit-label');
+    const janelasLista = document.getElementById('janelas-edit-lista');
+    const janelasCloseBtn = document.getElementById('janelas-edit-close-btn');
+    const janelasCancelBtn = document.getElementById('janelas-edit-cancel-btn');
+
+    document.querySelectorAll('.ordens-editar-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        let itens;
+        try { itens = JSON.parse(btn.dataset.janelas); } catch (e) { return; }
+        if (!Array.isArray(itens) || itens.length === 0) return;
+
+        janelasLabel.textContent = btn.dataset.label;
+        janelasLista.innerHTML = '';
+
+        const editaveis = [];
+        let restante = null;
+
+        itens.forEach((item, i) => {
+          const linha = document.createElement('div');
+          linha.className = 'field-row';
+
+          const label = document.createElement('label');
+          label.textContent = item.rotulo;
+          label.htmlFor = `janelas-edit-input-${i}`;
+
+          const input = document.createElement('input');
+          input.type = 'number';
+          input.id = `janelas-edit-input-${i}`;
+          input.min = '0';
+          input.max = '100';
+          input.step = '1';
+          input.value = item.valor;
+
+          if (item.nome) {
+            input.name = item.nome;
+            editaveis.push(input);
+          } else {
+            input.readOnly = true;
+            input.tabIndex = -1;
+            restante = input;
+          }
+
+          linha.appendChild(label);
+          linha.appendChild(input);
+          janelasLista.appendChild(linha);
+        });
+
+        if (restante) {
+          const recalcularRestante = () => {
+            const soma = editaveis.reduce((acc, el) => acc + clamp(Number(el.value)), 0);
+            restante.value = Math.max(0, 100 - soma);
+          };
+          editaveis.forEach(el => el.addEventListener('input', recalcularRestante));
+        }
+
+        janelasModal.showModal();
+        if (editaveis[0]) { editaveis[0].focus(); editaveis[0].select(); }
+      });
+    });
+
+    const fecharJanelasModal = () => janelasModal.close();
+    if (janelasCloseBtn) janelasCloseBtn.addEventListener('click', fecharJanelasModal);
+    if (janelasCancelBtn) janelasCancelBtn.addEventListener('click', fecharJanelasModal);
+    janelasModal.addEventListener('click', (e) => { if (e.target === janelasModal) fecharJanelasModal(); });
+  }
 
   // Abas de seção (Instalação / Serviços / ...) da página de Cotas Planejadas.
   // Todas as tabelas já vêm renderizadas; a aba só mostra/esconde o painel e o
