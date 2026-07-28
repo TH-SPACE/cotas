@@ -132,19 +132,27 @@ function calcularTotais(linhasComTudo, config) {
 }
 
 // Roda o pipeline inteiro (Previsto -> Sugestão -> ORDENS/COTAS/PU/Técnicos ->
-// Total) SEPARADAMENTE por aliada dentro de uma mesma seção -- cada aliada tem sua
-// própria config (Previsto%, Carga, %janela, Meta de PU), que pode divergir das
-// outras (ver configAliadaService.js). O ponto-chave é a Sugestão: como a Carga é
-// por aliada, ela é redistribuída DENTRO do grupo da aliada (denominador = Previsto
-// total DAQUELA aliada), não da seção inteira -- senão a Carga de uma aliada
-// "vazaria" pros buckets de outra.
+// Total) SEPARADAMENTE por (aliada, região) dentro de uma mesma seção -- cada
+// grupo tem sua própria config (Previsto%, Carga, %janela, Meta de PU), que
+// pode divergir dos outros (ver configAliadaService.js / configAliadaRegiaoService.js).
+// O ponto-chave é a Sugestão: como a Carga é por grupo, ela é redistribuída
+// DENTRO do grupo (denominador = Previsto total DAQUELE grupo), não da seção
+// inteira -- senão a Carga de um grupo "vazaria" pros buckets de outro.
 //
-// `configDe(aliada)` -> { percentual, carga, percentuaisJanela, pu, metaPuTecnico }.
-// `numJanelas` (labels.length) garante que uma seção vazia/filtrada ainda devolve
-// arrays de total do tamanho certo. O `maiorVolume` (top-N por backlog) continua
-// sendo calculado sobre a seção INTEIRA, não por aliada, pra não mudar quais
-// buckets aparecem destacados hoje.
-function calcularSecaoPorAliada(linhas, config) {
+// `linha.regiao` (CAPITAL/INTERIOR, ver bucketRegiaoService.js) já vem atribuída
+// pelo chamador -- esta função é agnóstica de onde a região veio, só agrupa pelo
+// que já está no dado (mesmo padrão de `linha.aliada`). Aliadas sem split
+// (hoje: qualquer uma sem bucket capital classificado, incl. VIVO) têm todas as
+// linhas na mesma região (INTERIOR, o padrão), então o grupo colapsa pra 1 só --
+// comportamento idêntico ao agrupamento por aliada pura de antes.
+//
+// `configDe(chaveGrupo)` -> { percentual, carga, percentuaisJanela, pu, metaPuTecnico },
+// onde `chaveGrupo` = "ALIADA::REGIAO" (quem chama faz o split). `numJanelas`
+// (labels.length) garante que uma seção vazia/filtrada ainda devolve arrays de
+// total do tamanho certo. O `maiorVolume` (top-N por backlog) continua sendo
+// calculado sobre a seção INTEIRA, não por grupo, pra não mudar quais buckets
+// aparecem destacados hoje.
+function calcularSecaoPorAliadaRegiao(linhas, config) {
   const { campoBacklog, campoTempo, campoPuBruto, numJanelas, configDe } = config;
 
   const rankBacklog = new Map(
@@ -153,20 +161,22 @@ function calcularSecaoPorAliada(linhas, config) {
       .map((linha, indice) => [linha.bucket, indice])
   );
 
-  // Agrupa por aliada preservando a ordem em que cada aliada aparece.
-  const ordemAliadas = [];
+  // Agrupa por (aliada, região) preservando a ordem em que cada grupo aparece.
+  const chaveGrupo = (linha) => `${linha.aliada}::${linha.regiao}`;
+  const ordemGrupos = [];
   const grupos = new Map();
   linhas.forEach(linha => {
-    if (!grupos.has(linha.aliada)) { grupos.set(linha.aliada, []); ordemAliadas.push(linha.aliada); }
-    grupos.get(linha.aliada).push(linha);
+    const chave = chaveGrupo(linha);
+    if (!grupos.has(chave)) { grupos.set(chave, []); ordemGrupos.push(chave); }
+    grupos.get(chave).push(linha);
   });
 
   const linhasPorBucket = new Map();
   const totaisPorAliada = [];
 
-  ordemAliadas.forEach(aliada => {
-    const cfg = configDe(aliada);
-    const grupo = grupos.get(aliada);
+  ordemGrupos.forEach(chave => {
+    const cfg = configDe(chave);
+    const grupo = grupos.get(chave);
 
     const comPrevisto = grupo.map(linha => ({
       ...linha,
@@ -191,7 +201,7 @@ function calcularSecaoPorAliada(linhas, config) {
   const linhasSaida = linhas.map(linha => linhasPorBucket.get(linha.bucket));
 
   // Total da seção: soma bottom-up das colunas aditivas + soma dos Técnicos por
-  // aliada (cada aliada é seu próprio "bolo", Técnicos = ceil(PU_aliada / Meta_aliada),
+  // grupo (cada (aliada,região) é seu próprio "bolo", Técnicos = ceil(PU_grupo / Meta_grupo),
   // então o total da seção é a SOMA desses ceils, não um ceil único).
   const somar = (campo) => linhasSaida.reduce((acc, l) => acc + l[campo], 0);
   const totais = {
@@ -237,6 +247,6 @@ module.exports = {
   calcularSugestao,
   calcularDistribuicaoPorSugestao,
   calcularTotais,
-  calcularSecaoPorAliada,
+  calcularSecaoPorAliadaRegiao,
   construirMapaCoresAliada,
 };

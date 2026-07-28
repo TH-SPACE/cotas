@@ -24,26 +24,32 @@
    // da seção + o Previsto total, pra simular a fórmula com dado real no modal
    // em vez de números fixos/inventados. %>
 <% // `aliada` (opcional) faz o botão editar o override DAQUELA aliada (data-aliada
-   // -> aliadaConfig no POST) em vez do padrão global; `herdado` marca visualmente
-   // que a aliada ainda herda o global (cfg-herdado) vs tem valor próprio (cfg-proprio). %>
-<% const botaoConfigRapido = (campo, tipo, label, valor, texto, titulo, exemplo, aliada, herdado) => {
+   // -> aliadaConfig no POST) em vez do padrão global; `regiao` (CAPITAL/INTERIOR,
+   // só faz sentido junto de `aliada`) restringe ainda mais, pro override de
+   // (aliada,região) -- ver configAliadaRegiaoService.js. `herdado` marca
+   // visualmente que o grupo ainda herda o nível de baixo (cfg-herdado) vs tem
+   // valor próprio NESSE grupo (cfg-proprio). %>
+<% const botaoConfigRapido = (campo, tipo, label, valor, texto, titulo, exemplo, aliada, herdado, regiao) => {
   const atributosExemplo = exemplo
     ? Object.entries(exemplo).map(([chave, v]) => ` data-exemplo-${chave}="${v}"`).join('')
     : '';
   const attrAliada = aliada ? ` data-aliada="${aliada}"` : '';
+  const attrRegiao = regiao ? ` data-regiao="${regiao}"` : '';
   const clsHerdado = aliada ? (herdado ? ' cfg-herdado' : ' cfg-proprio') : '';
-  return `<button type="button" class="config-rapido-btn${clsHerdado}" data-campo="${campo}" data-tipo="${tipo}" data-label="${label}" data-valor="${valor}" title="${titulo}"${attrAliada}${atributosExemplo}>${texto}</button>`;
+  return `<button type="button" class="config-rapido-btn${clsHerdado}" data-campo="${campo}" data-tipo="${tipo}" data-label="${label}" data-valor="${valor}" title="${titulo}"${attrAliada}${attrRegiao}${atributosExemplo}>${texto}</button>`;
 }; %>
 <% // Botão "ORDENS" (cabeçalho de grupo, colspan): abre o modal #janelas-edit-modal
    // (main.js) pra editar as % de janela de 1 seção -- `data-janelas` carrega as
    // editáveis + a última (sempre o restante, calculado, nunca enviada ao servidor). %>
-<% const botaoOrdens = (tipo, label, editaveis, labelsJanela, aliada, herdado) => {
+<% const botaoOrdens = (tipo, label, editaveis, labelsJanela, aliada, herdado, regiao) => {
   const somaEditaveis = editaveis.reduce((acc, e) => acc + Number(e.valor), 0);
   const itens = editaveis.map((e, i) => ({ nome: e.nome, rotulo: labelsJanela[i], valor: e.valor }));
   itens.push({ nome: null, rotulo: labelsJanela[labelsJanela.length - 1], valor: Math.max(0, 100 - somaEditaveis) });
   const attrAliada = aliada ? ` data-aliada="${aliada}"` : '';
+  const attrRegiao = regiao ? ` data-regiao="${regiao}"` : '';
   const clsHerdado = aliada ? (herdado ? ' cfg-herdado' : ' cfg-proprio') : '';
-  return `<button type="button" class="ordens-editar-btn${clsHerdado}" data-tipo="${tipo}" data-label="${label}" data-janelas='${JSON.stringify(itens)}' title="Previsto dividido entre as ${labelsJanela.length} janelas de horário — clique para editar as % de ${aliada || 'todas as aliadas'}"${attrAliada}>ORDENS</button>`;
+  const escopoLabel = aliada ? `${aliada}${regiao ? ' — ' + (regiao === 'CAPITAL' ? 'Capital' : 'Interior') : ''}` : 'todas as aliadas';
+  return `<button type="button" class="ordens-editar-btn${clsHerdado}" data-tipo="${tipo}" data-label="${label}" data-janelas='${JSON.stringify(itens)}' title="Previsto dividido entre as ${labelsJanela.length} janelas de horário — clique para editar as % de ${escopoLabel}"${attrAliada}${attrRegiao}>ORDENS</button>`;
 }; %>
 <% // Formata número curto pro chip (2,9 em vez de 2.90; 50 em vez de 50.00). %>
 <% const numChip = (v) => { const n = Number(v); return (Number.isInteger(n) ? String(n) : n.toFixed(2).replace(/\.?0+$/, '')).replace('.', ','); }; %>
@@ -56,24 +62,30 @@
     ? `<img src="/${logo}" alt="${aliada}" class="aliada-logo" />`
     : `<span class="aliada-badge aliada-color-${corIdx}">${aliada}</span>`;
 }; %>
-<% // Faixa de configuração POR ALIADA: renderizada no divisor de cada grupo de
-   // aliada dentro da seção. Mostra o valor EFETIVO de cada campo daquela aliada
-   // (herda o global se não tiver override) e, ao clicar, abre os mesmos modais
-   // já existentes gravando só o override da aliada. `cfg` = configPorAliada<Secao>[aliada].
+<% // Faixa de configuração POR (ALIADA, REGIÃO): renderizada no divisor de cada
+   // grupo dentro da seção. Mostra o valor EFETIVO de cada campo daquele grupo
+   // (herda a aliada/o global se não tiver override próprio) e, ao clicar, abre
+   // os mesmos modais já existentes gravando só o override daquele (aliada,região).
+   // `cfg` = configPorAliada<Secao>[aliada][regiao]. `mostrarRegiao` só é true
+   // quando a aliada tem buckets nas DUAS regiões (ver rótulo abaixo) -- enquanto
+   // nenhum bucket estiver classificado como Capital, toda aliada cai só em
+   // Interior e a faixa continua com o rótulo genérico de sempre (1 linha só).
    // colspan = 2 (aliada+bucket) + 3 (backlog) + 2×janelas + 2 (pu+técnicos). %>
-<% const faixaAliada = (tipo, label, aliada, corIdx, cfg, labelsJanela) => {
+<% const faixaAliada = (tipo, label, aliada, corIdx, cfg, labelsJanela, regiao, mostrarRegiao) => {
   const colspan = 2 + 3 + labelsJanela.length * 2 + 2;
   const exCarga = { bucket: cfg.exemploPrevisto, total: cfg.exemploTotal, nome: cfg.exemploNome };
   const exMeta = { pu: cfg.exemploPu, nome: cfg.exemploNome };
+  const sufixoRegiao = mostrarRegiao ? ` — ${regiao === 'CAPITAL' ? 'Capital' : 'Interior'}` : '';
+  const escopoTitulo = `${aliada}${sufixoRegiao}`;
   const chips = [
-    botaoConfigRapido('previsto', tipo, label, cfg.percentual, `Previsto ${numChip(cfg.percentual)}%`, `Previsto de ${aliada} — clique para editar`, null, aliada, !cfg.overridePercentual),
-    botaoConfigRapido('carga', tipo, label, cfg.carga, `Carga ${numChip(cfg.carga)}`, `Carga de ${aliada} (base da Sugestão) — clique para editar`, exCarga, aliada, !cfg.overrideCarga),
-    botaoOrdens(tipo, label, cfg.janelasEditaveis, labelsJanela, aliada, !cfg.overrideJanelas),
-    botaoConfigRapido('metaPu', tipo, label, cfg.metaPu, `Meta PU ${numChip(cfg.metaPu)}`, `Meta de PU por técnico de ${aliada} — clique para editar`, exMeta, aliada, !cfg.overrideMetaPu),
+    botaoConfigRapido('previsto', tipo, label, cfg.percentual, `Previsto ${numChip(cfg.percentual)}%`, `Previsto de ${escopoTitulo} — clique para editar`, null, aliada, !cfg.overridePercentual, regiao),
+    botaoConfigRapido('carga', tipo, label, cfg.carga, `Carga ${numChip(cfg.carga)}`, `Carga de ${escopoTitulo} (base da Sugestão) — clique para editar`, exCarga, aliada, !cfg.overrideCarga, regiao),
+    botaoOrdens(tipo, label, cfg.janelasEditaveis, labelsJanela, aliada, !cfg.overrideJanelas, regiao),
+    botaoConfigRapido('metaPu', tipo, label, cfg.metaPu, `Meta PU ${numChip(cfg.metaPu)}`, `Meta de PU por técnico de ${escopoTitulo} — clique para editar`, exMeta, aliada, !cfg.overrideMetaPu, regiao),
   ];
   return `<tr class="aliada-config-row"><td colspan="${colspan}" class="aliada-config-td">`
     + `<div class="aliada-config-faixa">`
-    + `<span class="aliada-config-nome">${marcaAliada(aliada, corIdx)}configuração da aliada</span>`
+    + `<span class="aliada-config-nome">${marcaAliada(aliada, corIdx)}configuração da aliada${sufixoRegiao}</span>`
     + `<span class="aliada-config-chips">${chips.join('')}</span>`
     + `</div></td></tr>`;
 }; %>
@@ -207,10 +219,11 @@
         </tr>
       </thead>
       <tbody>
-        <% let aliadaAtualInstalacoes = null; %>
+        <% let aliadaAtualInstalacoes = null; let regiaoAtualInstalacoes = null; %>
         <% linhasInstalacoes.forEach(linha => { %>
-          <% const novaAliadaInstalacoes = linha.aliada !== aliadaAtualInstalacoes; aliadaAtualInstalacoes = linha.aliada; %>
-          <% if (novaAliadaInstalacoes && configPorAliadaInstalacoes[linha.aliada]) { %><%- faixaAliada('instalacao', 'Instalação', linha.aliada, aliadaCoresInstalacoes[linha.aliada], configPorAliadaInstalacoes[linha.aliada], janelasInstalacaoLabels) %><% } %>
+          <% const novaAliadaInstalacoes = linha.aliada !== aliadaAtualInstalacoes || linha.regiao !== regiaoAtualInstalacoes; aliadaAtualInstalacoes = linha.aliada; regiaoAtualInstalacoes = linha.regiao; %>
+          <% const cfgFaixaInstalacoes = configPorAliadaInstalacoes[linha.aliada] && configPorAliadaInstalacoes[linha.aliada][linha.regiao]; %>
+          <% if (novaAliadaInstalacoes && cfgFaixaInstalacoes) { %><%- faixaAliada('instalacao', 'Instalação', linha.aliada, aliadaCoresInstalacoes[linha.aliada], cfgFaixaInstalacoes, janelasInstalacaoLabels, linha.regiao, Object.keys(configPorAliadaInstalacoes[linha.aliada]).length > 1) %><% } %>
           <tr class="<%= novaAliadaInstalacoes ? 'group-start' : '' %>">
             <td><span class="aliada-badge aliada-color-<%= aliadaCoresInstalacoes[linha.aliada] %>"><%= linha.aliada %></span></td>
             <td class="celula-truncada" title="<%= linha.bucket %>"><%= linha.bucket %></td>
@@ -370,10 +383,11 @@
         </tr>
       </thead>
       <tbody>
-        <% let aliadaAtualServicos = null; %>
+        <% let aliadaAtualServicos = null; let regiaoAtualServicos = null; %>
         <% linhasServicos.forEach(linha => { %>
-          <% const novaAliadaServicos = linha.aliada !== aliadaAtualServicos; aliadaAtualServicos = linha.aliada; %>
-          <% if (novaAliadaServicos && configPorAliadaServicos[linha.aliada]) { %><%- faixaAliada('servico', 'Serviços', linha.aliada, aliadaCoresServicos[linha.aliada], configPorAliadaServicos[linha.aliada], janelasServicoLabels) %><% } %>
+          <% const novaAliadaServicos = linha.aliada !== aliadaAtualServicos || linha.regiao !== regiaoAtualServicos; aliadaAtualServicos = linha.aliada; regiaoAtualServicos = linha.regiao; %>
+          <% const cfgFaixaServicos = configPorAliadaServicos[linha.aliada] && configPorAliadaServicos[linha.aliada][linha.regiao]; %>
+          <% if (novaAliadaServicos && cfgFaixaServicos) { %><%- faixaAliada('servico', 'Serviços', linha.aliada, aliadaCoresServicos[linha.aliada], cfgFaixaServicos, janelasServicoLabels, linha.regiao, Object.keys(configPorAliadaServicos[linha.aliada]).length > 1) %><% } %>
           <tr class="<%= novaAliadaServicos ? 'group-start' : '' %>">
             <td><span class="aliada-badge aliada-color-<%= aliadaCoresServicos[linha.aliada] %>"><%= linha.aliada %></span></td>
             <td class="celula-truncada" title="<%= linha.bucket %>"><%= linha.bucket %></td>
@@ -533,10 +547,11 @@
         </tr>
       </thead>
       <tbody>
-        <% let aliadaAtualMe = null; %>
+        <% let aliadaAtualMe = null; let regiaoAtualMe = null; %>
         <% linhasMe.forEach(linha => { %>
-          <% const novaAliadaMe = linha.aliada !== aliadaAtualMe; aliadaAtualMe = linha.aliada; %>
-          <% if (novaAliadaMe && configPorAliadaMe[linha.aliada]) { %><%- faixaAliada('me', 'ME', linha.aliada, aliadaCoresMe[linha.aliada], configPorAliadaMe[linha.aliada], janelasMeLabels) %><% } %>
+          <% const novaAliadaMe = linha.aliada !== aliadaAtualMe || linha.regiao !== regiaoAtualMe; aliadaAtualMe = linha.aliada; regiaoAtualMe = linha.regiao; %>
+          <% const cfgFaixaMe = configPorAliadaMe[linha.aliada] && configPorAliadaMe[linha.aliada][linha.regiao]; %>
+          <% if (novaAliadaMe && cfgFaixaMe) { %><%- faixaAliada('me', 'ME', linha.aliada, aliadaCoresMe[linha.aliada], cfgFaixaMe, janelasMeLabels, linha.regiao, Object.keys(configPorAliadaMe[linha.aliada]).length > 1) %><% } %>
           <tr class="<%= novaAliadaMe ? 'group-start' : '' %>">
             <td><span class="aliada-badge aliada-color-<%= aliadaCoresMe[linha.aliada] %>"><%= linha.aliada %></span></td>
             <td class="celula-truncada" title="<%= linha.bucket %>"><%= linha.bucket %></td>
@@ -686,10 +701,11 @@
         </tr>
       </thead>
       <tbody>
-        <% let aliadaAtual = null; %>
+        <% let aliadaAtual = null; let regiaoAtual = null; %>
         <% linhas.forEach(linha => { %>
-          <% const novaAliada = linha.aliada !== aliadaAtual; aliadaAtual = linha.aliada; %>
-          <% if (novaAliada && configPorAliadaReparos[linha.aliada]) { %><%- faixaAliada('reparo', 'Reparos', linha.aliada, aliadaCores[linha.aliada], configPorAliadaReparos[linha.aliada], janelasReparoLabels) %><% } %>
+          <% const novaAliada = linha.aliada !== aliadaAtual || linha.regiao !== regiaoAtual; aliadaAtual = linha.aliada; regiaoAtual = linha.regiao; %>
+          <% const cfgFaixaReparos = configPorAliadaReparos[linha.aliada] && configPorAliadaReparos[linha.aliada][linha.regiao]; %>
+          <% if (novaAliada && cfgFaixaReparos) { %><%- faixaAliada('reparo', 'Reparos', linha.aliada, aliadaCores[linha.aliada], cfgFaixaReparos, janelasReparoLabels, linha.regiao, Object.keys(configPorAliadaReparos[linha.aliada]).length > 1) %><% } %>
           <tr class="<%= novaAliada ? 'group-start' : '' %>">
             <td><span class="aliada-badge aliada-color-<%= aliadaCores[linha.aliada] %>"><%= linha.aliada %></span></td>
             <td class="celula-truncada" title="<%= linha.bucket %>"><%= linha.bucket %></td>
@@ -756,6 +772,7 @@
     <input type="hidden" name="tipo" id="config-rapido-tipo" value="" />
     <input type="hidden" name="campo" id="config-rapido-campo" value="" />
     <input type="hidden" name="aliadaConfig" id="config-rapido-aliada" value="" />
+    <input type="hidden" name="regiaoConfig" id="config-rapido-regiao" value="" />
     <%- include('partials/hidden-config-estado', { exceto: [] }) %>
     <div class="modal-body">
       <p class="config-rapido-escopo" id="config-rapido-escopo" hidden></p>
@@ -780,6 +797,7 @@
   </div>
   <form method="post" action="/config/janelas" class="modal-section" data-loading="Salvando…">
     <input type="hidden" name="aliadaConfig" id="janelas-edit-aliada" value="" />
+    <input type="hidden" name="regiaoConfig" id="janelas-edit-regiao" value="" />
     <%- include('partials/hidden-config-estado', { exceto: [] }) %>
     <div class="modal-body">
       <p class="config-rapido-escopo" id="janelas-edit-escopo" hidden></p>

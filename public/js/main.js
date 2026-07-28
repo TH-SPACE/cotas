@@ -243,6 +243,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const rapidoTipoInput = document.getElementById('config-rapido-tipo');
     const rapidoCampoInput = document.getElementById('config-rapido-campo');
     const rapidoAliadaInput = document.getElementById('config-rapido-aliada');
+    const rapidoRegiaoInput = document.getElementById('config-rapido-regiao');
     const rapidoValorInput = document.getElementById('config-rapido-input');
     const rapidoTitulo = document.getElementById('config-rapido-titulo');
     const rapidoRotulo = document.getElementById('config-rapido-rotulo');
@@ -275,9 +276,12 @@ document.addEventListener('DOMContentLoaded', () => {
           const cargaAtual = Number(dataset.valor) || 0;
           const sugestao = total > 0 ? (bucketPrevisto / total) * cargaAtual : 0;
           const rotuloExemplo = dataset.exemploNome ? `Exemplo (${dataset.exemploNome}):` : 'Exemplo:';
-          // Com config por aliada, a Carga é redistribuída DENTRO da aliada, então
-          // o denominador vira o Previsto total da aliada (não da seção inteira).
-          const denominador = dataset.aliada ? 'Previsto total da aliada' : 'Previsto total da seção';
+          // Com config por aliada (e, dentro dela, por região), a Carga é
+          // redistribuída DENTRO do grupo, então o denominador vira o Previsto
+          // total do grupo (aliada, ou aliada+região quando houver split) --
+          // não da seção inteira.
+          const denominador = dataset.regiao ? `Previsto total de ${dataset.aliada} — ${dataset.regiao === 'CAPITAL' ? 'Capital' : 'Interior'}`
+            : dataset.aliada ? 'Previsto total da aliada' : 'Previsto total da seção';
 
           return '<span class="formula-linha">'
             + '<strong class="formula-destaque">Sugestão</strong> <span>=</span> '
@@ -324,22 +328,27 @@ document.addEventListener('DOMContentLoaded', () => {
       btn.addEventListener('click', () => {
         const cfg = CONFIG_RAPIDO_CAMPOS[btn.dataset.campo] || CONFIG_RAPIDO_CAMPOS.previsto;
         const aliada = btn.dataset.aliada || '';
+        const regiao = btn.dataset.regiao || '';
+        const regiaoLabel = regiao === 'CAPITAL' ? 'Capital' : regiao === 'INTERIOR' ? 'Interior' : '';
+        const escopoLabel = regiaoLabel ? `${aliada} — ${regiaoLabel}` : aliada;
         rapidoTipoInput.value = btn.dataset.tipo;
         rapidoCampoInput.value = btn.dataset.campo;
         if (rapidoAliadaInput) rapidoAliadaInput.value = aliada;
+        if (rapidoRegiaoInput) rapidoRegiaoInput.value = regiao;
         rapidoValorInput.value = btn.dataset.valor;
         rapidoValorInput.min = cfg.min;
         if (cfg.max === null) rapidoValorInput.removeAttribute('max');
         else rapidoValorInput.max = cfg.max;
         rapidoValorInput.step = cfg.step;
-        // Título e escopo dizem se está editando o padrão (todas) ou uma aliada.
+        // Título e escopo dizem se está editando o padrão (todas), uma aliada
+        // inteira, ou só a região (Capital/Interior) daquela aliada.
         rapidoTitulo.textContent = aliada
-          ? `${cfg.titulo} — ${btn.dataset.label} · ${aliada}`
+          ? `${cfg.titulo} — ${btn.dataset.label} · ${escopoLabel}`
           : `${cfg.titulo} — ${btn.dataset.label}`;
         if (rapidoEscopo) {
           rapidoEscopo.hidden = !aliada;
           rapidoEscopo.textContent = aliada
-            ? `Editando só a aliada ${aliada}. As outras aliadas não mudam.`
+            ? `Editando só ${escopoLabel}. O resto não muda.`
             : '';
         }
         // "Voltar ao padrão" só faz sentido quando editando uma aliada com valor
@@ -406,6 +415,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const janelasLabel = document.getElementById('janelas-edit-label');
     const janelasLista = document.getElementById('janelas-edit-lista');
     const janelasAliadaInput = document.getElementById('janelas-edit-aliada');
+    const janelasRegiaoInput = document.getElementById('janelas-edit-regiao');
     const janelasEscopo = document.getElementById('janelas-edit-escopo');
     const janelasResetBtn = document.getElementById('janelas-edit-reset-btn');
     const janelasCloseBtn = document.getElementById('janelas-edit-close-btn');
@@ -418,11 +428,15 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!Array.isArray(itens) || itens.length === 0) return;
 
         const aliada = btn.dataset.aliada || '';
+        const regiao = btn.dataset.regiao || '';
+        const regiaoLabel = regiao === 'CAPITAL' ? 'Capital' : regiao === 'INTERIOR' ? 'Interior' : '';
+        const escopoLabel = regiaoLabel ? `${aliada} — ${regiaoLabel}` : aliada;
         if (janelasAliadaInput) janelasAliadaInput.value = aliada;
-        janelasLabel.textContent = aliada ? `${btn.dataset.label} · ${aliada}` : btn.dataset.label;
+        if (janelasRegiaoInput) janelasRegiaoInput.value = regiao;
+        janelasLabel.textContent = aliada ? `${btn.dataset.label} · ${escopoLabel}` : btn.dataset.label;
         if (janelasEscopo) {
           janelasEscopo.hidden = !aliada;
-          janelasEscopo.textContent = aliada ? `Editando só a aliada ${aliada}. As outras aliadas não mudam.` : '';
+          janelasEscopo.textContent = aliada ? `Editando só ${escopoLabel}. O resto não muda.` : '';
         }
         if (janelasResetBtn) janelasResetBtn.hidden = !(aliada && btn.classList.contains('cfg-proprio'));
         janelasLista.innerHTML = '';

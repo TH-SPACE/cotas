@@ -8,7 +8,7 @@
         Configurações
       </h2>
       <p class="hint">
-        Tempos por bucket e PU por Specification Product em tabelas únicas (coluna por seção). Upload manual de backlog e Previsto/Janelas/PU/Carga (menos usados agora que dá pra editar direto na página inicial) ficam recolhidos no final.
+        Tempos por bucket, Região por bucket (Capital/Interior) e PU por Specification Product em tabelas únicas (coluna por seção). Upload manual de backlog e Previsto/Janelas/PU/Carga (menos usados agora que dá pra editar direto na página inicial) ficam recolhidos no final.
       </p>
     </div>
     <div class="panel-header-actions">
@@ -68,6 +68,54 @@
 
     <div class="modal-footer">
       <button type="submit" title="Grava estes tempos em depara_tempo_bucket">Salvar tempos</button>
+    </div>
+  </form>
+</section>
+
+<section class="panel config-page-panel" id="config-regiao-bucket">
+  <div class="modal-header">
+    <h3 title="Classifica cada bucket como Capital ou Interior, pra poder ter configuração (Previsto/Carga/Janela/Meta PU) diferente entre eles dentro da mesma aliada">Região por bucket (Capital/Interior)</h3>
+  </div>
+
+  <form method="post" action="/config/bucket-regiao" class="modal-section" data-loading="Salvando região…">
+    <%- include('partials/hidden-config-estado', { exceto: [] }) %>
+    <div class="modal-body">
+      <p class="hint">
+        Bucket sem classificação conta como <strong>Interior</strong> por padrão — só precisa marcar as exceções de Capital.
+        A faixa de configuração da aliada, na página inicial, só se divide em Capital/Interior quando a aliada tiver buckets
+        classificados nas duas regiões (VIVO não aparece aqui — é o bucket curinga, sem armário próprio).
+      </p>
+      <table class="tempo-table">
+        <thead>
+          <tr>
+            <th title="Empresa aliada dona do bucket">Aliada</th>
+            <th title="Nome do bucket em depara_bucket">Bucket</th>
+            <th title="Capital ou Interior — usado pra dar configuração separada dentro da mesma aliada">Região</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% let aliadaRegiaoBucketAtual = null; %>
+          <% bucketsClassificaveis.forEach(b => { %>
+            <% const novaAliadaRegiaoBucket = b.aliada !== aliadaRegiaoBucketAtual; aliadaRegiaoBucketAtual = b.aliada; %>
+            <% const regiaoAtualBucket = bucketRegiaoMap[b.bucket] || 'INTERIOR'; %>
+            <tr class="<%= novaAliadaRegiaoBucket ? 'group-start' : '' %>">
+              <td><span class="aliada-badge aliada-color-<%= aliadaCoresBucketsClassificaveis[b.aliada] %>"><%= b.aliada %></span></td>
+              <td class="celula-truncada" title="<%= b.bucket %>"><%= b.bucket %></td>
+              <td>
+                <input type="hidden" name="bucket[]" value="<%= b.bucket %>" />
+                <select name="regiao[]" aria-label="Região de <%= b.bucket %>" title="Capital ou Interior para <%= b.bucket %>">
+                  <option value="INTERIOR" <%= regiaoAtualBucket === 'INTERIOR' ? 'selected' : '' %>>Interior</option>
+                  <option value="CAPITAL" <%= regiaoAtualBucket === 'CAPITAL' ? 'selected' : '' %>>Capital</option>
+                </select>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="modal-footer">
+      <button type="submit" title="Grava esta classificação em bucket_regiao">Salvar região</button>
     </div>
   </form>
 </section>

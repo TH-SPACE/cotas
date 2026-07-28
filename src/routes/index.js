@@ -53,11 +53,22 @@ const {
 } = require('../services/cotasService');
 const { getTemposBucket, atualizarTemposBucket } = require('../services/temposBucketService');
 const {
-  calcularSecaoPorAliada,
+  calcularSecaoPorAliadaRegiao,
   construirMapaCoresAliada,
 } = require('../services/calculoBacklogService');
 const { getConfiguracoesGerais, salvarConfiguracoesGerais } = require('../services/configGeralService');
 const { getConfiguracoesAliada, salvarConfiguracaoAliada, limparConfiguracaoAliada } = require('../services/configAliadaService');
+const {
+  getConfiguracoesAliadaRegiao,
+  salvarConfiguracaoAliadaRegiao,
+  limparConfiguracaoAliadaRegiao,
+} = require('../services/configAliadaRegiaoService');
+const {
+  getBucketsClassificaveis,
+  getBucketRegiao,
+  regiaoDoBucket,
+  salvarBucketRegiao,
+} = require('../services/bucketRegiaoService');
 const { getElosCredenciais, salvarElosCredenciais } = require('../services/elosCredenciaisService');
 const { getStatusRaspagem, solicitarExecucaoManual } = require('../services/raspagemStatusService');
 const { memoTTL } = require('../services/cacheUtil');
@@ -242,9 +253,12 @@ function montarQueryStringEstado(body) {
 // objeto de query string — usado tanto pela página principal quanto pela página de
 // resumo consolidado (/resumo-cotas), pra nunca fazer as duas divergirem.
 async function carregarDadosPainel(query) {
-  const [configGeral, configAliada] = await Promise.all([
+  const [configGeral, configAliada, configAliadaRegiao, bucketRegiaoMap, bucketsClassificaveis] = await Promise.all([
     getConfiguracoesGerais(),
     getConfiguracoesAliada(),
+    getConfiguracoesAliadaRegiao(),
+    getBucketRegiao(),
+    getBucketsClassificaveis(),
   ]);
 
   // Resolve um campo em camadas: override da aliada -> global -> default de
@@ -260,6 +274,24 @@ async function carregarDadosPainel(query) {
   // true quando a aliada tem valor PRÓPRIO para o campo (não está herdando o
   // global) -- a faixa da home usa isso pra marcar "próprio" vs "herda padrão".
   const temOverride = (aliada, chave) => !!(configAliada[aliada] && configAliada[aliada][chave] !== undefined);
+
+  // Camada MAIS específica, por cima da de aliada: override de (aliada,região)
+  // -> override da aliada inteira -> global -> default. Existe pra dar
+  // Previsto/Carga/%janela/Meta de PU diferente entre os buckets do interior e
+  // os da capital de uma mesma aliada (ver configAliadaRegiaoService.js /
+  // bucketRegiaoService.js). Os overrides de aliada já configurados continuam
+  // valendo como camada intermediária -- nada se perde.
+  const resolverAliadaRegiao = (aliada, regiao, chave, normalizar, padrao) => {
+    const overrideRegiao = configAliadaRegiao[aliada] && configAliadaRegiao[aliada][regiao];
+    if (overrideRegiao && overrideRegiao[chave] !== undefined) return normalizar(overrideRegiao[chave], padrao);
+    return resolverAliada(aliada, chave, normalizar, padrao);
+  };
+  // true só quando essa (aliada,região) EXATA tem valor próprio -- diferente de
+  // "herda da aliada" ou "herda do global", que contam como herdado pra badge.
+  const temOverrideRegiao = (aliada, regiao, chave) => {
+    const overrideRegiao = configAliadaRegiao[aliada] && configAliadaRegiao[aliada][regiao];
+    return !!(overrideRegiao && overrideRegiao[chave] !== undefined);
+  };
 
   // Config efetiva por aliada de uma seção, no formato que a faixa de edição da
   // home consome (1 objeto por aliada, com o valor resolvido + se é override).
@@ -277,6 +309,40 @@ async function carregarDadosPainel(query) {
         overrideMetaPu: temOverride(aliada, spec.metaChave),
         janelasEditaveis: spec.janelas.map(j => ({ nome: j.nome, valor: resolverAliada(aliada, j.nome, normalizarPercentual, j.padrao) })),
         overrideJanelas: spec.janelas.some(j => temOverride(aliada, j.nome)),
+      };
+    });
+    return mapa;
+  };
+
+  // Extrai os pares (aliada,região) realmente presentes nas linhas JÁ filtradas
+  // de uma seção (não um produto cartesiano) -- preserva a ordem de aparição.
+  const paresAliadaRegiao = (linhasSecao) => {
+    const vistos = new Set();
+    const pares = [];
+    linhasSecao.forEach(l => {
+      const chave = `${l.aliada}::${l.regiao}`;
+      if (!vistos.has(chave)) { vistos.add(chave); pares.push({ aliada: l.aliada, regiao: l.regiao }); }
+    });
+    return pares;
+  };
+
+  // Config efetiva por (aliada,região) de uma seção -- mapa ANINHADO
+  // {aliada: {regiao: {...}}}. A view usa `Object.keys(mapa[aliada]).length > 1`
+  // pra saber se aquela aliada tem split (mostra "— Capital"/"— Interior") ou
+  // continua com 1 faixa só (rótulo genérico, comportamento de antes).
+  const construirConfigPorAliadaRegiao = (pares, spec) => {
+    const mapa = {};
+    pares.forEach(({ aliada, regiao }) => {
+      const porAliada = mapa[aliada] || (mapa[aliada] = {});
+      porAliada[regiao] = {
+        percentual: resolverAliadaRegiao(aliada, regiao, spec.percentualChave, normalizarPercentual, spec.percentualPadrao),
+        overridePercentual: temOverrideRegiao(aliada, regiao, spec.percentualChave),
+        carga: resolverAliadaRegiao(aliada, regiao, spec.cargaChave, normalizarPu, spec.cargaPadrao),
+        overrideCarga: temOverrideRegiao(aliada, regiao, spec.cargaChave),
+        metaPu: resolverAliadaRegiao(aliada, regiao, spec.metaChave, normalizarMetaPuTecnico, spec.metaPadrao),
+        overrideMetaPu: temOverrideRegiao(aliada, regiao, spec.metaChave),
+        janelasEditaveis: spec.janelas.map(j => ({ nome: j.nome, valor: resolverAliadaRegiao(aliada, regiao, j.nome, normalizarPercentual, j.padrao) })),
+        overrideJanelas: spec.janelas.some(j => temOverrideRegiao(aliada, regiao, j.nome)),
       };
     });
     return mapa;
@@ -450,15 +516,33 @@ async function carregarDadosPainel(query) {
   const { linhas: linhasServicos, totalGeral: totalGeralServicos } = filtrarPorAliada(linhasServicosBruto, 'backlogServicos');
   const { linhas: linhasMe, totalGeral: totalGeralMe } = filtrarPorAliada(linhasMeBruto, 'backlogMe');
 
-  // Config efetiva por aliada de cada seção (para a faixa de edição da home).
-  // As MESMAS chaves de configuracoes_gerais, resolvidas em camadas por aliada.
-  const configPorAliadaReparos = construirConfigPorAliada(aliadasDisponiveis, {
+  // Atribui a região (CAPITAL/INTERIOR) de cada bucket (ver bucketRegiaoService.js;
+  // sem classificação = INTERIOR) e reordena por (aliada, região, bucket) -- os
+  // buckets de cada (aliada,região) precisam ficar CONTÍGUOS pra faixa de
+  // configuração da home e o cálculo por grupo funcionarem; `ORDER BY aliada,
+  // bucket` do SQL não garante isso sozinho (ex.: em ONDACOM, BKT_APARECIDA_GOIANIA
+  // vem alfabeticamente antes de BKT_GOIANIA_ONDACOM, que normalmente é a capital).
+  const aplicarRegiao = (linhasSecao) => {
+    linhasSecao.forEach(l => { l.regiao = regiaoDoBucket(l.bucket, bucketRegiaoMap); });
+    linhasSecao.sort((a, b) =>
+      a.aliada.localeCompare(b.aliada) || a.regiao.localeCompare(b.regiao) || a.bucket.localeCompare(b.bucket)
+    );
+    return linhasSecao;
+  };
+  aplicarRegiao(linhas);
+  aplicarRegiao(linhasInstalacoes);
+  aplicarRegiao(linhasServicos);
+  aplicarRegiao(linhasMe);
+
+  // Config efetiva por (aliada,região) de cada seção (para a faixa de edição da
+  // home). As MESMAS chaves de configuracoes_gerais, resolvidas em camadas.
+  const configPorAliadaReparos = construirConfigPorAliadaRegiao(paresAliadaRegiao(linhas), {
     percentualChave: 'percentual', percentualPadrao: PERCENTUAL_PADRAO,
     cargaChave: 'cargaReparo', cargaPadrao: CARGA_REPARO_PADRAO,
     metaChave: 'metaPuTecnico', metaPadrao: META_PU_TECNICO_PADRAO,
     janelas: [{ nome: 'percentualJanela', padrao: PERCENTUAL_JANELA_PADRAO }],
   });
-  const configPorAliadaInstalacoes = construirConfigPorAliada(aliadasDisponiveis, {
+  const configPorAliadaInstalacoes = construirConfigPorAliadaRegiao(paresAliadaRegiao(linhasInstalacoes), {
     percentualChave: 'percentualInstalacao', percentualPadrao: PERCENTUAL_INSTALACAO_PADRAO,
     cargaChave: 'cargaInstalacao', cargaPadrao: CARGA_INSTALACAO_PADRAO,
     metaChave: 'metaPuTecnicoInstalacao', metaPadrao: META_PU_TECNICO_INSTALACAO_PADRAO,
@@ -468,7 +552,7 @@ async function carregarDadosPainel(query) {
       { nome: 'percentualJanela3Instalacao', padrao: PERCENTUAL_JANELA3_INSTALACAO_PADRAO },
     ],
   });
-  const configPorAliadaServicos = construirConfigPorAliada(aliadasDisponiveis, {
+  const configPorAliadaServicos = construirConfigPorAliadaRegiao(paresAliadaRegiao(linhasServicos), {
     percentualChave: 'percentualServico', percentualPadrao: PERCENTUAL_SERVICO_PADRAO,
     cargaChave: 'cargaServico', cargaPadrao: CARGA_SERVICO_PADRAO,
     metaChave: 'metaPuTecnicoServico', metaPadrao: META_PU_TECNICO_SERVICO_PADRAO,
@@ -478,7 +562,7 @@ async function carregarDadosPainel(query) {
       { nome: 'percentualJanela3Servico', padrao: PERCENTUAL_JANELA3_SERVICO_PADRAO },
     ],
   });
-  const configPorAliadaMe = construirConfigPorAliada(aliadasDisponiveis, {
+  const configPorAliadaMe = construirConfigPorAliadaRegiao(paresAliadaRegiao(linhasMe), {
     percentualChave: 'percentualMe', percentualPadrao: PERCENTUAL_ME_PADRAO,
     cargaChave: 'cargaMe', cargaPadrao: CARGA_ME_PADRAO,
     metaChave: 'metaPuTecnicoMe', metaPadrao: META_PU_TECNICO_ME_PADRAO,
@@ -489,61 +573,69 @@ async function carregarDadosPainel(query) {
     ],
   });
 
-  // Adaptador: config por aliada -> shape que o orquestrador de cálculo espera.
-  // Reparos tem `pu` (peso fixo, herda global por aliada); os outros usam
-  // campoPuBruto (peso por Specification Product, independente de aliada).
-  const configDeReparo = (aliada) => {
-    const c = configPorAliadaReparos[aliada];
+  // Adaptador: config por (aliada,região) -> shape que o orquestrador de cálculo
+  // espera. `chaveGrupo` = "ALIADA::REGIAO" (ver calcularSecaoPorAliadaRegiao).
+  // Reparos tem `pu` (peso fixo, continua só por aliada -- não faz parte do
+  // pedido de split por região); os outros usam campoPuBruto (peso por
+  // Specification Product, independente de aliada/região).
+  const configDeReparo = (chaveGrupo) => {
+    const [aliada, regiao] = chaveGrupo.split('::');
+    const c = configPorAliadaReparos[aliada][regiao];
     return { percentual: c.percentual, carga: c.carga, metaPuTecnico: c.metaPu,
       percentuaisJanela: c.janelasEditaveis.map(j => j.valor),
       pu: resolverAliada(aliada, 'puReparo', normalizarPu, PU_REPARO_PADRAO) };
   };
-  const configDeSecao = (mapa) => (aliada) => {
-    const c = mapa[aliada];
+  const configDeSecao = (mapa) => (chaveGrupo) => {
+    const [aliada, regiao] = chaveGrupo.split('::');
+    const c = mapa[aliada][regiao];
     return { percentual: c.percentual, carga: c.carga, metaPuTecnico: c.metaPu,
       percentuaisJanela: c.janelasEditaveis.map(j => j.valor) };
   };
 
-  const { linhas: linhasComPrevisto, totais } = calcularSecaoPorAliada(linhas, {
+  const { linhas: linhasComPrevisto, totais } = calcularSecaoPorAliadaRegiao(linhas, {
     campoBacklog: 'backlogReparos', campoTempo: 'tempoReparoMinutos',
     numJanelas: JANELAS_REPARO.length, configDe: configDeReparo,
   });
 
-  const { linhas: linhasInstalacoesComPrevisto, totais: totaisInstalacoes } = calcularSecaoPorAliada(linhasInstalacoes, {
+  const { linhas: linhasInstalacoesComPrevisto, totais: totaisInstalacoes } = calcularSecaoPorAliadaRegiao(linhasInstalacoes, {
     campoBacklog: 'backlogInstalacoes', campoTempo: 'tempoInstalacaoMinutos', campoPuBruto: 'puBrutoTotal',
     numJanelas: JANELAS_INSTALACAO.length, configDe: configDeSecao(configPorAliadaInstalacoes),
   });
   const totalSugestaoInstalacoes = totaisInstalacoes.totalSugestao;
 
-  const { linhas: linhasServicosComPrevisto, totais: totaisServicos } = calcularSecaoPorAliada(linhasServicos, {
+  const { linhas: linhasServicosComPrevisto, totais: totaisServicos } = calcularSecaoPorAliadaRegiao(linhasServicos, {
     campoBacklog: 'backlogServicos', campoTempo: 'tempoServicoMinutos', campoPuBruto: 'puBrutoTotal',
     numJanelas: JANELAS_SERVICO.length, configDe: configDeSecao(configPorAliadaServicos),
   });
   const totalSugestaoServicos = totaisServicos.totalSugestao;
 
-  const { linhas: linhasMeComPrevisto, totais: totaisMe } = calcularSecaoPorAliada(linhasMe, {
+  const { linhas: linhasMeComPrevisto, totais: totaisMe } = calcularSecaoPorAliadaRegiao(linhasMe, {
     campoBacklog: 'backlogMe', campoTempo: 'tempoMeMinutos', campoPuBruto: 'puBrutoTotal',
     numJanelas: JANELAS_ME.length, configDe: configDeSecao(configPorAliadaMe),
   });
   const totalSugestaoMe = totaisMe.totalSugestao;
 
-  // Enriquece o mapa de config por aliada com o exemplo REAL daquela aliada (usado
-  // na fórmula dentro dos modais de Carga/Meta): Previsto total DA ALIADA (novo
-  // denominador da Sugestão, já que a Carga é por aliada) + o 1º bucket dela.
+  // Enriquece o mapa de config por (aliada,região) com o exemplo REAL daquele
+  // grupo (usado na fórmula dentro dos modais de Carga/Meta): Previsto total DO
+  // GRUPO (denominador da Sugestão, já que a Carga é redistribuída dentro do
+  // grupo) + o 1º bucket dele.
   const enriquecerExemplos = (mapa, linhasCalc) => {
     const agg = {};
     linhasCalc.forEach(l => {
-      const a = agg[l.aliada] || (agg[l.aliada] = {
+      const chave = `${l.aliada}::${l.regiao}`;
+      const a = agg[chave] || (agg[chave] = {
         totalPrevisto: 0, primeiroBucket: l.bucket, primeiroPrevisto: l.previstoResolucao, primeiroPu: l.pu,
       });
       a.totalPrevisto += l.previstoResolucao;
     });
     Object.keys(mapa).forEach(aliada => {
-      const a = agg[aliada];
-      mapa[aliada].exemploTotal = a ? a.totalPrevisto : 0;
-      mapa[aliada].exemploNome = a ? a.primeiroBucket : '';
-      mapa[aliada].exemploPrevisto = a ? a.primeiroPrevisto : 0;
-      mapa[aliada].exemploPu = a ? a.primeiroPu : 0;
+      Object.keys(mapa[aliada]).forEach(regiao => {
+        const a = agg[`${aliada}::${regiao}`];
+        mapa[aliada][regiao].exemploTotal = a ? a.totalPrevisto : 0;
+        mapa[aliada][regiao].exemploNome = a ? a.primeiroBucket : '';
+        mapa[aliada][regiao].exemploPrevisto = a ? a.primeiroPrevisto : 0;
+        mapa[aliada][regiao].exemploPu = a ? a.primeiroPu : 0;
+      });
     });
   };
   enriquecerExemplos(configPorAliadaReparos, linhasComPrevisto);
@@ -656,6 +748,15 @@ async function carregarDadosPainel(query) {
     // colunas da mesma linha, não tabelas separadas).
     temposBucket,
     aliadaCoresTemposBucket: construirMapaCoresAliada(ALIADA_COR_QTD, temposBucket),
+
+    // Região por bucket (CAPITAL/INTERIOR, ver bucketRegiaoService.js) -- tabela
+    // admin na página de Configurações. `bucketsClassificaveis` é a lista de
+    // buckets "reais" (com armário mapeado; a VIVO/BKT_GOIANIA não entra, é o
+    // curinga); `bucketRegiaoMap` é a classificação salva (bucket sem entrada
+    // aqui é INTERIOR por padrão).
+    bucketsClassificaveis,
+    bucketRegiaoMap,
+    aliadaCoresBucketsClassificaveis: construirMapaCoresAliada(ALIADA_COR_QTD, bucketsClassificaveis),
 
     // Credenciais da raspagem automática do Elos (elos-backlog-scraper) --
     // nunca inclui a senha, só usuário + quando foi a última atualização.
@@ -1220,15 +1321,23 @@ router.post('/config/rapido', async (req, res, next) => {
 
     // `aliadaConfig` (qual aliada editar) é distinto de `aliada` (o filtro global,
     // que viaja no estado via hidden-config-estado) -- sem aliadaConfig, grava o
-    // padrão global de sempre; com ela, grava/limpa só o override daquela aliada.
+    // padrão global de sempre. `regiaoConfig` (CAPITAL/INTERIOR) é a camada mais
+    // específica: toda faixa visível na home hoje corresponde a um (aliada,região)
+    // exato, então quando os dois vêm preenchidos grava/limpa SEMPRE nessa camada
+    // (nunca mais a de "aliada inteira", que vira só leitura/fallback a partir daqui).
     const aliada = typeof req.body.aliadaConfig === 'string' && req.body.aliadaConfig.trim()
       ? req.body.aliadaConfig.trim() : null;
+    const regiao = typeof req.body.regiaoConfig === 'string' && req.body.regiaoConfig.trim()
+      ? req.body.regiaoConfig.trim() : null;
 
-    if (req.body.reset && aliada) {
-      await limparConfiguracaoAliada(aliada, [cfg.chave]); // volta a herdar o global
+    if (req.body.reset && aliada && regiao) {
+      await limparConfiguracaoAliadaRegiao(aliada, regiao, [cfg.chave]); // volta a herdar aliada/global
+    } else if (req.body.reset && aliada) {
+      await limparConfiguracaoAliada(aliada, [cfg.chave]);
     } else {
       const valor = grupo.normalizar(req.body.valor, cfg.padrao);
-      if (aliada) await salvarConfiguracaoAliada(aliada, { [cfg.chave]: valor });
+      if (aliada && regiao) await salvarConfiguracaoAliadaRegiao(aliada, regiao, { [cfg.chave]: valor });
+      else if (aliada) await salvarConfiguracaoAliada(aliada, { [cfg.chave]: valor });
       else await salvarConfiguracoesGerais({ [cfg.chave]: valor });
     }
 
@@ -1247,11 +1356,16 @@ router.post('/config/janelas', async (req, res, next) => {
   try {
     const aliada = typeof req.body.aliadaConfig === 'string' && req.body.aliadaConfig.trim()
       ? req.body.aliadaConfig.trim() : null;
+    const regiao = typeof req.body.regiaoConfig === 'string' && req.body.regiaoConfig.trim()
+      ? req.body.regiaoConfig.trim() : null;
 
-    if (req.body.reset && aliada) {
-      // Volta a herdar o global em todas as janelas editáveis da seção enviadas.
+    if (req.body.reset && (aliada || regiao)) {
+      // Volta a herdar o nível de baixo em todas as janelas editáveis da seção enviadas.
       const chaves = Object.keys(JANELA_CAMPOS_PADRAO).filter(campo => req.body[campo] !== undefined);
-      if (chaves.length > 0) await limparConfiguracaoAliada(aliada, chaves);
+      if (chaves.length > 0) {
+        if (aliada && regiao) await limparConfiguracaoAliadaRegiao(aliada, regiao, chaves);
+        else if (aliada) await limparConfiguracaoAliada(aliada, chaves);
+      }
       return res.redirect(`/?${montarQueryStringEstado(req.body).toString()}`);
     }
 
@@ -1263,7 +1377,8 @@ router.post('/config/janelas', async (req, res, next) => {
     });
 
     if (Object.keys(valores).length > 0) {
-      if (aliada) await salvarConfiguracaoAliada(aliada, valores);
+      if (aliada && regiao) await salvarConfiguracaoAliadaRegiao(aliada, regiao, valores);
+      else if (aliada) await salvarConfiguracaoAliada(aliada, valores);
       else await salvarConfiguracoesGerais(valores);
     }
 
@@ -1298,6 +1413,26 @@ router.post('/config/tempo-bucket', async (req, res, next) => {
         && Number.isFinite(item.reparo) && item.reparo >= 0);
 
     await atualizarTemposBucket(atualizacoes);
+
+    res.redirect(`/configuracoes?${montarQueryStringEstado(req.body).toString()}`);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Classificação CAPITAL/INTERIOR de cada bucket (ver bucketRegiaoService.js) --
+// usada pra dar config (Previsto/Carga/Janela/Meta PU) separada por região
+// dentro de uma mesma aliada. Bucket sem linha salva aqui continua INTERIOR.
+router.post('/config/bucket-regiao', async (req, res, next) => {
+  try {
+    const buckets = [].concat(req.body.bucket || []);
+    const regioes = [].concat(req.body.regiao || []);
+
+    const atualizacoes = buckets
+      .map((bucket, i) => ({ bucket, regiao: regioes[i] }))
+      .filter(item => item.bucket && (item.regiao === 'CAPITAL' || item.regiao === 'INTERIOR'));
+
+    await salvarBucketRegiao(atualizacoes);
 
     res.redirect(`/configuracoes?${montarQueryStringEstado(req.body).toString()}`);
   } catch (err) {
