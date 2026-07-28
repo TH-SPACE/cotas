@@ -10,7 +10,11 @@ const pool = require('../db');
 // (percentualInstalacao, cargaReparo, percentualJanela1Servico, metaPuTecnicoMe, ...).
 // Aliada sem linha aqui simplesmente herda o global -- nada quebra pra quem já
 // estava configurado antes desta tabela existir.
+// Memoiza: só roda o CREATE TABLE uma vez por processo (antes ia ao banco a cada
+// getConfiguracoesAliada, ou seja, em toda página).
+let tabelaGarantida = false;
 async function criarTabela() {
+  if (tabelaGarantida) return;
   await pool.query(`
     CREATE TABLE IF NOT EXISTS configuracoes_aliada (
       ALIADA VARCHAR(50) NOT NULL,
@@ -20,6 +24,7 @@ async function criarTabela() {
       PRIMARY KEY (ALIADA, CHAVE)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
   `);
+  tabelaGarantida = true;
 }
 
 // Retorna um mapa aninhado aliada -> { chave -> valor (string) }. Quem chama

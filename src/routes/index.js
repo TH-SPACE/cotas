@@ -60,6 +60,18 @@ const { getConfiguracoesGerais, salvarConfiguracoesGerais } = require('../servic
 const { getConfiguracoesAliada, salvarConfiguracaoAliada, limparConfiguracaoAliada } = require('../services/configAliadaService');
 const { getElosCredenciais, salvarElosCredenciais } = require('../services/elosCredenciaisService');
 const { getStatusRaspagem, solicitarExecucaoManual } = require('../services/raspagemStatusService');
+const { memoTTL } = require('../services/cacheUtil');
+
+// As OPÇÕES de filtro (status/statusReason/tecnologia) varrem backlog_instalacoes/
+// backlog_elos (colunas TEXT, sem índice) e só mudam quando um novo backlog é
+// carregado -- cacheadas por 15s pra não pagar ~60ms de DISTINCT em TODA página.
+// Os NÚMEROS (getResumoBuckets*) continuam sempre frescos, sem cache. Staleness de
+// até 15s numa lista de checkbox de filtro é irrelevante.
+const FILTROS_TTL_MS = 15000;
+const getFiltrosReparoCache = memoTTL(getFiltrosDisponiveisReparo, FILTROS_TTL_MS);
+const getFiltrosInstalacoesCache = memoTTL(getFiltrosDisponiveisInstalacoes, FILTROS_TTL_MS);
+const getFiltrosServicosCache = memoTTL(getFiltrosDisponiveisServicos, FILTROS_TTL_MS);
+const getFiltrosMeCache = memoTTL(getFiltrosDisponiveisMe, FILTROS_TTL_MS);
 
 const router = express.Router();
 const upload = multer({ storage: multer.memoryStorage() });
@@ -285,9 +297,22 @@ async function carregarDadosPainel(query) {
 
   const tecnologiasSelecionadas = normalizarTecnologias(query.tecnologia, formReparoEnviado);
 
-  // Mesmo raciocínio do bloco de Instalações: os valores disponíveis (e o padrão
-  // pré-marcado) dependem do que existe hoje em backlog_elos.
-  const filtrosDisponiveisReparo = await getFiltrosDisponiveisReparo();
+  // Os 4 conjuntos de filtros disponíveis (status/statusReason/tecnologia por
+  // seção) são independentes entre si -> buscados em PARALELO num único lote, em
+  // vez de 4 esperas em série antes do lote principal. Cada um só depende do que
+  // existe hoje na base daquela seção (backlog_elos / backlog_instalacoes).
+  const [
+    filtrosDisponiveisReparo,
+    filtrosDisponiveisInstalacoes,
+    filtrosDisponiveisServicos,
+    filtrosDisponiveisMe,
+  ] = await Promise.all([
+    getFiltrosReparoCache(),
+    getFiltrosInstalacoesCache(),
+    getFiltrosServicosCache(),
+    getFiltrosMeCache(),
+  ]);
+
   const statusReparoSelecionados = normalizarListaComPadrao(
     query.statusReparo,
     filtrosDisponiveisReparo.status.filter(v => !STATUS_EXCLUIDOS_PADRAO_REPARO.includes(v)),
@@ -306,9 +331,6 @@ async function carregarDadosPainel(query) {
   const metaPuTecnicoInstalacao = normalizarMetaPuTecnico(configGeral.metaPuTecnicoInstalacao, META_PU_TECNICO_INSTALACAO_PADRAO);
   const cargaInstalacao = normalizarPu(configGeral.cargaInstalacao, CARGA_INSTALACAO_PADRAO);
 
-  // Os valores disponíveis (e, por tabela, o padrão pré-marcado) dependem do que
-  // existe hoje em backlog_instalacoes, então precisam vir antes de montar a seleção.
-  const filtrosDisponiveisInstalacoes = await getFiltrosDisponiveisInstalacoes();
   const statusInstalacaoSelecionados = normalizarListaComPadrao(
     query.statusInstalacao,
     filtrosDisponiveisInstalacoes.status.filter(v => !STATUS_EXCLUIDOS_PADRAO_INSTALACAO.includes(v)),
@@ -328,7 +350,6 @@ async function carregarDadosPainel(query) {
   const metaPuTecnicoServico = normalizarMetaPuTecnico(configGeral.metaPuTecnicoServico, META_PU_TECNICO_SERVICO_PADRAO);
   const cargaServico = normalizarPu(configGeral.cargaServico, CARGA_SERVICO_PADRAO);
 
-  const filtrosDisponiveisServicos = await getFiltrosDisponiveisServicos();
   const statusServicoSelecionados = normalizarListaComPadrao(
     query.statusServico,
     filtrosDisponiveisServicos.status.filter(v => !STATUS_EXCLUIDOS_PADRAO_SERVICO.includes(v)),
@@ -348,7 +369,6 @@ async function carregarDadosPainel(query) {
   const metaPuTecnicoMe = normalizarMetaPuTecnico(configGeral.metaPuTecnicoMe, META_PU_TECNICO_ME_PADRAO);
   const cargaMe = normalizarPu(configGeral.cargaMe, CARGA_ME_PADRAO);
 
-  const filtrosDisponiveisMe = await getFiltrosDisponiveisMe();
   const statusMeSelecionados = normalizarListaComPadrao(
     query.statusMe,
     filtrosDisponiveisMe.status.filter(v => !STATUS_EXCLUIDOS_PADRAO_ME.includes(v)),

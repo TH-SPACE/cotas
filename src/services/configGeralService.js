@@ -6,7 +6,11 @@ const pool = require('../db');
 // adicionado. Antes esses valores só viviam na query string da URL (ver
 // hidden-config-estado.ejs) e voltavam pro padrão fixo em routes/index.js
 // sempre que alguém abria um link "limpo" -- agora persistem de verdade.
+// Memoiza: o CREATE TABLE IF NOT EXISTS só precisa rodar uma vez por processo --
+// antes rodava a CADA getConfiguracoesGerais (toda página), uma ida ao banco à toa.
+let tabelaGarantida = false;
 async function criarTabela() {
+  if (tabelaGarantida) return;
   await pool.query(`
     CREATE TABLE IF NOT EXISTS configuracoes_gerais (
       CHAVE VARCHAR(50) PRIMARY KEY,
@@ -14,6 +18,7 @@ async function criarTabela() {
       ATUALIZADO_EM DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
   `);
+  tabelaGarantida = true;
 }
 
 // Retorna um mapa chave -> valor (string). Quem chama decide o normalizador e o

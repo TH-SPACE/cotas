@@ -6,7 +6,11 @@
 const pool = require('../db');
 const { criptografar } = require('./cryptoUtil');
 
+// Memoiza: só roda o CREATE TABLE uma vez por processo (getElosCredenciais é
+// chamado em toda página via carregarDadosPainel).
+let tabelaGarantida = false;
 async function criarTabelaElosCredenciais() {
+  if (tabelaGarantida) return;
   await pool.query(`
     CREATE TABLE IF NOT EXISTS elos_credenciais (
       id TINYINT PRIMARY KEY,
@@ -15,6 +19,7 @@ async function criarTabelaElosCredenciais() {
       atualizado_em DATETIME
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
   `);
+  tabelaGarantida = true;
 }
 
 // Nunca devolve a senha pro front -- só usuário e quando foi a última atualização,

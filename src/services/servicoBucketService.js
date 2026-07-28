@@ -37,18 +37,12 @@ const ESCOPO_PARAMS_BASE = [CLUSTER_ESCOPO, ...SPECIFICATION_TYPE_EXCLUIDOS, SPE
 // Valores distintos de STATUS/STATUS_REASON/TECNOLOGIA_ACESSO hoje na base (escopo
 // de Serviços), para montar os filtros no front sem hardcodar os valores.
 async function getFiltrosDisponiveisServicos() {
-  const [statusRows] = await pool.query(
-    `SELECT DISTINCT STATUS AS valor FROM backlog_instalacoes WHERE ${ESCOPO_SQL} ORDER BY STATUS`,
-    ESCOPO_PARAMS_BASE
-  );
-  const [statusReasonRows] = await pool.query(
-    `SELECT DISTINCT STATUS_REASON AS valor FROM backlog_instalacoes WHERE ${ESCOPO_SQL} ORDER BY STATUS_REASON`,
-    ESCOPO_PARAMS_BASE
-  );
-  const [tecnologiaRows] = await pool.query(
-    `SELECT DISTINCT TECNOLOGIA_ACESSO AS valor FROM backlog_instalacoes WHERE ${ESCOPO_SQL} AND TECNOLOGIA_ACESSO <> '' ORDER BY TECNOLOGIA_ACESSO`,
-    ESCOPO_PARAMS_BASE
-  );
+  // As 3 queries são independentes -> rodam em paralelo (1/3 das idas ao banco).
+  const [[statusRows], [statusReasonRows], [tecnologiaRows]] = await Promise.all([
+    pool.query(`SELECT DISTINCT STATUS AS valor FROM backlog_instalacoes WHERE ${ESCOPO_SQL} ORDER BY STATUS`, ESCOPO_PARAMS_BASE),
+    pool.query(`SELECT DISTINCT STATUS_REASON AS valor FROM backlog_instalacoes WHERE ${ESCOPO_SQL} ORDER BY STATUS_REASON`, ESCOPO_PARAMS_BASE),
+    pool.query(`SELECT DISTINCT TECNOLOGIA_ACESSO AS valor FROM backlog_instalacoes WHERE ${ESCOPO_SQL} AND TECNOLOGIA_ACESSO <> '' ORDER BY TECNOLOGIA_ACESSO`, ESCOPO_PARAMS_BASE),
+  ]);
 
   return {
     status: statusRows.map(r => r.valor),

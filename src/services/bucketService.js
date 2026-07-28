@@ -156,14 +156,11 @@ async function getFiltrosDisponiveisReparo() {
   const escopo = 'CLUSTER_ = ? AND SPECIFICATION_TYPE = ?';
   const params = [CLUSTER_ESCOPO, SPECIFICATION_TYPE_REPARO];
 
-  const [statusRows] = await pool.query(
-    `SELECT DISTINCT STATUS AS valor FROM ${TABELA_BACKLOG_ELOS} WHERE ${escopo} ORDER BY STATUS`,
-    params
-  );
-  const [statusReasonRows] = await pool.query(
-    `SELECT DISTINCT STATUS_REASON AS valor FROM ${TABELA_BACKLOG_ELOS} WHERE ${escopo} ORDER BY STATUS_REASON`,
-    params
-  );
+  // As 2 queries são independentes -> rodam em paralelo (metade das idas ao banco).
+  const [[statusRows], [statusReasonRows]] = await Promise.all([
+    pool.query(`SELECT DISTINCT STATUS AS valor FROM ${TABELA_BACKLOG_ELOS} WHERE ${escopo} ORDER BY STATUS`, params),
+    pool.query(`SELECT DISTINCT STATUS_REASON AS valor FROM ${TABELA_BACKLOG_ELOS} WHERE ${escopo} ORDER BY STATUS_REASON`, params),
+  ]);
 
   return {
     status: statusRows.map(r => r.valor),

@@ -30,18 +30,12 @@ async function getFiltrosDisponiveisInstalacoes() {
   const escopo = 'CLUSTER_ = ? AND SPECIFICATION_TYPE = ?';
   const params = [CLUSTER_ESCOPO, SPECIFICATION_TYPE_INSTALACAO];
 
-  const [statusRows] = await pool.query(
-    `SELECT DISTINCT STATUS AS valor FROM backlog_instalacoes WHERE ${escopo} ORDER BY STATUS`,
-    params
-  );
-  const [statusReasonRows] = await pool.query(
-    `SELECT DISTINCT STATUS_REASON AS valor FROM backlog_instalacoes WHERE ${escopo} ORDER BY STATUS_REASON`,
-    params
-  );
-  const [tecnologiaRows] = await pool.query(
-    `SELECT DISTINCT TECNOLOGIA_ACESSO AS valor FROM backlog_instalacoes WHERE ${escopo} AND TECNOLOGIA_ACESSO <> '' ORDER BY TECNOLOGIA_ACESSO`,
-    params
-  );
+  // As 3 queries são independentes -> rodam em paralelo (1/3 das idas ao banco).
+  const [[statusRows], [statusReasonRows], [tecnologiaRows]] = await Promise.all([
+    pool.query(`SELECT DISTINCT STATUS AS valor FROM backlog_instalacoes WHERE ${escopo} ORDER BY STATUS`, params),
+    pool.query(`SELECT DISTINCT STATUS_REASON AS valor FROM backlog_instalacoes WHERE ${escopo} ORDER BY STATUS_REASON`, params),
+    pool.query(`SELECT DISTINCT TECNOLOGIA_ACESSO AS valor FROM backlog_instalacoes WHERE ${escopo} AND TECNOLOGIA_ACESSO <> '' ORDER BY TECNOLOGIA_ACESSO`, params),
+  ]);
 
   return {
     status: statusRows.map(r => r.valor),
