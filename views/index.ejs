@@ -23,27 +23,60 @@
 <% // No botão "Sugestão" (campo carga), `exemplo` carrega o Previsto do 1º bucket
    // da seção + o Previsto total, pra simular a fórmula com dado real no modal
    // em vez de números fixos/inventados. %>
-<% const botaoConfigRapido = (campo, tipo, label, valor, texto, titulo, exemplo) => {
+<% // `aliada` (opcional) faz o botão editar o override DAQUELA aliada (data-aliada
+   // -> aliadaConfig no POST) em vez do padrão global; `herdado` marca visualmente
+   // que a aliada ainda herda o global (cfg-herdado) vs tem valor próprio (cfg-proprio). %>
+<% const botaoConfigRapido = (campo, tipo, label, valor, texto, titulo, exemplo, aliada, herdado) => {
   const atributosExemplo = exemplo
     ? Object.entries(exemplo).map(([chave, v]) => ` data-exemplo-${chave}="${v}"`).join('')
     : '';
-  return `<button type="button" class="config-rapido-btn" data-campo="${campo}" data-tipo="${tipo}" data-label="${label}" data-valor="${valor}" title="${titulo}"${atributosExemplo}>${texto}</button>`;
+  const attrAliada = aliada ? ` data-aliada="${aliada}"` : '';
+  const clsHerdado = aliada ? (herdado ? ' cfg-herdado' : ' cfg-proprio') : '';
+  return `<button type="button" class="config-rapido-btn${clsHerdado}" data-campo="${campo}" data-tipo="${tipo}" data-label="${label}" data-valor="${valor}" title="${titulo}"${attrAliada}${atributosExemplo}>${texto}</button>`;
 }; %>
-<% const exemploCarga = (lista, total) => ({ bucket: (lista[0] || {}).previstoResolucao || 0, total, nome: (lista[0] || {}).bucket || '' }); %>
 <% // Botão "ORDENS" (cabeçalho de grupo, colspan): abre o modal #janelas-edit-modal
    // (main.js) pra editar as % de janela de 1 seção -- `data-janelas` carrega as
    // editáveis + a última (sempre o restante, calculado, nunca enviada ao servidor). %>
-<% const botaoOrdens = (tipo, label, editaveis, labelsJanela) => {
+<% const botaoOrdens = (tipo, label, editaveis, labelsJanela, aliada, herdado) => {
   const somaEditaveis = editaveis.reduce((acc, e) => acc + Number(e.valor), 0);
   const itens = editaveis.map((e, i) => ({ nome: e.nome, rotulo: labelsJanela[i], valor: e.valor }));
   itens.push({ nome: null, rotulo: labelsJanela[labelsJanela.length - 1], valor: Math.max(0, 100 - somaEditaveis) });
-  return `<button type="button" class="ordens-editar-btn" data-tipo="${tipo}" data-label="${label}" data-janelas='${JSON.stringify(itens)}' title="Previsto dividido entre as ${labelsJanela.length} janelas de horário — clique para editar as %">ORDENS</button>`;
+  const attrAliada = aliada ? ` data-aliada="${aliada}"` : '';
+  const clsHerdado = aliada ? (herdado ? ' cfg-herdado' : ' cfg-proprio') : '';
+  return `<button type="button" class="ordens-editar-btn${clsHerdado}" data-tipo="${tipo}" data-label="${label}" data-janelas='${JSON.stringify(itens)}' title="Previsto dividido entre as ${labelsJanela.length} janelas de horário — clique para editar as % de ${aliada || 'todas as aliadas'}"${attrAliada}>ORDENS</button>`;
 }; %>
-<% // Cabeçalho "PU": edita a Meta de PU por técnico da seção (afeta a coluna
-   // Técnicos = PU ÷ Meta) -- diferente do peso de PU em si (só Reparos tem um
-   // valor fixo; Instalação/Serviço/ME usam PU por Specification Product,
-   // tabela própria que não cabe aqui), a Meta é 1 campo só nas 4 seções. %>
-<% const exemploMetaPu = (lista) => ({ pu: (lista[0] || {}).pu || 0, nome: (lista[0] || {}).bucket || '' }); %>
+<% // Formata número curto pro chip (2,9 em vez de 2.90; 50 em vez de 50.00). %>
+<% const numChip = (v) => { const n = Number(v); return (Number.isInteger(n) ? String(n) : n.toFixed(2).replace(/\.?0+$/, '')).replace('.', ','); }; %>
+<% // Logo da aliada (public/ability.png, public/ondacom.png). Aliada sem logo
+   // (VIVO) cai no badge de texto colorido de sempre. Usado no cabeçalho da faixa. %>
+<% const LOGOS_ALIADA = { ABILITY: 'ability.png', ONDACOM: 'ondacom.png' }; %>
+<% const marcaAliada = (aliada, corIdx) => {
+  const logo = LOGOS_ALIADA[String(aliada).toUpperCase()];
+  return logo
+    ? `<img src="/${logo}" alt="${aliada}" class="aliada-logo" />`
+    : `<span class="aliada-badge aliada-color-${corIdx}">${aliada}</span>`;
+}; %>
+<% // Faixa de configuração POR ALIADA: renderizada no divisor de cada grupo de
+   // aliada dentro da seção. Mostra o valor EFETIVO de cada campo daquela aliada
+   // (herda o global se não tiver override) e, ao clicar, abre os mesmos modais
+   // já existentes gravando só o override da aliada. `cfg` = configPorAliada<Secao>[aliada].
+   // colspan = 2 (aliada+bucket) + 3 (backlog) + 2×janelas + 2 (pu+técnicos). %>
+<% const faixaAliada = (tipo, label, aliada, corIdx, cfg, labelsJanela) => {
+  const colspan = 2 + 3 + labelsJanela.length * 2 + 2;
+  const exCarga = { bucket: cfg.exemploPrevisto, total: cfg.exemploTotal, nome: cfg.exemploNome };
+  const exMeta = { pu: cfg.exemploPu, nome: cfg.exemploNome };
+  const chips = [
+    botaoConfigRapido('previsto', tipo, label, cfg.percentual, `Previsto ${numChip(cfg.percentual)}%`, `Previsto de ${aliada} — clique para editar`, null, aliada, !cfg.overridePercentual),
+    botaoConfigRapido('carga', tipo, label, cfg.carga, `Carga ${numChip(cfg.carga)}`, `Carga de ${aliada} (base da Sugestão) — clique para editar`, exCarga, aliada, !cfg.overrideCarga),
+    botaoOrdens(tipo, label, cfg.janelasEditaveis, labelsJanela, aliada, !cfg.overrideJanelas),
+    botaoConfigRapido('metaPu', tipo, label, cfg.metaPu, `Meta PU ${numChip(cfg.metaPu)}`, `Meta de PU por técnico de ${aliada} — clique para editar`, exMeta, aliada, !cfg.overrideMetaPu),
+  ];
+  return `<tr class="aliada-config-row"><td colspan="${colspan}" class="aliada-config-td">`
+    + `<div class="aliada-config-faixa">`
+    + `<span class="aliada-config-nome">${marcaAliada(aliada, corIdx)}configuração da aliada</span>`
+    + `<span class="aliada-config-chips">${chips.join('')}</span>`
+    + `</div></td></tr>`;
+}; %>
 <% // Abas de seção no canto direito do cabeçalho de cada painel -- mesma posição/
    // estilo de Cotas Planejadas (.tabela-card-acoes > .secao-tabs), em vez de uma
    // barra solta acima dos painéis. Gerada 1x por seção (só a do painel visível
@@ -156,19 +189,15 @@
           <th rowspan="2" title="Empresa aliada responsável pelo bucket">Aliada</th>
           <th rowspan="2" title="Agrupamento de ARDs (armários) mapeado em depara_bucket">Bucket</th>
           <th colspan="3" class="group-header col-backlog col-divider" title="Quantidade de instalações em aberto, a meta calculada sobre elas e a Sugestão baseada na Carga configurada">BACKLOG</th>
-          <th colspan="<%= janelasInstalacaoLabels.length %>" class="group-header col-ordens col-divider th-clicavel"><%- botaoOrdens('instalacao', 'Instalação', [
-            { nome: 'percentualJanela1Instalacao', valor: percentualJanela1Instalacao },
-            { nome: 'percentualJanela2Instalacao', valor: percentualJanela2Instalacao },
-            { nome: 'percentualJanela3Instalacao', valor: percentualJanela3Instalacao },
-          ], janelasInstalacaoLabels) %></th>
+          <th colspan="<%= janelasInstalacaoLabels.length %>" class="group-header col-ordens col-divider" title="Previsto de cada bucket dividido entre as janelas de horário — % configurável por aliada na faixa de cada aliada">ORDENS</th>
           <th colspan="<%= janelasInstalacaoLabels.length %>" class="group-header col-minutos col-divider" title="Ordens de cada janela × tempo de instalação do bucket (depara_tempo_bucket)">COTAS(min)</th>
-          <th rowspan="2" class="num col-divider th-clicavel"><%- botaoConfigRapido('metaPu', 'instalacao', 'Instalação', metaPuTecnicoInstalacao, 'PU', 'Técnicos = PU ÷ Meta de PU por técnico — clique para editar a Meta', exemploMetaPu(linhasInstalacoes)) %></th>
+          <th rowspan="2" class="num col-divider" title="Técnicos = PU ÷ Meta de PU por técnico — Meta configurável por aliada na faixa de cada aliada">PU</th>
           <th rowspan="2" class="num" title="Técnicos necessários = PU ÷ Meta de PU por técnico, arredondado para cima (não existe fração de técnico)">Técnicos</th>
         </tr>
         <tr>
           <th class="num col-backlog col-divider" title="Total de instalações em aberto no bucket (regra de backlog no topo da página)">Backlog Instalações</th>
-          <th class="num col-backlog th-clicavel"><%- botaoConfigRapido('previsto', 'instalacao', 'Instalação', percentualInstalacao, `Previsto (${percentualInstalacao}%)`, 'Backlog Instalações × percentual configurado — clique para editar') %></th>
-          <th class="num col-backlog th-clicavel"><%- botaoConfigRapido('carga', 'instalacao', 'Instalação', cargaInstalacao, 'Sugestão', '(Previsto do bucket ÷ Previsto total de Instalações) × Carga — clique para editar a Carga', exemploCarga(linhasInstalacoes, totalPrevistoInstalacoes)) %></th>
+          <th class="num col-backlog" title="Backlog de Instalações × percentual de resolução — percentual configurável por aliada na faixa de cada aliada">Previsto</th>
+          <th class="num col-backlog" title="(Previsto do bucket ÷ Previsto total da aliada) × Carga — Carga configurável por aliada na faixa de cada aliada">Sugestão</th>
           <% janelasInstalacaoLabels.forEach((label, i) => { %>
             <th class="num col-ordens <%= i === 0 ? 'col-divider' : '' %>" title="Parte do Previsto alocada para a janela <%= label %>"><%- janelaDuasLinhas(label) %></th>
           <% }) %>
@@ -181,6 +210,7 @@
         <% let aliadaAtualInstalacoes = null; %>
         <% linhasInstalacoes.forEach(linha => { %>
           <% const novaAliadaInstalacoes = linha.aliada !== aliadaAtualInstalacoes; aliadaAtualInstalacoes = linha.aliada; %>
+          <% if (novaAliadaInstalacoes && configPorAliadaInstalacoes[linha.aliada]) { %><%- faixaAliada('instalacao', 'Instalação', linha.aliada, aliadaCoresInstalacoes[linha.aliada], configPorAliadaInstalacoes[linha.aliada], janelasInstalacaoLabels) %><% } %>
           <tr class="<%= novaAliadaInstalacoes ? 'group-start' : '' %>">
             <td><span class="aliada-badge aliada-color-<%= aliadaCoresInstalacoes[linha.aliada] %>"><%= linha.aliada %></span></td>
             <td class="celula-truncada" title="<%= linha.bucket %>"><%= linha.bucket %></td>
@@ -322,19 +352,15 @@
           <th rowspan="2" title="Empresa aliada responsável pelo bucket">Aliada</th>
           <th rowspan="2" title="Agrupamento de ARDs (armários) mapeado em depara_bucket">Bucket</th>
           <th colspan="3" class="group-header col-backlog col-divider" title="Quantidade de serviços em aberto, a meta calculada sobre eles e a Sugestão baseada na Carga configurada">BACKLOG</th>
-          <th colspan="<%= janelasServicoLabels.length %>" class="group-header col-ordens col-divider th-clicavel"><%- botaoOrdens('servico', 'Serviço', [
-            { nome: 'percentualJanela1Servico', valor: percentualJanela1Servico },
-            { nome: 'percentualJanela2Servico', valor: percentualJanela2Servico },
-            { nome: 'percentualJanela3Servico', valor: percentualJanela3Servico },
-          ], janelasServicoLabels) %></th>
+          <th colspan="<%= janelasServicoLabels.length %>" class="group-header col-ordens col-divider" title="Previsto de cada bucket dividido entre as janelas de horário — % configurável por aliada na faixa de cada aliada">ORDENS</th>
           <th colspan="<%= janelasServicoLabels.length %>" class="group-header col-minutos col-divider" title="Ordens de cada janela × tempo de serviço do bucket (depara_tempo_bucket)">COTAS(min)</th>
-          <th rowspan="2" class="num col-divider th-clicavel"><%- botaoConfigRapido('metaPu', 'servico', 'Serviço', metaPuTecnicoServico, 'PU', 'Técnicos = PU ÷ Meta de PU por técnico — clique para editar a Meta', exemploMetaPu(linhasServicos)) %></th>
+          <th rowspan="2" class="num col-divider" title="Técnicos = PU ÷ Meta de PU por técnico — Meta configurável por aliada na faixa de cada aliada">PU</th>
           <th rowspan="2" class="num" title="Técnicos necessários = PU ÷ Meta de PU por técnico, arredondado para cima (não existe fração de técnico)">Técnicos</th>
         </tr>
         <tr>
           <th class="num col-backlog col-divider" title="Total de serviços em aberto no bucket (regra de backlog no topo da página)">Backlog Serviços</th>
-          <th class="num col-backlog th-clicavel"><%- botaoConfigRapido('previsto', 'servico', 'Serviço', percentualServico, `Previsto (${percentualServico}%)`, 'Backlog Serviços × percentual configurado — clique para editar') %></th>
-          <th class="num col-backlog th-clicavel"><%- botaoConfigRapido('carga', 'servico', 'Serviço', cargaServico, 'Sugestão', '(Previsto do bucket ÷ Previsto total de Serviços) × Carga — clique para editar a Carga', exemploCarga(linhasServicos, totalPrevistoServicos)) %></th>
+          <th class="num col-backlog" title="Backlog de Serviços × percentual de resolução — percentual configurável por aliada na faixa de cada aliada">Previsto</th>
+          <th class="num col-backlog" title="(Previsto do bucket ÷ Previsto total da aliada) × Carga — Carga configurável por aliada na faixa de cada aliada">Sugestão</th>
           <% janelasServicoLabels.forEach((label, i) => { %>
             <th class="num col-ordens <%= i === 0 ? 'col-divider' : '' %>" title="Parte do Previsto alocada para a janela <%= label %>"><%- janelaDuasLinhas(label) %></th>
           <% }) %>
@@ -347,6 +373,7 @@
         <% let aliadaAtualServicos = null; %>
         <% linhasServicos.forEach(linha => { %>
           <% const novaAliadaServicos = linha.aliada !== aliadaAtualServicos; aliadaAtualServicos = linha.aliada; %>
+          <% if (novaAliadaServicos && configPorAliadaServicos[linha.aliada]) { %><%- faixaAliada('servico', 'Serviços', linha.aliada, aliadaCoresServicos[linha.aliada], configPorAliadaServicos[linha.aliada], janelasServicoLabels) %><% } %>
           <tr class="<%= novaAliadaServicos ? 'group-start' : '' %>">
             <td><span class="aliada-badge aliada-color-<%= aliadaCoresServicos[linha.aliada] %>"><%= linha.aliada %></span></td>
             <td class="celula-truncada" title="<%= linha.bucket %>"><%= linha.bucket %></td>
@@ -488,19 +515,15 @@
           <th rowspan="2" title="Empresa aliada responsável pelo bucket">Aliada</th>
           <th rowspan="2" title="Agrupamento de ARDs (armários) mapeado em depara_bucket">Bucket</th>
           <th colspan="3" class="group-header col-backlog col-divider" title="Quantidade de ME em aberto, a meta calculada sobre elas e a Sugestão baseada na Carga configurada">BACKLOG</th>
-          <th colspan="<%= janelasMeLabels.length %>" class="group-header col-ordens col-divider th-clicavel"><%- botaoOrdens('me', 'ME', [
-            { nome: 'percentualJanela1Me', valor: percentualJanela1Me },
-            { nome: 'percentualJanela2Me', valor: percentualJanela2Me },
-            { nome: 'percentualJanela3Me', valor: percentualJanela3Me },
-          ], janelasMeLabels) %></th>
+          <th colspan="<%= janelasMeLabels.length %>" class="group-header col-ordens col-divider" title="Previsto de cada bucket dividido entre as janelas de horário — % configurável por aliada na faixa de cada aliada">ORDENS</th>
           <th colspan="<%= janelasMeLabels.length %>" class="group-header col-minutos col-divider" title="Ordens de cada janela × tempo de ME do bucket (depara_tempo_bucket)">COTAS(min)</th>
-          <th rowspan="2" class="num col-divider th-clicavel"><%- botaoConfigRapido('metaPu', 'me', 'ME', metaPuTecnicoMe, 'PU', 'Técnicos = PU ÷ Meta de PU por técnico — clique para editar a Meta', exemploMetaPu(linhasMe)) %></th>
+          <th rowspan="2" class="num col-divider" title="Técnicos = PU ÷ Meta de PU por técnico — Meta configurável por aliada na faixa de cada aliada">PU</th>
           <th rowspan="2" class="num" title="Técnicos necessários = PU ÷ Meta de PU por técnico, arredondado para cima (não existe fração de técnico)">Técnicos</th>
         </tr>
         <tr>
           <th class="num col-backlog col-divider" title="Total de ME em aberto no bucket (regra de backlog no topo da página)">Backlog ME</th>
-          <th class="num col-backlog th-clicavel"><%- botaoConfigRapido('previsto', 'me', 'ME', percentualMe, `Previsto (${percentualMe}%)`, 'Backlog ME × percentual configurado — clique para editar') %></th>
-          <th class="num col-backlog th-clicavel"><%- botaoConfigRapido('carga', 'me', 'ME', cargaMe, 'Sugestão', '(Previsto do bucket ÷ Previsto total de ME) × Carga — clique para editar a Carga', exemploCarga(linhasMe, totalPrevistoMe)) %></th>
+          <th class="num col-backlog" title="Backlog de ME × percentual de resolução — percentual configurável por aliada na faixa de cada aliada">Previsto</th>
+          <th class="num col-backlog" title="(Previsto do bucket ÷ Previsto total da aliada) × Carga — Carga configurável por aliada na faixa de cada aliada">Sugestão</th>
           <% janelasMeLabels.forEach((label, i) => { %>
             <th class="num col-ordens <%= i === 0 ? 'col-divider' : '' %>" title="Parte do Previsto alocada para a janela <%= label %>"><%- janelaDuasLinhas(label) %></th>
           <% }) %>
@@ -513,6 +536,7 @@
         <% let aliadaAtualMe = null; %>
         <% linhasMe.forEach(linha => { %>
           <% const novaAliadaMe = linha.aliada !== aliadaAtualMe; aliadaAtualMe = linha.aliada; %>
+          <% if (novaAliadaMe && configPorAliadaMe[linha.aliada]) { %><%- faixaAliada('me', 'ME', linha.aliada, aliadaCoresMe[linha.aliada], configPorAliadaMe[linha.aliada], janelasMeLabels) %><% } %>
           <tr class="<%= novaAliadaMe ? 'group-start' : '' %>">
             <td><span class="aliada-badge aliada-color-<%= aliadaCoresMe[linha.aliada] %>"><%= linha.aliada %></span></td>
             <td class="celula-truncada" title="<%= linha.bucket %>"><%= linha.bucket %></td>
@@ -646,17 +670,15 @@
           <th rowspan="2" title="Empresa aliada responsável pelo bucket">Aliada</th>
           <th rowspan="2" title="Agrupamento de armários (BKT) mapeado em depara_bucket">Bucket</th>
           <th colspan="3" class="group-header col-backlog col-divider" title="Quantidade de reparos em aberto, a meta calculada sobre eles e a Sugestão baseada na Carga configurada">BACKLOG</th>
-          <th colspan="2" class="group-header col-ordens col-divider th-clicavel"><%- botaoOrdens('reparo', 'Reparos', [
-            { nome: 'percentualJanela', valor: percentualJanela },
-          ], ['08:30 - 12:30', '12:30 - 18:00']) %></th>
+          <th colspan="2" class="group-header col-ordens col-divider" title="Previsto de cada bucket dividido entre as 2 janelas de horário — % configurável por aliada na faixa de cada aliada">ORDENS</th>
           <th colspan="2" class="group-header col-minutos col-divider" title="Ordens de cada janela × tempo de reparo do bucket (depara_tempo_bucket)">COTAS(min)</th>
-          <th rowspan="2" class="num col-divider th-clicavel"><%- botaoConfigRapido('metaPu', 'reparo', 'Reparos', metaPuTecnico, 'PU', 'Técnicos = PU ÷ Meta de PU por técnico — clique para editar a Meta', exemploMetaPu(linhas)) %></th>
+          <th rowspan="2" class="num col-divider" title="Técnicos = PU ÷ Meta de PU por técnico — Meta configurável por aliada na faixa de cada aliada">PU</th>
           <th rowspan="2" class="num" title="Técnicos necessários = PU ÷ Meta de PU por técnico, arredondado para cima (não existe fração de técnico)">Técnicos</th>
         </tr>
         <tr>
           <th class="num col-backlog col-divider" title="Total de chamados de reparo em aberto no bucket (regra de backlog no topo da página)">Backlog Reparos</th>
-          <th class="num col-backlog th-clicavel"><%- botaoConfigRapido('previsto', 'reparo', 'Reparos', percentual, `Previsto (${percentual}%)`, 'Backlog Reparos × percentual configurado — clique para editar') %></th>
-          <th class="num col-backlog th-clicavel"><%- botaoConfigRapido('carga', 'reparo', 'Reparos', cargaReparo, 'Sugestão', '(Previsto do bucket ÷ Previsto total de Reparos) × Carga — clique para editar a Carga', exemploCarga(linhas, totalPrevisto)) %></th>
+          <th class="num col-backlog" title="Backlog de Reparos × percentual de resolução — percentual configurável por aliada na faixa de cada aliada">Previsto</th>
+          <th class="num col-backlog" title="(Previsto do bucket ÷ Previsto total da aliada) × Carga — Carga configurável por aliada na faixa de cada aliada">Sugestão</th>
           <th class="num col-ordens col-divider" title="Parte do Previsto alocada para a janela 08:30-12:30"><%- janelaDuasLinhas('08:30 - 12:30') %></th>
           <th class="num col-ordens" title="Restante do Previsto: janela 12:30-18:00"><%- janelaDuasLinhas('12:30 - 18:00') %></th>
           <th class="num col-minutos col-divider" title="Ordens de 08:30-12:30 × tempo de reparo do bucket"><%- janelaDuasLinhas('08:30 - 12:30') %></th>
@@ -667,6 +689,7 @@
         <% let aliadaAtual = null; %>
         <% linhas.forEach(linha => { %>
           <% const novaAliada = linha.aliada !== aliadaAtual; aliadaAtual = linha.aliada; %>
+          <% if (novaAliada && configPorAliadaReparos[linha.aliada]) { %><%- faixaAliada('reparo', 'Reparos', linha.aliada, aliadaCores[linha.aliada], configPorAliadaReparos[linha.aliada], janelasReparoLabels) %><% } %>
           <tr class="<%= novaAliada ? 'group-start' : '' %>">
             <td><span class="aliada-badge aliada-color-<%= aliadaCores[linha.aliada] %>"><%= linha.aliada %></span></td>
             <td class="celula-truncada" title="<%= linha.bucket %>"><%= linha.bucket %></td>
@@ -732,8 +755,10 @@
   <form method="post" action="/config/rapido" class="modal-section" data-loading="Salvando…">
     <input type="hidden" name="tipo" id="config-rapido-tipo" value="" />
     <input type="hidden" name="campo" id="config-rapido-campo" value="" />
+    <input type="hidden" name="aliadaConfig" id="config-rapido-aliada" value="" />
     <%- include('partials/hidden-config-estado', { exceto: [] }) %>
     <div class="modal-body">
+      <p class="config-rapido-escopo" id="config-rapido-escopo" hidden></p>
       <div class="field-row">
         <label for="config-rapido-input" id="config-rapido-rotulo">Valor</label>
         <input type="number" id="config-rapido-input" name="valor" required autofocus />
@@ -741,8 +766,9 @@
       <p class="hint" id="config-rapido-dica"></p>
     </div>
     <div class="modal-footer">
+      <button type="submit" name="reset" value="1" formnovalidate class="btn-secundario config-rapido-reset" id="config-rapido-reset-btn" title="Remove o valor próprio desta aliada e volta a herdar o padrão" hidden>Voltar ao padrão</button>
       <button type="button" class="btn-secundario" id="config-rapido-cancel-btn">Cancelar</button>
-      <button type="submit" title="Grava este valor em configuracoes_gerais">Salvar</button>
+      <button type="submit">Salvar</button>
     </div>
   </form>
 </dialog>
@@ -753,14 +779,17 @@
     <button type="button" class="icon-btn" id="janelas-edit-close-btn" aria-label="Fechar" title="Fechar">&times;</button>
   </div>
   <form method="post" action="/config/janelas" class="modal-section" data-loading="Salvando…">
+    <input type="hidden" name="aliadaConfig" id="janelas-edit-aliada" value="" />
     <%- include('partials/hidden-config-estado', { exceto: [] }) %>
     <div class="modal-body">
+      <p class="config-rapido-escopo" id="janelas-edit-escopo" hidden></p>
       <div id="janelas-edit-lista"></div>
       <p class="hint">As % de cada janela somam 100 — a última é sempre o restante, calculada automaticamente.</p>
     </div>
     <div class="modal-footer">
+      <button type="submit" name="reset" value="1" formnovalidate class="btn-secundario config-rapido-reset" id="janelas-edit-reset-btn" title="Remove as % próprias desta aliada e volta a herdar o padrão" hidden>Voltar ao padrão</button>
       <button type="button" class="btn-secundario" id="janelas-edit-cancel-btn">Cancelar</button>
-      <button type="submit" title="Grava estes valores em configuracoes_gerais">Salvar</button>
+      <button type="submit">Salvar</button>
     </div>
   </form>
 </dialog>

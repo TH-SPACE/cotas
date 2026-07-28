@@ -242,10 +242,13 @@ document.addEventListener('DOMContentLoaded', () => {
   if (configRapidoModal) {
     const rapidoTipoInput = document.getElementById('config-rapido-tipo');
     const rapidoCampoInput = document.getElementById('config-rapido-campo');
+    const rapidoAliadaInput = document.getElementById('config-rapido-aliada');
     const rapidoValorInput = document.getElementById('config-rapido-input');
     const rapidoTitulo = document.getElementById('config-rapido-titulo');
     const rapidoRotulo = document.getElementById('config-rapido-rotulo');
     const rapidoDica = document.getElementById('config-rapido-dica');
+    const rapidoEscopo = document.getElementById('config-rapido-escopo');
+    const rapidoResetBtn = document.getElementById('config-rapido-reset-btn');
     const rapidoCloseBtn = document.getElementById('config-rapido-close-btn');
     const rapidoCancelBtn = document.getElementById('config-rapido-cancel-btn');
 
@@ -272,10 +275,13 @@ document.addEventListener('DOMContentLoaded', () => {
           const cargaAtual = Number(dataset.valor) || 0;
           const sugestao = total > 0 ? (bucketPrevisto / total) * cargaAtual : 0;
           const rotuloExemplo = dataset.exemploNome ? `Exemplo (${dataset.exemploNome}):` : 'Exemplo:';
+          // Com config por aliada, a Carga é redistribuída DENTRO da aliada, então
+          // o denominador vira o Previsto total da aliada (não da seção inteira).
+          const denominador = dataset.aliada ? 'Previsto total da aliada' : 'Previsto total da seção';
 
           return '<span class="formula-linha">'
             + '<strong class="formula-destaque">Sugestão</strong> <span>=</span> '
-            + '<span class="fracao"><span class="fracao-cima">Previsto do bucket</span><span class="fracao-baixo">Previsto total da seção</span></span> '
+            + `<span class="fracao"><span class="fracao-cima">Previsto do bucket</span><span class="fracao-baixo">${denominador}</span></span> `
             + '<span>×</span> <strong class="formula-destaque">Carga</strong>'
             + '</span>'
             + '<span class="formula-linha formula-exemplo">'
@@ -317,15 +323,28 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('.config-rapido-btn').forEach((btn) => {
       btn.addEventListener('click', () => {
         const cfg = CONFIG_RAPIDO_CAMPOS[btn.dataset.campo] || CONFIG_RAPIDO_CAMPOS.previsto;
+        const aliada = btn.dataset.aliada || '';
         rapidoTipoInput.value = btn.dataset.tipo;
         rapidoCampoInput.value = btn.dataset.campo;
+        if (rapidoAliadaInput) rapidoAliadaInput.value = aliada;
         rapidoValorInput.value = btn.dataset.valor;
         rapidoValorInput.min = cfg.min;
         if (cfg.max === null) rapidoValorInput.removeAttribute('max');
         else rapidoValorInput.max = cfg.max;
         rapidoValorInput.step = cfg.step;
-        rapidoTitulo.textContent = `${cfg.titulo} — ${btn.dataset.label}`;
-        rapidoRotulo.textContent = cfg.rotulo;
+        // Título e escopo dizem se está editando o padrão (todas) ou uma aliada.
+        rapidoTitulo.textContent = aliada
+          ? `${cfg.titulo} — ${btn.dataset.label} · ${aliada}`
+          : `${cfg.titulo} — ${btn.dataset.label}`;
+        if (rapidoEscopo) {
+          rapidoEscopo.hidden = !aliada;
+          rapidoEscopo.textContent = aliada
+            ? `Editando só a aliada ${aliada}. As outras aliadas não mudam.`
+            : '';
+        }
+        // "Voltar ao padrão" só faz sentido quando editando uma aliada com valor
+        // próprio (cfg-proprio); herdando o global já está no padrão.
+        if (rapidoResetBtn) rapidoResetBtn.hidden = !(aliada && btn.classList.contains('cfg-proprio'));
         rapidoDica.innerHTML = typeof cfg.dica === 'function' ? cfg.dica(btn.dataset) : cfg.dica;
         configRapidoModal.showModal();
         rapidoValorInput.focus();
@@ -386,6 +405,9 @@ document.addEventListener('DOMContentLoaded', () => {
   if (janelasModal) {
     const janelasLabel = document.getElementById('janelas-edit-label');
     const janelasLista = document.getElementById('janelas-edit-lista');
+    const janelasAliadaInput = document.getElementById('janelas-edit-aliada');
+    const janelasEscopo = document.getElementById('janelas-edit-escopo');
+    const janelasResetBtn = document.getElementById('janelas-edit-reset-btn');
     const janelasCloseBtn = document.getElementById('janelas-edit-close-btn');
     const janelasCancelBtn = document.getElementById('janelas-edit-cancel-btn');
 
@@ -395,7 +417,14 @@ document.addEventListener('DOMContentLoaded', () => {
         try { itens = JSON.parse(btn.dataset.janelas); } catch (e) { return; }
         if (!Array.isArray(itens) || itens.length === 0) return;
 
-        janelasLabel.textContent = btn.dataset.label;
+        const aliada = btn.dataset.aliada || '';
+        if (janelasAliadaInput) janelasAliadaInput.value = aliada;
+        janelasLabel.textContent = aliada ? `${btn.dataset.label} · ${aliada}` : btn.dataset.label;
+        if (janelasEscopo) {
+          janelasEscopo.hidden = !aliada;
+          janelasEscopo.textContent = aliada ? `Editando só a aliada ${aliada}. As outras aliadas não mudam.` : '';
+        }
+        if (janelasResetBtn) janelasResetBtn.hidden = !(aliada && btn.classList.contains('cfg-proprio'));
         janelasLista.innerHTML = '';
 
         const editaveis = [];

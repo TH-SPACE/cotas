@@ -15,6 +15,8 @@
   --aliada-2-fg: #17806b;
   --aliada-3-bg: #fff1d6;
   --aliada-3-fg: #9a6300;
+  --aliada-4-bg: #ece4fb;
+  --aliada-4-fg: #6c3ce0;
   --col-backlog-bg: #f1eefb;
   --col-ordens-bg: #eaf1fb;
   --col-minutos-bg: #fbf1e6;
@@ -1124,6 +1126,98 @@ body {
   border-top: 2px solid var(--border);
 }
 
+/* ---- Faixa de configuração POR ALIADA (home) ----
+   No divisor de cada grupo de aliada, uma linha com os campos editáveis DAQUELA
+   aliada (Previsto/Carga/ORDENS/Meta). Cada aliada trabalha diferente, então a
+   config saiu de "geral da seção" para "por aliada" -- esta faixa grava o override
+   da aliada (herda o padrão global quando não configurado). Os chips reaproveitam
+   .config-rapido-btn/.ordens-editar-btn (mesmo modal), mas aqui vivem sobre fundo
+   claro, então ganham estilo próprio -- e sem o pulso do cabeçalho (seriam dezenas
+   piscando ao carregar). */
+.cotas-table tbody tr.aliada-config-row td.aliada-config-td {
+  border-top: 2px solid var(--border);
+  padding: 0.3rem 0.55rem;
+}
+.cotas-table tbody tr.aliada-config-row,
+.cotas-table tbody tr.aliada-config-row:nth-child(even),
+.cotas-table tbody tr.aliada-config-row:hover {
+  background: rgba(108, 60, 224, 0.05);
+}
+.aliada-config-faixa {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.35rem 0.75rem;
+  flex-wrap: wrap;
+}
+.aliada-config-nome {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.66rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+.aliada-config-chips {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+.aliada-config-faixa .config-rapido-btn,
+.aliada-config-faixa .ordens-editar-btn {
+  animation: none;
+  margin: 0;
+  max-width: none;
+  padding: 0.12rem 0.55rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: #fff;
+  color: var(--text);
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-decoration: none;
+  text-transform: none;
+}
+/* Aliada COM valor próprio (override): destaca em accent. */
+.aliada-config-faixa .cfg-proprio {
+  border-color: var(--accent);
+  background: rgba(108, 60, 224, 0.12);
+  color: var(--accent);
+}
+/* Aliada herdando o padrão global: discreto, borda tracejada. */
+.aliada-config-faixa .cfg-herdado {
+  color: var(--muted);
+  border-style: dashed;
+}
+.aliada-config-faixa .config-rapido-btn:hover,
+.aliada-config-faixa .ordens-editar-btn:hover {
+  background: rgba(108, 60, 224, 0.16);
+  border-color: var(--accent);
+  color: var(--accent);
+  text-decoration: none;
+}
+.aliada-config-faixa .config-rapido-btn:focus-visible,
+.aliada-config-faixa .ordens-editar-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+/* Nota de escopo dentro do modal ("editando só a aliada X") + o botão "voltar ao
+   padrão" empurrado pra esquerda do rodapé. */
+.config-rapido-escopo {
+  margin: 0 0 0.6rem;
+  padding: 0.35rem 0.55rem;
+  background: rgba(108, 60, 224, 0.08);
+  border-radius: 6px;
+  font-size: 0.78rem;
+  color: var(--accent);
+}
+.config-rapido-reset {
+  margin-right: auto;
+}
+
 .cotas-table .valor-zero {
   color: var(--zero-color);
 }
@@ -1423,6 +1517,22 @@ body {
 .aliada-color-3 {
   background: var(--aliada-3-bg);
   color: var(--aliada-3-fg);
+}
+
+.aliada-color-4 {
+  background: var(--aliada-4-bg);
+  color: var(--aliada-4-fg);
+}
+
+/* Logo da aliada (ability.png/ondacom.png em public/) usada no cabeçalho da faixa
+   de config por aliada. Fundo transparente; altura travada pra alinhar com o
+   texto ao lado. Aliada sem logo (VIVO) continua com o badge de texto colorido. */
+.aliada-logo {
+  height: 20px;
+  width: auto;
+  max-width: 96px;
+  vertical-align: middle;
+  display: inline-block;
 }
 
 .footer {

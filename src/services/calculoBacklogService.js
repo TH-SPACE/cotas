@@ -131,16 +131,102 @@ function calcularTotais(linhasComTudo, config) {
   };
 }
 
-// Mapa aliada -> índice de cor (0..qtd-1), na ordem em que cada aliada aparece,
-// para reaproveitar as mesmas cores entre a tabela principal e a página de config.
+// Roda o pipeline inteiro (Previsto -> Sugestão -> ORDENS/COTAS/PU/Técnicos ->
+// Total) SEPARADAMENTE por aliada dentro de uma mesma seção -- cada aliada tem sua
+// própria config (Previsto%, Carga, %janela, Meta de PU), que pode divergir das
+// outras (ver configAliadaService.js). O ponto-chave é a Sugestão: como a Carga é
+// por aliada, ela é redistribuída DENTRO do grupo da aliada (denominador = Previsto
+// total DAQUELA aliada), não da seção inteira -- senão a Carga de uma aliada
+// "vazaria" pros buckets de outra.
+//
+// `configDe(aliada)` -> { percentual, carga, percentuaisJanela, pu, metaPuTecnico }.
+// `numJanelas` (labels.length) garante que uma seção vazia/filtrada ainda devolve
+// arrays de total do tamanho certo. O `maiorVolume` (top-N por backlog) continua
+// sendo calculado sobre a seção INTEIRA, não por aliada, pra não mudar quais
+// buckets aparecem destacados hoje.
+function calcularSecaoPorAliada(linhas, config) {
+  const { campoBacklog, campoTempo, campoPuBruto, numJanelas, configDe } = config;
+
+  const rankBacklog = new Map(
+    [...linhas]
+      .sort((a, b) => b[campoBacklog] - a[campoBacklog])
+      .map((linha, indice) => [linha.bucket, indice])
+  );
+
+  // Agrupa por aliada preservando a ordem em que cada aliada aparece.
+  const ordemAliadas = [];
+  const grupos = new Map();
+  linhas.forEach(linha => {
+    if (!grupos.has(linha.aliada)) { grupos.set(linha.aliada, []); ordemAliadas.push(linha.aliada); }
+    grupos.get(linha.aliada).push(linha);
+  });
+
+  const linhasPorBucket = new Map();
+  const totaisPorAliada = [];
+
+  ordemAliadas.forEach(aliada => {
+    const cfg = configDe(aliada);
+    const grupo = grupos.get(aliada);
+
+    const comPrevisto = grupo.map(linha => ({
+      ...linha,
+      previstoResolucao: Math.round(linha[campoBacklog] * cfg.percentual / 100),
+      maiorVolume: linha[campoBacklog] > 0 && rankBacklog.get(linha.bucket) < TOP_N_VOLUME_PADRAO,
+    }));
+
+    const totalPrevistoAliada = comPrevisto.reduce((acc, l) => acc + l.previstoResolucao, 0);
+    const comSugestao = calcularSugestao(comPrevisto, totalPrevistoAliada, cfg.carga);
+    const comDistribuicao = calcularDistribuicaoPorSugestao(comSugestao, {
+      percentuaisJanela: cfg.percentuaisJanela, pu: cfg.pu, metaPuTecnico: cfg.metaPuTecnico,
+      campoBacklog, campoTempo, campoPuBruto,
+    });
+
+    comDistribuicao.forEach(l => linhasPorBucket.set(l.bucket, l));
+    totaisPorAliada.push(calcularTotais(comDistribuicao, {
+      percentuaisJanela: cfg.percentuaisJanela, metaPuTecnico: cfg.metaPuTecnico,
+    }));
+  });
+
+  // Reconstrói na ordem ORIGINAL de entrada (bucket é único por seção).
+  const linhasSaida = linhas.map(linha => linhasPorBucket.get(linha.bucket));
+
+  // Total da seção: soma bottom-up das colunas aditivas + soma dos Técnicos por
+  // aliada (cada aliada é seu próprio "bolo", Técnicos = ceil(PU_aliada / Meta_aliada),
+  // então o total da seção é a SOMA desses ceils, não um ceil único).
+  const somar = (campo) => linhasSaida.reduce((acc, l) => acc + l[campo], 0);
+  const totais = {
+    totalPrevisto: somar('previstoResolucao'),
+    totalSugestao: somar('sugestao'),
+    totalJanelas: Array.from({ length: numJanelas }, (_, i) =>
+      linhasSaida.reduce((acc, l) => acc + (l.janelas[i] || 0), 0)
+    ),
+    totalMinutos: Array.from({ length: numJanelas }, (_, i) =>
+      linhasSaida.reduce((acc, l) => acc + (l.minutos[i] || 0), 0)
+    ),
+    totalPu: Math.round(somar('pu') * 100) / 100,
+    totalTecnicos: totaisPorAliada.reduce((acc, t) => acc + t.totalTecnicos, 0),
+  };
+
+  return { linhas: linhasSaida, totais };
+}
+
+// Cores FIXAS por aliada, pinadas pelo NOME (não mais pela ordem de aparição) --
+// o usuário quer ABILITY sempre laranja, ONDACOM sempre azul e VIVO sempre roxo,
+// e igual em todas as páginas (antes, sendo por ordem, a mesma aliada podia
+// trocar de cor entre telas conforme a ordem dos dados). Os índices batem com as
+// classes .aliada-color-N / variáveis --aliada-N-* em style.css (0=laranja,
+// 1=azul, 4=roxo).
+const ALIADA_COR_FIXA = { ABILITY: 0, ONDACOM: 1, VIVO: 4 };
+
+// Mapa aliada -> índice de cor. Aliada conhecida usa a cor fixa; qualquer aliada
+// nova/desconhecida cai num rodízio de cores livres (0..qtd-1), pra não quebrar.
 function construirMapaCoresAliada(qtdCores, ...listas) {
   const mapa = {};
-  let indice = 0;
+  let indiceLivre = 0;
   listas.flat().forEach(item => {
-    if (!(item.aliada in mapa)) {
-      mapa[item.aliada] = indice % qtdCores;
-      indice += 1;
-    }
+    if (item.aliada in mapa) return;
+    const fixa = ALIADA_COR_FIXA[String(item.aliada).toUpperCase()];
+    mapa[item.aliada] = fixa !== undefined ? fixa : (indiceLivre++ % qtdCores);
   });
   return mapa;
 }
@@ -151,5 +237,6 @@ module.exports = {
   calcularSugestao,
   calcularDistribuicaoPorSugestao,
   calcularTotais,
+  calcularSecaoPorAliada,
   construirMapaCoresAliada,
 };

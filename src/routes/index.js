@@ -53,14 +53,11 @@ const {
 } = require('../services/cotasService');
 const { getTemposBucket, atualizarTemposBucket } = require('../services/temposBucketService');
 const {
-  calcularPrevisto,
-  calcularTotalPrevisto,
-  calcularSugestao,
-  calcularDistribuicaoPorSugestao,
-  calcularTotais,
+  calcularSecaoPorAliada,
   construirMapaCoresAliada,
 } = require('../services/calculoBacklogService');
 const { getConfiguracoesGerais, salvarConfiguracoesGerais } = require('../services/configGeralService');
+const { getConfiguracoesAliada, salvarConfiguracaoAliada, limparConfiguracaoAliada } = require('../services/configAliadaService');
 const { getElosCredenciais, salvarElosCredenciais } = require('../services/elosCredenciaisService');
 const { getStatusRaspagem, solicitarExecucaoManual } = require('../services/raspagemStatusService');
 
@@ -233,7 +230,46 @@ function montarQueryStringEstado(body) {
 // objeto de query string — usado tanto pela página principal quanto pela página de
 // resumo consolidado (/resumo-cotas), pra nunca fazer as duas divergirem.
 async function carregarDadosPainel(query) {
-  const configGeral = await getConfiguracoesGerais();
+  const [configGeral, configAliada] = await Promise.all([
+    getConfiguracoesGerais(),
+    getConfiguracoesAliada(),
+  ]);
+
+  // Resolve um campo em camadas: override da aliada -> global -> default de
+  // código. É o coração da config por aliada -- cada aliada trabalha diferente,
+  // então o mesmo campo pode ter valor próprio por aliada; quem não tem override
+  // herda o global (comportamento de antes desta feature). `normalizar` valida
+  // (percentual 0-100, carga/pu >= 0, meta > 0).
+  const resolverAliada = (aliada, chave, normalizar, padrao) => {
+    const override = configAliada[aliada];
+    const bruto = (override && override[chave] !== undefined) ? override[chave] : configGeral[chave];
+    return normalizar(bruto, padrao);
+  };
+  // true quando a aliada tem valor PRÓPRIO para o campo (não está herdando o
+  // global) -- a faixa da home usa isso pra marcar "próprio" vs "herda padrão".
+  const temOverride = (aliada, chave) => !!(configAliada[aliada] && configAliada[aliada][chave] !== undefined);
+
+  // Config efetiva por aliada de uma seção, no formato que a faixa de edição da
+  // home consome (1 objeto por aliada, com o valor resolvido + se é override).
+  // `janelas` são as chaves das janelas EDITÁVEIS da seção (1 em Reparos, 3 nos
+  // outros); a última janela nunca é editável (é sempre o restante).
+  const construirConfigPorAliada = (aliadas, spec) => {
+    const mapa = {};
+    aliadas.forEach(aliada => {
+      mapa[aliada] = {
+        percentual: resolverAliada(aliada, spec.percentualChave, normalizarPercentual, spec.percentualPadrao),
+        overridePercentual: temOverride(aliada, spec.percentualChave),
+        carga: resolverAliada(aliada, spec.cargaChave, normalizarPu, spec.cargaPadrao),
+        overrideCarga: temOverride(aliada, spec.cargaChave),
+        metaPu: resolverAliada(aliada, spec.metaChave, normalizarMetaPuTecnico, spec.metaPadrao),
+        overrideMetaPu: temOverride(aliada, spec.metaChave),
+        janelasEditaveis: spec.janelas.map(j => ({ nome: j.nome, valor: resolverAliada(aliada, j.nome, normalizarPercentual, j.padrao) })),
+        overrideJanelas: spec.janelas.some(j => temOverride(aliada, j.nome)),
+      };
+    });
+    return mapa;
+  };
+
   const percentual = normalizarPercentual(configGeral.percentual, PERCENTUAL_PADRAO);
   const percentualJanela = normalizarPercentual(configGeral.percentualJanela, PERCENTUAL_JANELA_PADRAO);
   const puReparo = normalizarPu(configGeral.puReparo, PU_REPARO_PADRAO);
@@ -394,64 +430,106 @@ async function carregarDadosPainel(query) {
   const { linhas: linhasServicos, totalGeral: totalGeralServicos } = filtrarPorAliada(linhasServicosBruto, 'backlogServicos');
   const { linhas: linhasMe, totalGeral: totalGeralMe } = filtrarPorAliada(linhasMeBruto, 'backlogMe');
 
-  const linhasComPrevistoBruto = calcularPrevisto(linhas, { percentual, campoBacklog: 'backlogReparos' });
-  const totalPrevistoReparo = calcularTotalPrevisto(totalGeral, percentual);
-  const linhasComSugestaoReparo = calcularSugestao(linhasComPrevistoBruto, totalPrevistoReparo, cargaReparo);
-  const linhasComPrevisto = calcularDistribuicaoPorSugestao(linhasComSugestaoReparo, {
-    percentuaisJanela: [percentualJanela], pu: puReparo, metaPuTecnico,
-    campoBacklog: 'backlogReparos', campoTempo: 'tempoReparoMinutos',
+  // Config efetiva por aliada de cada seção (para a faixa de edição da home).
+  // As MESMAS chaves de configuracoes_gerais, resolvidas em camadas por aliada.
+  const configPorAliadaReparos = construirConfigPorAliada(aliadasDisponiveis, {
+    percentualChave: 'percentual', percentualPadrao: PERCENTUAL_PADRAO,
+    cargaChave: 'cargaReparo', cargaPadrao: CARGA_REPARO_PADRAO,
+    metaChave: 'metaPuTecnico', metaPadrao: META_PU_TECNICO_PADRAO,
+    janelas: [{ nome: 'percentualJanela', padrao: PERCENTUAL_JANELA_PADRAO }],
   });
-  const totais = calcularTotais(linhasComPrevisto, {
-    percentuaisJanela: [percentualJanela], metaPuTecnico,
+  const configPorAliadaInstalacoes = construirConfigPorAliada(aliadasDisponiveis, {
+    percentualChave: 'percentualInstalacao', percentualPadrao: PERCENTUAL_INSTALACAO_PADRAO,
+    cargaChave: 'cargaInstalacao', cargaPadrao: CARGA_INSTALACAO_PADRAO,
+    metaChave: 'metaPuTecnicoInstalacao', metaPadrao: META_PU_TECNICO_INSTALACAO_PADRAO,
+    janelas: [
+      { nome: 'percentualJanela1Instalacao', padrao: PERCENTUAL_JANELA1_INSTALACAO_PADRAO },
+      { nome: 'percentualJanela2Instalacao', padrao: PERCENTUAL_JANELA2_INSTALACAO_PADRAO },
+      { nome: 'percentualJanela3Instalacao', padrao: PERCENTUAL_JANELA3_INSTALACAO_PADRAO },
+    ],
+  });
+  const configPorAliadaServicos = construirConfigPorAliada(aliadasDisponiveis, {
+    percentualChave: 'percentualServico', percentualPadrao: PERCENTUAL_SERVICO_PADRAO,
+    cargaChave: 'cargaServico', cargaPadrao: CARGA_SERVICO_PADRAO,
+    metaChave: 'metaPuTecnicoServico', metaPadrao: META_PU_TECNICO_SERVICO_PADRAO,
+    janelas: [
+      { nome: 'percentualJanela1Servico', padrao: PERCENTUAL_JANELA1_SERVICO_PADRAO },
+      { nome: 'percentualJanela2Servico', padrao: PERCENTUAL_JANELA2_SERVICO_PADRAO },
+      { nome: 'percentualJanela3Servico', padrao: PERCENTUAL_JANELA3_SERVICO_PADRAO },
+    ],
+  });
+  const configPorAliadaMe = construirConfigPorAliada(aliadasDisponiveis, {
+    percentualChave: 'percentualMe', percentualPadrao: PERCENTUAL_ME_PADRAO,
+    cargaChave: 'cargaMe', cargaPadrao: CARGA_ME_PADRAO,
+    metaChave: 'metaPuTecnicoMe', metaPadrao: META_PU_TECNICO_ME_PADRAO,
+    janelas: [
+      { nome: 'percentualJanela1Me', padrao: PERCENTUAL_JANELA1_ME_PADRAO },
+      { nome: 'percentualJanela2Me', padrao: PERCENTUAL_JANELA2_ME_PADRAO },
+      { nome: 'percentualJanela3Me', padrao: PERCENTUAL_JANELA3_ME_PADRAO },
+    ],
   });
 
-  const percentuaisJanelaInstalacao = [percentualJanela1Instalacao, percentualJanela2Instalacao, percentualJanela3Instalacao];
-  const linhasInstalacoesComPrevistoBruto = calcularPrevisto(linhasInstalacoes, {
-    percentual: percentualInstalacao, campoBacklog: 'backlogInstalacoes',
+  // Adaptador: config por aliada -> shape que o orquestrador de cálculo espera.
+  // Reparos tem `pu` (peso fixo, herda global por aliada); os outros usam
+  // campoPuBruto (peso por Specification Product, independente de aliada).
+  const configDeReparo = (aliada) => {
+    const c = configPorAliadaReparos[aliada];
+    return { percentual: c.percentual, carga: c.carga, metaPuTecnico: c.metaPu,
+      percentuaisJanela: c.janelasEditaveis.map(j => j.valor),
+      pu: resolverAliada(aliada, 'puReparo', normalizarPu, PU_REPARO_PADRAO) };
+  };
+  const configDeSecao = (mapa) => (aliada) => {
+    const c = mapa[aliada];
+    return { percentual: c.percentual, carga: c.carga, metaPuTecnico: c.metaPu,
+      percentuaisJanela: c.janelasEditaveis.map(j => j.valor) };
+  };
+
+  const { linhas: linhasComPrevisto, totais } = calcularSecaoPorAliada(linhas, {
+    campoBacklog: 'backlogReparos', campoTempo: 'tempoReparoMinutos',
+    numJanelas: JANELAS_REPARO.length, configDe: configDeReparo,
   });
-  const totalPrevistoInstalacaoBase = calcularTotalPrevisto(totalGeralInstalacoes, percentualInstalacao);
-  const linhasInstalacoesComSugestao = calcularSugestao(linhasInstalacoesComPrevistoBruto, totalPrevistoInstalacaoBase, cargaInstalacao);
-  const linhasInstalacoesComPrevisto = calcularDistribuicaoPorSugestao(linhasInstalacoesComSugestao, {
-    percentuaisJanela: percentuaisJanelaInstalacao, metaPuTecnico: metaPuTecnicoInstalacao,
-    campoBacklog: 'backlogInstalacoes', campoTempo: 'tempoInstalacaoMinutos',
-    campoPuBruto: 'puBrutoTotal',
-  });
-  const totaisInstalacoes = calcularTotais(linhasInstalacoesComPrevisto, {
-    percentuaisJanela: percentuaisJanelaInstalacao, metaPuTecnico: metaPuTecnicoInstalacao,
+
+  const { linhas: linhasInstalacoesComPrevisto, totais: totaisInstalacoes } = calcularSecaoPorAliada(linhasInstalacoes, {
+    campoBacklog: 'backlogInstalacoes', campoTempo: 'tempoInstalacaoMinutos', campoPuBruto: 'puBrutoTotal',
+    numJanelas: JANELAS_INSTALACAO.length, configDe: configDeSecao(configPorAliadaInstalacoes),
   });
   const totalSugestaoInstalacoes = totaisInstalacoes.totalSugestao;
 
-  const percentuaisJanelaServico = [percentualJanela1Servico, percentualJanela2Servico, percentualJanela3Servico];
-  const linhasServicosComPrevistoBruto = calcularPrevisto(linhasServicos, {
-    percentual: percentualServico, campoBacklog: 'backlogServicos',
-  });
-  const totalPrevistoServicoBase = calcularTotalPrevisto(totalGeralServicos, percentualServico);
-  const linhasServicosComSugestao = calcularSugestao(linhasServicosComPrevistoBruto, totalPrevistoServicoBase, cargaServico);
-  const linhasServicosComPrevisto = calcularDistribuicaoPorSugestao(linhasServicosComSugestao, {
-    percentuaisJanela: percentuaisJanelaServico, metaPuTecnico: metaPuTecnicoServico,
-    campoBacklog: 'backlogServicos', campoTempo: 'tempoServicoMinutos',
-    campoPuBruto: 'puBrutoTotal',
-  });
-  const totaisServicos = calcularTotais(linhasServicosComPrevisto, {
-    percentuaisJanela: percentuaisJanelaServico, metaPuTecnico: metaPuTecnicoServico,
+  const { linhas: linhasServicosComPrevisto, totais: totaisServicos } = calcularSecaoPorAliada(linhasServicos, {
+    campoBacklog: 'backlogServicos', campoTempo: 'tempoServicoMinutos', campoPuBruto: 'puBrutoTotal',
+    numJanelas: JANELAS_SERVICO.length, configDe: configDeSecao(configPorAliadaServicos),
   });
   const totalSugestaoServicos = totaisServicos.totalSugestao;
 
-  const percentuaisJanelaMe = [percentualJanela1Me, percentualJanela2Me, percentualJanela3Me];
-  const linhasMeComPrevistoBruto = calcularPrevisto(linhasMe, {
-    percentual: percentualMe, campoBacklog: 'backlogMe',
-  });
-  const totalPrevistoMeBase = calcularTotalPrevisto(totalGeralMe, percentualMe);
-  const linhasMeComSugestao = calcularSugestao(linhasMeComPrevistoBruto, totalPrevistoMeBase, cargaMe);
-  const linhasMeComPrevisto = calcularDistribuicaoPorSugestao(linhasMeComSugestao, {
-    percentuaisJanela: percentuaisJanelaMe, metaPuTecnico: metaPuTecnicoMe,
-    campoBacklog: 'backlogMe', campoTempo: 'tempoMeMinutos',
-    campoPuBruto: 'puBrutoTotal',
-  });
-  const totaisMe = calcularTotais(linhasMeComPrevisto, {
-    percentuaisJanela: percentuaisJanelaMe, metaPuTecnico: metaPuTecnicoMe,
+  const { linhas: linhasMeComPrevisto, totais: totaisMe } = calcularSecaoPorAliada(linhasMe, {
+    campoBacklog: 'backlogMe', campoTempo: 'tempoMeMinutos', campoPuBruto: 'puBrutoTotal',
+    numJanelas: JANELAS_ME.length, configDe: configDeSecao(configPorAliadaMe),
   });
   const totalSugestaoMe = totaisMe.totalSugestao;
+
+  // Enriquece o mapa de config por aliada com o exemplo REAL daquela aliada (usado
+  // na fórmula dentro dos modais de Carga/Meta): Previsto total DA ALIADA (novo
+  // denominador da Sugestão, já que a Carga é por aliada) + o 1º bucket dela.
+  const enriquecerExemplos = (mapa, linhasCalc) => {
+    const agg = {};
+    linhasCalc.forEach(l => {
+      const a = agg[l.aliada] || (agg[l.aliada] = {
+        totalPrevisto: 0, primeiroBucket: l.bucket, primeiroPrevisto: l.previstoResolucao, primeiroPu: l.pu,
+      });
+      a.totalPrevisto += l.previstoResolucao;
+    });
+    Object.keys(mapa).forEach(aliada => {
+      const a = agg[aliada];
+      mapa[aliada].exemploTotal = a ? a.totalPrevisto : 0;
+      mapa[aliada].exemploNome = a ? a.primeiroBucket : '';
+      mapa[aliada].exemploPrevisto = a ? a.primeiroPrevisto : 0;
+      mapa[aliada].exemploPu = a ? a.primeiroPu : 0;
+    });
+  };
+  enriquecerExemplos(configPorAliadaReparos, linhasComPrevisto);
+  enriquecerExemplos(configPorAliadaInstalacoes, linhasInstalacoesComPrevisto);
+  enriquecerExemplos(configPorAliadaServicos, linhasServicosComPrevisto);
+  enriquecerExemplos(configPorAliadaMe, linhasMeComPrevisto);
 
   return {
     // Aliada: filtro global (compartilhado pelos 4 painéis), widget fica no
@@ -469,6 +547,7 @@ async function carregarDadosPainel(query) {
     puReparo,
     metaPuTecnico,
     cargaReparo,
+    configPorAliadaReparos,
     aliadaCores: construirMapaCoresAliada(ALIADA_COR_QTD, linhasComPrevisto, temposBucket),
     tecnologiasSelecionadas,
     tecnologiasDisponiveis,
@@ -493,6 +572,7 @@ async function carregarDadosPainel(query) {
     percentualJanela3Instalacao,
     metaPuTecnicoInstalacao,
     cargaInstalacao,
+    configPorAliadaInstalacoes,
     puProdutos,
     aliadaCoresInstalacoes: construirMapaCoresAliada(ALIADA_COR_QTD, linhasInstalacoesComPrevisto, temposBucket),
     filtrosDisponiveisInstalacoes,
@@ -517,6 +597,7 @@ async function carregarDadosPainel(query) {
     percentualJanela3Servico,
     metaPuTecnicoServico,
     cargaServico,
+    configPorAliadaServicos,
     puProdutosServicos,
     aliadaCoresServicos: construirMapaCoresAliada(ALIADA_COR_QTD, linhasServicosComPrevisto, temposBucket),
     filtrosDisponiveisServicos,
@@ -541,6 +622,7 @@ async function carregarDadosPainel(query) {
     percentualJanela3Me,
     metaPuTecnicoMe,
     cargaMe,
+    configPorAliadaMe,
     puProdutosMe,
     aliadaCoresMe: construirMapaCoresAliada(ALIADA_COR_QTD, linhasMeComPrevisto, temposBucket),
     filtrosDisponiveisMe,
@@ -1116,8 +1198,19 @@ router.post('/config/rapido', async (req, res, next) => {
     const cfg = grupo && grupo.mapa[req.body.tipo];
     if (!cfg) return res.redirect('/');
 
-    const valor = grupo.normalizar(req.body.valor, cfg.padrao);
-    await salvarConfiguracoesGerais({ [cfg.chave]: valor });
+    // `aliadaConfig` (qual aliada editar) é distinto de `aliada` (o filtro global,
+    // que viaja no estado via hidden-config-estado) -- sem aliadaConfig, grava o
+    // padrão global de sempre; com ela, grava/limpa só o override daquela aliada.
+    const aliada = typeof req.body.aliadaConfig === 'string' && req.body.aliadaConfig.trim()
+      ? req.body.aliadaConfig.trim() : null;
+
+    if (req.body.reset && aliada) {
+      await limparConfiguracaoAliada(aliada, [cfg.chave]); // volta a herdar o global
+    } else {
+      const valor = grupo.normalizar(req.body.valor, cfg.padrao);
+      if (aliada) await salvarConfiguracaoAliada(aliada, { [cfg.chave]: valor });
+      else await salvarConfiguracoesGerais({ [cfg.chave]: valor });
+    }
 
     res.redirect(`/?${montarQueryStringEstado(req.body).toString()}`);
   } catch (err) {
@@ -1132,6 +1225,16 @@ router.post('/config/rapido', async (req, res, next) => {
 // (não precisa de `tipo` pra saber quais são: os nomes dos campos já dizem).
 router.post('/config/janelas', async (req, res, next) => {
   try {
+    const aliada = typeof req.body.aliadaConfig === 'string' && req.body.aliadaConfig.trim()
+      ? req.body.aliadaConfig.trim() : null;
+
+    if (req.body.reset && aliada) {
+      // Volta a herdar o global em todas as janelas editáveis da seção enviadas.
+      const chaves = Object.keys(JANELA_CAMPOS_PADRAO).filter(campo => req.body[campo] !== undefined);
+      if (chaves.length > 0) await limparConfiguracaoAliada(aliada, chaves);
+      return res.redirect(`/?${montarQueryStringEstado(req.body).toString()}`);
+    }
+
     const valores = {};
     Object.keys(JANELA_CAMPOS_PADRAO).forEach((campo) => {
       if (req.body[campo] !== undefined) {
@@ -1140,7 +1243,8 @@ router.post('/config/janelas', async (req, res, next) => {
     });
 
     if (Object.keys(valores).length > 0) {
-      await salvarConfiguracoesGerais(valores);
+      if (aliada) await salvarConfiguracaoAliada(aliada, valores);
+      else await salvarConfiguracoesGerais(valores);
     }
 
     res.redirect(`/?${montarQueryStringEstado(req.body).toString()}`);
