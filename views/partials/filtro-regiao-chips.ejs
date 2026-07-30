@@ -1,0 +1,25 @@
+<%
+/*
+  Filtro de Região (CAPITAL/INTERIOR), mesmo padrão do filtro-aliada-chips.ejs
+  (pill estilo .secao-tab, multi-seleção via checkbox, auto-submit em main.js
+  pela classe `filtro-regiao-chips-form`). Fica sempre ao lado do filtro de
+  Aliada, nos mesmos 6 pontos das 5 páginas.
+
+  Espera em escopo (locals do render, não precisa passar explícito):
+  regioesDisponiveis, regioesSelecionadas, pathAtual, queryAtual.
+*/
+%>
+<% const rotuloRegiao = { CAPITAL: 'Capital', INTERIOR: 'Interior' }; %>
+<% if (typeof regioesDisponiveis !== 'undefined' && regioesDisponiveis.length > 0) { %>
+  <form method="get" action="<%= typeof pathAtual !== 'undefined' ? pathAtual : '/' %>" class="filtro-regiao-chips-form">
+    <div class="secao-tabs regiao-tabs" role="group" aria-label="Filtrar por Região">
+      <% regioesDisponiveis.forEach(function (valor) { %>
+        <label class="secao-tab regiao-chip<%= regioesSelecionadas.includes(valor) ? ' is-active' : '' %>">
+          <input type="checkbox" name="regiao" value="<%= valor %>" <%= regioesSelecionadas.includes(valor) ? 'checked' : '' %> />
+          <%= rotuloRegiao[valor] || valor %>
+        </label>
+      <% }) %>
+    </div>
+    <%- include('hidden-query-estado', { queryAtual: (typeof queryAtual !== 'undefined' ? queryAtual : {}), exceto: ['regiao'] }) %>
+  </form>
+<% } %>

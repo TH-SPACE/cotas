@@ -1955,17 +1955,20 @@ button.is-loading::after {
   cursor: not-allowed;
 }
 
-/* Filtro de Aliada (views/partials/filtro-aliada-chips.ejs), nas 5 páginas:
+/* Filtro de Aliada (views/partials/filtro-aliada-chips.ejs) e de Região
+   (views/partials/filtro-regiao-chips.ejs), nas 5 páginas, sempre lado a lado:
    mesma pill (.secao-tab/.is-active) das abas de seção/unidade, mas continua
    multi-seleção -- cada pill é um checkbox de verdade (não exclusivo como as
    abas), então mais de um pode ficar "is-active" ao mesmo tempo. */
-.aliada-chip {
+.aliada-chip,
+.regiao-chip {
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;
 }
 
-.aliada-chip input[type="checkbox"] {
+.aliada-chip input[type="checkbox"],
+.regiao-chip input[type="checkbox"] {
   margin: 0;
   accent-color: var(--accent);
 }

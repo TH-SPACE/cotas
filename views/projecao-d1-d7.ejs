@@ -105,6 +105,7 @@
         </div>
       </div>
       <%- include('partials/filtro-aliada-chips') %>
+      <%- include('partials/filtro-regiao-chips') %>
       <nav class="secao-tabs" aria-label="Seção">
         <% secoes.forEach((secao, i) => { %>
           <button type="button" class="secao-tab secao-aba <%= i === 0 ? 'is-active' : '' %>" data-secao="<%= secao.id %>" aria-pressed="<%= i === 0 ? 'true' : 'false' %>"><%= secao.label %></button>

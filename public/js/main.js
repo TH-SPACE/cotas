@@ -664,4 +664,15 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     });
   });
+
+  // Filtro de Região (views/partials/filtro-regiao-chips.ejs) -- mesmo mecanismo
+  // do filtro de Aliada acima, ao lado dele nas mesmas 5 páginas.
+  document.querySelectorAll('.filtro-regiao-chips-form').forEach((form) => {
+    form.querySelectorAll('input[type="checkbox"]').forEach((checkbox) => {
+      checkbox.addEventListener('change', () => {
+        sessionStorage.setItem(SCROLL_Y_KEY, String(window.scrollY));
+        form.submit();
+      });
+    });
+  });
 });

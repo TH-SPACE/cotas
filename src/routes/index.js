@@ -230,6 +230,7 @@ function normalizarListaComPadrao(valor, padrao, formEnviado) {
 function montarQueryStringEstado(body) {
   const params = new URLSearchParams();
   [].concat(body.aliada || []).forEach(v => params.append('aliada', v));
+  [].concat(body.regiao || []).forEach(v => params.append('regiao', v));
   if (body.formReparoEnviado !== undefined) params.append('formReparoEnviado', '1');
   if (body.formInstalacaoEnviado !== undefined) params.append('formInstalacaoEnviado', '1');
   if (body.formServicoEnviado !== undefined) params.append('formServicoEnviado', '1');
@@ -490,13 +491,34 @@ async function carregarDadosPainel(query) {
     getElosCredenciais(),
   ]);
 
-  // Filtro de Aliada: único filtro compartilhado pelos 4 painéis ao mesmo tempo
-  // (diferente de tecnologia/status, que são por seção) -- widget global fica no
-  // head.ejs, presente em toda página. Disponíveis = união do que aparece hoje
-  // em qualquer um dos 4 painéis (normalmente ABILITY/ONDACOM/VIVO); aplica
-  // ANTES de Previsto/Sugestão pra recalcular o total geral de cada painel só
-  // com as aliadas selecionadas, igual aos outros filtros (não é só cosmético
-  // na tabela).
+  // Atribui a região (CAPITAL/INTERIOR) de cada bucket (ver bucketRegiaoService.js;
+  // sem classificação = INTERIOR) e reordena por (aliada, região, bucket) -- os
+  // buckets de cada (aliada,região) precisam ficar CONTÍGUOS pra faixa de
+  // configuração da home e o cálculo por grupo funcionarem; `ORDER BY aliada,
+  // bucket` do SQL não garante isso sozinho (ex.: em ONDACOM, BKT_APARECIDA_GOIANIA
+  // vem alfabeticamente antes de BKT_GOIANIA_ONDACOM, que normalmente é a capital).
+  // Roda ANTES do filtro de aliada/região pra já classificar tudo (inclusive o
+  // que vai ficar de fora), já que aliadasDisponiveis/regioesDisponiveis usam
+  // os brutos.
+  const aplicarRegiao = (linhasSecao) => {
+    linhasSecao.forEach(l => { l.regiao = regiaoDoBucket(l.bucket, bucketRegiaoMap); });
+    linhasSecao.sort((a, b) =>
+      a.aliada.localeCompare(b.aliada) || a.regiao.localeCompare(b.regiao) || a.bucket.localeCompare(b.bucket)
+    );
+    return linhasSecao;
+  };
+  aplicarRegiao(linhasReparoBruto);
+  aplicarRegiao(linhasInstalacoesBruto);
+  aplicarRegiao(linhasServicosBruto);
+  aplicarRegiao(linhasMeBruto);
+
+  // Filtro de Aliada + Região: os dois compartilhados pelos 4 painéis ao mesmo
+  // tempo (diferente de tecnologia/status, que são por seção) -- widgets globais
+  // ficam no head.ejs, presentes em toda página. Disponíveis = união do que
+  // aparece hoje em qualquer um dos 4 painéis (normalmente ABILITY/ONDACOM/VIVO
+  // pra aliada; CAPITAL/INTERIOR, sempre as 2, pra região); aplica ANTES de
+  // Previsto/Sugestão pra recalcular o total geral de cada painel só com o que
+  // ficou selecionado, igual aos outros filtros (não é só cosmético na tabela).
   const aliadasDisponiveis = [...new Set([
     ...linhasReparoBruto.map(l => l.aliada),
     ...linhasInstalacoesBruto.map(l => l.aliada),
@@ -505,34 +527,19 @@ async function carregarDadosPainel(query) {
   ])].sort();
   const aliadasSelecionadas = normalizarListaComPadrao(query.aliada, aliadasDisponiveis);
 
-  const filtrarPorAliada = (linhasSecao, campoBacklog) => {
-    const linhasFiltradas = linhasSecao.filter(l => aliadasSelecionadas.includes(l.aliada));
+  const regioesDisponiveis = ['CAPITAL', 'INTERIOR'];
+  const regioesSelecionadas = normalizarListaComPadrao(query.regiao, regioesDisponiveis);
+
+  const filtrarPorAliadaRegiao = (linhasSecao, campoBacklog) => {
+    const linhasFiltradas = linhasSecao.filter(l => aliadasSelecionadas.includes(l.aliada) && regioesSelecionadas.includes(l.regiao));
     const totalGeralFiltrado = linhasFiltradas.reduce((acc, l) => acc + l[campoBacklog], 0);
     return { linhas: linhasFiltradas, totalGeral: totalGeralFiltrado };
   };
 
-  const { linhas, totalGeral } = filtrarPorAliada(linhasReparoBruto, 'backlogReparos');
-  const { linhas: linhasInstalacoes, totalGeral: totalGeralInstalacoes } = filtrarPorAliada(linhasInstalacoesBruto, 'backlogInstalacoes');
-  const { linhas: linhasServicos, totalGeral: totalGeralServicos } = filtrarPorAliada(linhasServicosBruto, 'backlogServicos');
-  const { linhas: linhasMe, totalGeral: totalGeralMe } = filtrarPorAliada(linhasMeBruto, 'backlogMe');
-
-  // Atribui a região (CAPITAL/INTERIOR) de cada bucket (ver bucketRegiaoService.js;
-  // sem classificação = INTERIOR) e reordena por (aliada, região, bucket) -- os
-  // buckets de cada (aliada,região) precisam ficar CONTÍGUOS pra faixa de
-  // configuração da home e o cálculo por grupo funcionarem; `ORDER BY aliada,
-  // bucket` do SQL não garante isso sozinho (ex.: em ONDACOM, BKT_APARECIDA_GOIANIA
-  // vem alfabeticamente antes de BKT_GOIANIA_ONDACOM, que normalmente é a capital).
-  const aplicarRegiao = (linhasSecao) => {
-    linhasSecao.forEach(l => { l.regiao = regiaoDoBucket(l.bucket, bucketRegiaoMap); });
-    linhasSecao.sort((a, b) =>
-      a.aliada.localeCompare(b.aliada) || a.regiao.localeCompare(b.regiao) || a.bucket.localeCompare(b.bucket)
-    );
-    return linhasSecao;
-  };
-  aplicarRegiao(linhas);
-  aplicarRegiao(linhasInstalacoes);
-  aplicarRegiao(linhasServicos);
-  aplicarRegiao(linhasMe);
+  const { linhas, totalGeral } = filtrarPorAliadaRegiao(linhasReparoBruto, 'backlogReparos');
+  const { linhas: linhasInstalacoes, totalGeral: totalGeralInstalacoes } = filtrarPorAliadaRegiao(linhasInstalacoesBruto, 'backlogInstalacoes');
+  const { linhas: linhasServicos, totalGeral: totalGeralServicos } = filtrarPorAliadaRegiao(linhasServicosBruto, 'backlogServicos');
+  const { linhas: linhasMe, totalGeral: totalGeralMe } = filtrarPorAliadaRegiao(linhasMeBruto, 'backlogMe');
 
   // Config efetiva por (aliada,região) de cada seção (para a faixa de edição da
   // home). As MESMAS chaves de configuracoes_gerais, resolvidas em camadas.
@@ -644,10 +651,12 @@ async function carregarDadosPainel(query) {
   enriquecerExemplos(configPorAliadaMe, linhasMeComPrevisto);
 
   return {
-    // Aliada: filtro global (compartilhado pelos 4 painéis), widget fica no
-    // head.ejs e aparece em toda página.
+    // Aliada / Região: filtros globais (compartilhados pelos 4 painéis), widgets
+    // ficam no head.ejs e aparecem em toda página.
     aliadasDisponiveis,
     aliadasSelecionadas,
+    regioesDisponiveis,
+    regioesSelecionadas,
 
     // Reparos
     linhas: linhasComPrevisto,
@@ -911,6 +920,8 @@ router.get('/resumo-cotas', async (req, res, next) => {
       elosCredenciais: dados.elosCredenciais,
       aliadasDisponiveis: dados.aliadasDisponiveis,
       aliadasSelecionadas: dados.aliadasSelecionadas,
+      regioesDisponiveis: dados.regioesDisponiveis,
+      regioesSelecionadas: dados.regioesSelecionadas,
       pathAtual: req.path,
       queryAtual: req.query,
     });
@@ -1046,6 +1057,8 @@ router.get('/cotas-planejadas', async (req, res, next) => {
       elosCredenciais: dados.elosCredenciais,
       aliadasDisponiveis: dados.aliadasDisponiveis,
       aliadasSelecionadas: dados.aliadasSelecionadas,
+      regioesDisponiveis: dados.regioesDisponiveis,
+      regioesSelecionadas: dados.regioesSelecionadas,
       pathAtual: req.path,
       queryAtual: req.query,
     });
@@ -1221,6 +1234,8 @@ router.get('/projecao-d1-d7', async (req, res, next) => {
       cotasUploadErro: req.query.cotasUploadErro,
       aliadasDisponiveis: dados.aliadasDisponiveis,
       aliadasSelecionadas: dados.aliadasSelecionadas,
+      regioesDisponiveis: dados.regioesDisponiveis,
+      regioesSelecionadas: dados.regioesSelecionadas,
       pathAtual: req.path,
       queryAtual: req.query,
     });
@@ -1628,11 +1643,14 @@ router.get('/backlog/exportar/:tipo', async (req, res, next) => {
       return res.status(404).send('Tipo de backlog inválido.');
     }
 
-    // Mesmo filtro de Aliada da tela -- aplicado aqui (não no SQL) porque a
-    // coluna "aliada" das queries de getOrdensBacklog* já vem resolvida via
+    // Mesmo filtro de Aliada + Região da tela -- aplicado aqui (não no SQL) porque
+    // a coluna "aliada" das queries de getOrdensBacklog* já vem resolvida via
     // COALESCE(d.ALIADA, curinga), igual ao que carregarDadosPainel faz pras
-    // linhas agregadas.
-    const linhasFiltradas = linhas.filter(l => dados.aliadasSelecionadas.includes(l.aliada));
+    // linhas agregadas. Região não vem na query (é derivada do bucket), então
+    // classifica por linha aqui com o mesmo mapa já carregado por carregarDadosPainel.
+    const linhasFiltradas = linhas.filter(l =>
+      dados.aliadasSelecionadas.includes(l.aliada) && dados.regioesSelecionadas.includes(regiaoDoBucket(l.bucket, dados.bucketRegiaoMap))
+    );
 
     const hoje = new Date();
     const dataArquivo = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}-${String(hoje.getDate()).padStart(2, '0')}`;
