@@ -593,6 +593,11 @@ body {
   width: min(380px, 90vw);
 }
 
+#janelas-edit-carga-row input {
+  width: 4.5rem;
+  text-align: center;
+}
+
 #janelas-edit-lista .field-row {
   margin-bottom: 0.7rem;
 }

@@ -41,15 +41,20 @@
 <% // Botão "ORDENS" (cabeçalho de grupo, colspan): abre o modal #janelas-edit-modal
    // (main.js) pra editar as % de janela de 1 seção -- `data-janelas` carrega as
    // editáveis + a última (sempre o restante, calculado, nunca enviada ao servidor). %>
-<% const botaoOrdens = (tipo, label, editaveis, labelsJanela, aliada, herdado, regiao) => {
+<% // `carga` (Carga configurada do grupo) vira o Total padrão do modo "Valor" no
+   // modal -- editar em valor absoluto só faz sentido com uma referência de
+   // quanto distribuir, e a Carga já é esse número, exibido ali do lado no
+   // próprio chip. %>
+<% const botaoOrdens = (tipo, label, editaveis, labelsJanela, aliada, herdado, regiao, carga) => {
   const somaEditaveis = editaveis.reduce((acc, e) => acc + Number(e.valor), 0);
   const itens = editaveis.map((e, i) => ({ nome: e.nome, rotulo: labelsJanela[i], valor: e.valor }));
   itens.push({ nome: null, rotulo: labelsJanela[labelsJanela.length - 1], valor: Math.max(0, 100 - somaEditaveis) });
   const attrAliada = aliada ? ` data-aliada="${aliada}"` : '';
   const attrRegiao = regiao ? ` data-regiao="${regiao}"` : '';
+  const attrCarga = carga !== undefined ? ` data-carga="${carga}"` : '';
   const clsHerdado = aliada ? (herdado ? ' cfg-herdado' : ' cfg-proprio') : '';
   const escopoLabel = aliada ? `${aliada}${regiao ? ' — ' + (regiao === 'CAPITAL' ? 'Capital' : 'Interior') : ''}` : 'todas as aliadas';
-  return `<button type="button" class="ordens-editar-btn${clsHerdado}" data-tipo="${tipo}" data-label="${label}" data-janelas='${JSON.stringify(itens)}' title="Previsto dividido entre as ${labelsJanela.length} janelas de horário — clique para editar as % de ${escopoLabel}"${attrAliada}${attrRegiao}>ORDENS</button>`;
+  return `<button type="button" class="ordens-editar-btn${clsHerdado}" data-tipo="${tipo}" data-label="${label}" data-janelas='${JSON.stringify(itens)}' title="Previsto dividido entre as ${labelsJanela.length} janelas de horário — clique para editar as % de ${escopoLabel}"${attrAliada}${attrRegiao}${attrCarga}>ORDENS</button>`;
 }; %>
 <% // Formata número curto pro chip (2,9 em vez de 2.90; 50 em vez de 50.00). %>
 <% const numChip = (v) => { const n = Number(v); return (Number.isInteger(n) ? String(n) : n.toFixed(2).replace(/\.?0+$/, '')).replace('.', ','); }; %>
@@ -80,7 +85,7 @@
   const chips = [
     botaoConfigRapido('previsto', tipo, label, cfg.percentual, `Previsto ${numChip(cfg.percentual)}%`, `Previsto de ${escopoTitulo} — clique para editar`, null, aliada, !cfg.overridePercentual, regiao),
     botaoConfigRapido('carga', tipo, label, cfg.carga, `Carga ${numChip(cfg.carga)}`, `Carga de ${escopoTitulo} (base da Sugestão) — clique para editar`, exCarga, aliada, !cfg.overrideCarga, regiao),
-    botaoOrdens(tipo, label, cfg.janelasEditaveis, labelsJanela, aliada, !cfg.overrideJanelas, regiao),
+    botaoOrdens(tipo, label, cfg.janelasEditaveis, labelsJanela, aliada, !cfg.overrideJanelas, regiao, cfg.carga),
     botaoConfigRapido('metaPu', tipo, label, cfg.metaPu, `Meta PU ${numChip(cfg.metaPu)}`, `Meta de PU por técnico de ${escopoTitulo} — clique para editar`, exMeta, aliada, !cfg.overrideMetaPu, regiao),
   ];
   return `<tr class="aliada-config-row"><td colspan="${colspan}" class="aliada-config-td">`
@@ -802,11 +807,21 @@
   <form method="post" action="/config/janelas" class="modal-section" data-loading="Salvando…">
     <input type="hidden" name="aliadaConfig" id="janelas-edit-aliada" value="" />
     <input type="hidden" name="regiaoConfig" id="janelas-edit-regiao" value="" />
+    <input type="hidden" name="tipo" id="janelas-edit-tipo" value="" />
     <%- include('partials/hidden-config-estado', { exceto: [] }) %>
     <div class="modal-body">
       <p class="config-rapido-escopo" id="janelas-edit-escopo" hidden></p>
+      <nav class="secao-tabs" id="janelas-edit-modo" aria-label="Editar em % ou em valor">
+        <button type="button" class="secao-tab is-active" data-modo="valor" aria-pressed="true">Valor</button>
+        <button type="button" class="secao-tab" data-modo="percentual" aria-pressed="false">%</button>
+      </nav>
+      <div class="field-row" id="janelas-edit-carga-row" hidden>
+        <label for="janelas-edit-carga">Carga</label>
+        <input type="number" name="carga" id="janelas-edit-carga" min="0" step="1" value="0" />
+      </div>
+      <p class="hint" id="janelas-edit-carga-hint" hidden>Distribua o Valor da Carga</p>
       <div id="janelas-edit-lista"></div>
-      <p class="hint">As % de cada janela somam 100 — a última é sempre o restante, calculada automaticamente.</p>
+      <p class="hint" id="janelas-edit-hint">As % de cada janela somam 100 — a última é sempre o restante, calculada automaticamente.</p>
     </div>
     <div class="modal-footer">
       <button type="submit" name="reset" value="1" formnovalidate class="btn-secundario config-rapido-reset" id="janelas-edit-reset-btn" title="Remove as % próprias desta aliada e volta a herdar o padrão" hidden>Voltar ao padrão</button>

@@ -858,6 +858,9 @@ router.get('/resumo-cotas', async (req, res, next) => {
     const qtdJanelasReparo = dados.janelasReparoLabels.length;
 
     const porBucket = new Map();
+    // Cada seção entra com os DOIS valores por janela: minutos (`campo`) e
+    // quantidade de ordens (`campoOrdens`) -- o toggle "Ver em" da página só
+    // troca qual dos dois aparece, igual em Cotas Planejadas.
     const acumularSecao = (linhas, campo, qtdJanelas) => {
       linhas.forEach(linha => {
         if (!porBucket.has(linha.bucket)) {
@@ -868,6 +871,10 @@ router.get('/resumo-cotas', async (req, res, next) => {
             me: new Array(qtdJanelasMe).fill(0),
             servico: new Array(qtdJanelasServico).fill(0),
             reparo: new Array(qtdJanelasReparo).fill(0),
+            instalacaoOrdens: new Array(qtdJanelasInstalacao).fill(0),
+            meOrdens: new Array(qtdJanelasMe).fill(0),
+            servicoOrdens: new Array(qtdJanelasServico).fill(0),
+            reparoOrdens: new Array(qtdJanelasReparo).fill(0),
             instalacaoTecnicos: 0,
             meTecnicos: 0,
             servicoTecnicos: 0,
@@ -876,6 +883,7 @@ router.get('/resumo-cotas', async (req, res, next) => {
         }
         const linhaBucket = porBucket.get(linha.bucket);
         linhaBucket[campo] = linha.minutos;
+        linhaBucket[`${campo}Ordens`] = linha.janelas;
         linhaBucket[`${campo}Tecnicos`] = linha.tecnicos;
       });
     };
@@ -915,6 +923,10 @@ router.get('/resumo-cotas', async (req, res, next) => {
       totalMinutosMe: dados.totalMinutosMe,
       totalMinutosServico: dados.totalMinutosServicos,
       totalMinutosReparo: dados.totalMinutos,
+      totalOrdensInstalacao: dados.totalJanelasInstalacoes,
+      totalOrdensMe: dados.totalJanelasMe,
+      totalOrdensServico: dados.totalJanelasServicos,
+      totalOrdensReparo: dados.totalJanelas,
       totalTecnicosGeral,
       aliadaCores: construirMapaCoresAliada(ALIADA_COR_QTD, linhasResumo),
       elosCredenciais: dados.elosCredenciais,
@@ -1367,6 +1379,9 @@ router.post('/config/rapido', async (req, res, next) => {
 // seção (ex.: percentualJanela1Instalacao/2/3, nunca a 4ª) -- grava só as
 // chaves que vieram no body, ignorando as outras 7 de JANELA_CAMPOS_PADRAO
 // (não precisa de `tipo` pra saber quais são: os nomes dos campos já dizem).
+// A aba "Valor" do mesmo modal edita a Carga do grupo também (é o total usado
+// ali pra converter valor -> %) -- `tipo` só é usado pra isso, achar a chave
+// certa (cargaInstalacao/cargaServico/cargaMe/cargaReparo) em CARGA_CONFIG_POR_TIPO.
 router.post('/config/janelas', async (req, res, next) => {
   try {
     const aliada = typeof req.body.aliadaConfig === 'string' && req.body.aliadaConfig.trim()
@@ -1390,6 +1405,11 @@ router.post('/config/janelas', async (req, res, next) => {
         valores[campo] = normalizarPercentual(req.body[campo], JANELA_CAMPOS_PADRAO[campo]);
       }
     });
+
+    const cargaCfg = CARGA_CONFIG_POR_TIPO[req.body.tipo];
+    if (cargaCfg && req.body.carga !== undefined) {
+      valores[cargaCfg.chave] = normalizarPu(req.body.carga, cargaCfg.padrao);
+    }
 
     if (Object.keys(valores).length > 0) {
       if (aliada && regiao) await salvarConfiguracaoAliadaRegiao(aliada, regiao, valores);

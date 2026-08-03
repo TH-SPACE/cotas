@@ -1,19 +1,44 @@
 <%- include('partials/head') %>
 <% const numCls = (valor) => `num${valor === 0 ? ' valor-zero' : ''}`; %>
 <% const janelaDuasLinhas = (label) => label.replace(' - ', '<br>'); %>
+<%
+  /*
+    Cada célula numérica sai com os DOIS valores no HTML (<span class="v-min"> e
+    <span class="v-qtd">); o toggle "Ver em" só troca qual aparece, via CSS --
+    mesmo esquema da tabela de Cotas Planejadas (ver partials/tabela-cotas).
+    Ordens já vem calculada do painel de origem (linha.janelas), não é uma
+    divisão feita aqui.
+  */
+  const celulaUnidade = (min, ordens, classes) => {
+    const _min = min || 0;
+    const _qtd = ordens || 0;
+    // `valor-zero` (número apagado) só quando os dois valores são zero -- assim a
+    // célula não aparece apagada mostrando uma quantidade de ordens > 0 (acontece
+    // em bucket sem tempo cadastrado, onde ordens existem mas os minutos dão 0).
+    return `<td class="num ${_min === 0 && _qtd === 0 ? 'valor-zero' : ''} ${classes}"><span class="v-min">${_min}</span><span class="v-qtd">${_qtd}</span></td>`;
+  };
+%>
 
 <section class="panel" id="secao-resumo-cotas">
   <div class="panel-header panel-header-row">
     <div>
       <h2 title="COTAS(min) (Ordens de cada janela × tempo do bucket) de cada painel, por janela de horário">
         <svg class="title-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-        Resumo de COTAS(min) por Bucket
+        Resumo de <span class="v-min">COTAS(min)</span><span class="v-qtd">Ordens</span> por Bucket
       </h2>
       <p class="hint">
         Uma linha por bucket, com as COTAS(min) de cada janela de horário calculadas em cada painel — Instalação, ME, Serviços e Reparos. Bucket sem movimento em algum painel aparece com 0 nas colunas daquele painel.
+        Use <strong>Ver em</strong> para alternar entre minutos e quantidade de ordens.
       </p>
     </div>
     <div class="panel-header-actions">
+      <div class="unidade-toggle">
+        <span class="unidade-toggle-label" id="rotulo-unidade">Ver em</span>
+        <div class="secao-tabs" role="group" aria-labelledby="rotulo-unidade">
+          <button type="button" class="secao-tab unidade-tab is-active" data-unidade="min" aria-pressed="true" title="Mostrar os valores em minutos">Minutos</button>
+          <button type="button" class="secao-tab unidade-tab" data-unidade="qtd" aria-pressed="false" title="Mostrar os valores em quantidade de ordens">Ordens</button>
+        </div>
+      </div>
       <%- include('partials/filtro-aliada-chips') %>
       <%- include('partials/filtro-regiao-chips') %>
     </div>
@@ -64,16 +89,16 @@
             <td class="celula-truncada" title="<%= linha.bucket %>"><%= linha.bucket %></td>
             <td class="<%= numCls(linha.totalTecnicos) %> col-divider"><%= linha.totalTecnicos %></td>
             <% linha.instalacao.forEach((min, i) => { %>
-              <td class="<%= numCls(min) %> <%= i === 0 ? 'col-divider' : '' %>"><%= min %></td>
+              <%- celulaUnidade(min, linha.instalacaoOrdens[i], i === 0 ? 'col-divider' : '') %>
             <% }) %>
             <% linha.me.forEach((min, i) => { %>
-              <td class="<%= numCls(min) %> <%= i === 0 ? 'col-divider' : '' %>"><%= min %></td>
+              <%- celulaUnidade(min, linha.meOrdens[i], i === 0 ? 'col-divider' : '') %>
             <% }) %>
             <% linha.servico.forEach((min, i) => { %>
-              <td class="<%= numCls(min) %> <%= i === 0 ? 'col-divider' : '' %>"><%= min %></td>
+              <%- celulaUnidade(min, linha.servicoOrdens[i], i === 0 ? 'col-divider' : '') %>
             <% }) %>
             <% linha.reparo.forEach((min, i) => { %>
-              <td class="<%= numCls(min) %> <%= i === 0 ? 'col-divider' : '' %>"><%= min %></td>
+              <%- celulaUnidade(min, linha.reparoOrdens[i], i === 0 ? 'col-divider' : '') %>
             <% }) %>
           </tr>
         <% }) %>
@@ -83,16 +108,16 @@
           <td colspan="2" title="Soma de todos os buckets">Total geral</td>
           <td class="num col-divider"><%= totalTecnicosGeral %></td>
           <% totalMinutosInstalacao.forEach((min, i) => { %>
-            <td class="<%= numCls(min) %> <%= i === 0 ? 'col-divider' : '' %>"><%= min %></td>
+            <%- celulaUnidade(min, totalOrdensInstalacao[i], i === 0 ? 'col-divider' : '') %>
           <% }) %>
           <% totalMinutosMe.forEach((min, i) => { %>
-            <td class="<%= numCls(min) %> <%= i === 0 ? 'col-divider' : '' %>"><%= min %></td>
+            <%- celulaUnidade(min, totalOrdensMe[i], i === 0 ? 'col-divider' : '') %>
           <% }) %>
           <% totalMinutosServico.forEach((min, i) => { %>
-            <td class="<%= numCls(min) %> <%= i === 0 ? 'col-divider' : '' %>"><%= min %></td>
+            <%- celulaUnidade(min, totalOrdensServico[i], i === 0 ? 'col-divider' : '') %>
           <% }) %>
           <% totalMinutosReparo.forEach((min, i) => { %>
-            <td class="<%= numCls(min) %> <%= i === 0 ? 'col-divider' : '' %>"><%= min %></td>
+            <%- celulaUnidade(min, totalOrdensReparo[i], i === 0 ? 'col-divider' : '') %>
           <% }) %>
         </tr>
       </tfoot>

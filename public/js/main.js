@@ -420,6 +420,82 @@ document.addEventListener('DOMContentLoaded', () => {
     const janelasResetBtn = document.getElementById('janelas-edit-reset-btn');
     const janelasCloseBtn = document.getElementById('janelas-edit-close-btn');
     const janelasCancelBtn = document.getElementById('janelas-edit-cancel-btn');
+    const janelasTipoInput = document.getElementById('janelas-edit-tipo');
+    const janelasModoBtns = document.querySelectorAll('#janelas-edit-modo .secao-tab');
+    const janelasCargaRow = document.getElementById('janelas-edit-carga-row');
+    const janelasCargaInput = document.getElementById('janelas-edit-carga');
+    const janelasCargaHint = document.getElementById('janelas-edit-carga-hint');
+    const janelasHint = document.getElementById('janelas-edit-hint');
+
+    const HINT_PERCENTUAL = 'As % de cada janela somam 100 — a última é sempre o restante, calculada automaticamente.';
+    const HINT_VALOR = 'Os valores de cada janela somam a Carga acima — a última é sempre o restante. A % equivalente é calculada e salva por baixo dos panos.';
+
+    // Contexto da abertura atual do modal: recriado a cada clique num botão
+    // ORDENS (`editaveis`/`restante` apontam pros inputs daquela seção), mas os
+    // listeners do toggle %/Valor e do campo Total ficam fixos (o modal é 1 só
+    // reaproveitado pelas 4 seções) e sempre leem esse contexto por referência.
+    let modoAtual = 'valor';
+    let ctxEditaveis = [];
+    let ctxRestante = null;
+
+    const recalcularRestante = () => {
+      if (!ctxRestante) return;
+      if (modoAtual === 'percentual') {
+        const soma = ctxEditaveis.reduce((acc, e) => acc + clamp(Number(e.hidden.value)), 0);
+        ctxRestante.value = Math.max(0, Math.round((100 - soma) * 100) / 100);
+      } else {
+        const carga = Number(janelasCargaInput.value) || 0;
+        const soma = ctxEditaveis.reduce((acc, e) => acc + (Number(e.display.value) || 0), 0);
+        ctxRestante.value = Math.max(0, Math.round(carga - soma));
+      }
+    };
+
+    // Só troca o MODO DE EXIBIÇÃO -- a % de cada janela (hidden, o que
+    // realmente é enviado) só muda quando o usuário edita um campo, nunca só
+    // por alternar a aba. Trocar pra "Valor" deriva o valor a partir da % atual
+    // + Carga; trocar pra "%" só reflete a % (hidden) que já está atualizada.
+    const aplicarModo = (modo) => {
+      modoAtual = modo;
+      const ehValor = modo === 'valor';
+      if (janelasCargaRow) janelasCargaRow.hidden = !ehValor;
+      if (janelasCargaHint) janelasCargaHint.hidden = !ehValor;
+      janelasModoBtns.forEach((b) => {
+        const ativo = b.dataset.modo === modo;
+        b.classList.toggle('is-active', ativo);
+        b.setAttribute('aria-pressed', ativo ? 'true' : 'false');
+      });
+      const carga = Number(janelasCargaInput.value) || 0;
+      ctxEditaveis.forEach(({ display, hidden }) => {
+        if (ehValor) {
+          display.value = carga > 0 ? Math.round((carga * clamp(Number(hidden.value))) / 100) : 0;
+          display.removeAttribute('max');
+        } else {
+          display.value = clamp(Number(hidden.value));
+          display.max = '100';
+        }
+      });
+      recalcularRestante();
+      if (janelasHint) janelasHint.textContent = ehValor ? HINT_VALOR : HINT_PERCENTUAL;
+    };
+
+    janelasModoBtns.forEach((b) => b.addEventListener('click', () => aplicarModo(b.dataset.modo)));
+
+    if (janelasCargaInput) {
+      // Editar a Carga em modo "Valor" recalcula a % (hidden) a partir dos
+      // valores JÁ DIGITADOS -- não reaplica a % antiga sobre a nova Carga --
+      // pra não apagar o que o usuário acabou de distribuir manualmente entre
+      // as janelas só porque ajustou a Carga. Esse campo é a MESMA Carga do
+      // chip "Carga X" do cabeçalho -- ao salvar, os dois ficam sincronizados
+      // (ver /config/janelas no backend).
+      janelasCargaInput.addEventListener('input', () => {
+        if (modoAtual !== 'valor') return;
+        const carga = Number(janelasCargaInput.value) || 0;
+        ctxEditaveis.forEach(({ display, hidden }) => {
+          hidden.value = carga > 0 ? clamp((Number(display.value) || 0) / carga * 100) : 0;
+        });
+        recalcularRestante();
+      });
+    }
 
     document.querySelectorAll('.ordens-editar-btn').forEach((btn) => {
       btn.addEventListener('click', () => {
@@ -433,6 +509,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const escopoLabel = regiaoLabel ? `${aliada} — ${regiaoLabel}` : aliada;
         if (janelasAliadaInput) janelasAliadaInput.value = aliada;
         if (janelasRegiaoInput) janelasRegiaoInput.value = regiao;
+        if (janelasTipoInput) janelasTipoInput.value = btn.dataset.tipo || '';
         janelasLabel.textContent = aliada ? `${btn.dataset.label} · ${escopoLabel}` : btn.dataset.label;
         if (janelasEscopo) {
           janelasEscopo.hidden = !aliada;
@@ -440,6 +517,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         if (janelasResetBtn) janelasResetBtn.hidden = !(aliada && btn.classList.contains('cfg-proprio'));
         janelasLista.innerHTML = '';
+        if (janelasCargaInput) janelasCargaInput.value = Math.round(Number(btn.dataset.carga) || 0);
 
         const editaveis = [];
         let restante = null;
@@ -452,38 +530,53 @@ document.addEventListener('DOMContentLoaded', () => {
           label.textContent = item.rotulo;
           label.htmlFor = `janelas-edit-input-${i}`;
 
-          const input = document.createElement('input');
-          input.type = 'number';
-          input.id = `janelas-edit-input-${i}`;
-          input.min = '0';
-          input.max = '100';
-          input.step = '1';
-          input.value = item.valor;
-
-          if (item.nome) {
-            input.name = item.nome;
-            editaveis.push(input);
-          } else {
-            input.readOnly = true;
-            input.tabIndex = -1;
-            restante = input;
-          }
+          const display = document.createElement('input');
+          display.type = 'number';
+          display.id = `janelas-edit-input-${i}`;
+          display.min = '0';
+          display.max = '100';
+          display.step = '1';
+          display.value = item.valor;
 
           linha.appendChild(label);
-          linha.appendChild(input);
+          linha.appendChild(display);
           janelasLista.appendChild(linha);
+
+          if (item.nome) {
+            // O campo enviado ao servidor continua sendo a % (hidden) -- o
+            // input visível (`display`) mostra % ou valor absoluto dependendo
+            // do modo, mas nunca é ele quem é submetido.
+            const hidden = document.createElement('input');
+            hidden.type = 'hidden';
+            hidden.name = item.nome;
+            hidden.value = item.valor;
+            linha.appendChild(hidden);
+            editaveis.push({ display, hidden });
+          } else {
+            display.readOnly = true;
+            display.tabIndex = -1;
+            restante = display;
+          }
         });
 
-        if (restante) {
-          const recalcularRestante = () => {
-            const soma = editaveis.reduce((acc, el) => acc + clamp(Number(el.value)), 0);
-            restante.value = Math.max(0, 100 - soma);
-          };
-          editaveis.forEach(el => el.addEventListener('input', recalcularRestante));
-        }
+        editaveis.forEach(({ display, hidden }) => {
+          display.addEventListener('input', () => {
+            if (modoAtual === 'percentual') {
+              hidden.value = clamp(Number(display.value));
+            } else {
+              const total = Number(janelasTotalInput.value) || 0;
+              hidden.value = total > 0 ? clamp((Number(display.value) || 0) / total * 100) : 0;
+            }
+            recalcularRestante();
+          });
+        });
+
+        ctxEditaveis = editaveis;
+        ctxRestante = restante;
+        aplicarModo('valor');
 
         janelasModal.showModal();
-        if (editaveis[0]) { editaveis[0].focus(); editaveis[0].select(); }
+        if (editaveis[0]) { editaveis[0].display.focus(); editaveis[0].display.select(); }
       });
     });
 
@@ -527,12 +620,14 @@ document.addEventListener('DOMContentLoaded', () => {
     aplicarSecao(existe ? salva : abasDeSecao[0].dataset.secao);
   }
 
-  // Toggle "Minutos / Ordens" da tabela de Cotas Planejadas. Os dois valores já
-  // vêm renderizados (spans .v-min e .v-qtd), então trocar é só uma classe -- sem
-  // recarregar a página nem recalcular nada. A escolha fica guardada na sessão
-  // pra não voltar pro padrão a cada reload.
+  // Toggle "Minutos / Ordens" (Cotas Planejadas e Resumo de Cotas). Os dois
+  // valores já vêm renderizados (spans .v-min e .v-qtd), então trocar é só uma
+  // classe -- sem recarregar a página nem recalcular nada. A escolha fica
+  // guardada na sessão (mesma chave nas duas páginas) pra não voltar pro padrão
+  // a cada reload. O alvo da classe é o .panel que contém o toggle, então serve
+  // pra qualquer página que use esse par de botões.
   const botoesUnidade = document.querySelectorAll('.unidade-tab');
-  const tabelaCotas = document.getElementById('cotas-tabela');
+  const tabelaCotas = botoesUnidade.length > 0 ? botoesUnidade[0].closest('.panel') : null;
   if (botoesUnidade.length > 0 && tabelaCotas) {
     const UNIDADE_KEY = 'calc_unidade_cotas';
 
