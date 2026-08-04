@@ -75,9 +75,11 @@
    // quando a aliada tem buckets nas DUAS regiões (ver rótulo abaixo) -- enquanto
    // nenhum bucket estiver classificado como Capital, toda aliada cai só em
    // Interior e a faixa continua com o rótulo genérico de sempre (1 linha só).
-   // colspan = 2 (aliada+bucket) + 3 (backlog) + 2×janelas + 2 (pu+técnicos). %>
+   // colspan = 2 (aliada+bucket) + 3 (backlog) + 2×janelas -- as colunas PU e
+   // Técnicos estão ocultas por CSS (.col-pu / .col-tecnicos), então não contam
+   // aqui; se voltarem, somar 1 pra cada. %>
 <% const faixaAliada = (tipo, label, aliada, corIdx, cfg, labelsJanela, regiao, mostrarRegiao) => {
-  const colspan = 2 + 3 + labelsJanela.length * 2 + 2;
+  const colspan = 2 + 3 + labelsJanela.length * 2;
   const exCarga = { bucket: cfg.exemploPrevisto, total: cfg.exemploTotal, nome: cfg.exemploNome };
   const exMeta = { pu: cfg.exemploPu, nome: cfg.exemploNome };
   const sufixoRegiao = mostrarRegiao ? ` — ${regiao === 'CAPITAL' ? 'Capital' : 'Interior'}` : '';
@@ -86,7 +88,10 @@
     botaoConfigRapido('previsto', tipo, label, cfg.percentual, `Previsto ${numChip(cfg.percentual)}%`, `Previsto de ${escopoTitulo} — clique para editar`, null, aliada, !cfg.overridePercentual, regiao),
     botaoConfigRapido('carga', tipo, label, cfg.carga, `Carga ${numChip(cfg.carga)}`, `Carga de ${escopoTitulo} (base da Sugestão) — clique para editar`, exCarga, aliada, !cfg.overrideCarga, regiao),
     botaoOrdens(tipo, label, cfg.janelasEditaveis, labelsJanela, aliada, !cfg.overrideJanelas, regiao, cfg.carga),
-    botaoConfigRapido('metaPu', tipo, label, cfg.metaPu, `Meta PU ${numChip(cfg.metaPu)}`, `Meta de PU por técnico de ${escopoTitulo} — clique para editar`, exMeta, aliada, !cfg.overrideMetaPu, regiao),
+    // Chip "Meta PU" ocultado temporariamente (2026-08-04), junto com as colunas
+    // PU e Técnicos. O override por (aliada,região) continua gravado e sendo usado
+    // no cálculo -- pra voltar a editar pela faixa, é só descomentar esta linha.
+    // botaoConfigRapido('metaPu', tipo, label, cfg.metaPu, `Meta PU ${numChip(cfg.metaPu)}`, `Meta de PU por técnico de ${escopoTitulo} — clique para editar`, exMeta, aliada, !cfg.overrideMetaPu, regiao),
   ];
   return `<tr class="aliada-config-row"><td colspan="${colspan}" class="aliada-config-td">`
     + `<div class="aliada-config-faixa">`
@@ -200,7 +205,7 @@
         <col class="colw-num" /><col class="colw-num" /><col class="colw-num" />
         <% janelasInstalacaoLabels.forEach(() => { %><col class="colw-num" /><% }) %>
         <% janelasInstalacaoLabels.forEach(() => { %><col class="colw-num" /><% }) %>
-        <col class="colw-num" /><col class="colw-num" />
+        <%# PU e Técnicos ocultos (.col-pu/.col-tecnicos): os <col> deles foram removidos, senão o navegador cria colunas vazias e sobra espaço à direita %>
       </colgroup>
       <thead>
         <tr>
@@ -209,8 +214,8 @@
           <th colspan="3" class="group-header col-backlog col-divider" title="Quantidade de instalações em aberto, a meta calculada sobre elas e a Sugestão baseada na Carga configurada">BACKLOG</th>
           <th colspan="<%= janelasInstalacaoLabels.length %>" class="group-header col-ordens col-divider" title="Previsto de cada bucket dividido entre as janelas de horário — % configurável por aliada na faixa de cada aliada">ORDENS</th>
           <th colspan="<%= janelasInstalacaoLabels.length %>" class="group-header col-minutos col-divider" title="Ordens de cada janela × tempo de instalação do bucket (depara_tempo_bucket)">COTAS(min)</th>
-          <th rowspan="2" class="num col-divider" title="Técnicos = PU ÷ Meta de PU por técnico — Meta configurável por aliada na faixa de cada aliada">PU</th>
-          <th rowspan="2" class="num" title="Técnicos necessários = PU ÷ Meta de PU por técnico, arredondado para cima (não existe fração de técnico)">Técnicos</th>
+          <th rowspan="2" class="num col-divider col-pu" title="Técnicos = PU ÷ Meta de PU por técnico — Meta configurável por aliada na faixa de cada aliada">PU</th>
+          <th rowspan="2" class="num col-tecnicos" title="Técnicos necessários = PU ÷ Meta de PU por técnico, arredondado para cima (não existe fração de técnico)">Técnicos</th>
         </tr>
         <tr>
           <th class="num col-backlog col-divider" title="Total de instalações em aberto no bucket (regra de backlog no topo da página)">Backlog Instalações</th>
@@ -253,8 +258,8 @@
             <% linha.minutos.forEach((min, i) => { %>
               <td class="<%= numCls('col-minutos', min) %> <%= i === 0 ? 'col-divider' : '' %>"><%= min %></td>
             <% }) %>
-            <td class="<%= numCls('', linha.pu) %> col-divider"><%= linha.pu %></td>
-            <td class="<%= numCls('', linha.tecnicos) %>"><%= linha.tecnicos %></td>
+            <td class="<%= numCls('', linha.pu) %> col-divider col-pu"><%= linha.pu %></td>
+            <td class="<%= numCls('', linha.tecnicos) %> col-tecnicos"><%= linha.tecnicos %></td>
           </tr>
         <% }) %>
       </tbody>
@@ -275,8 +280,8 @@
           <% totalMinutosInstalacoes.forEach((min, i) => { %>
             <td class="<%= numCls('col-minutos', min) %> <%= i === 0 ? 'col-divider' : '' %>"><%= min %></td>
           <% }) %>
-          <td class="<%= numCls('', totalPuInstalacoes) %> col-divider"><%= totalPuInstalacoes %></td>
-          <td class="<%= numCls('', totalTecnicosInstalacoes) %>"><%= totalTecnicosInstalacoes %></td>
+          <td class="<%= numCls('', totalPuInstalacoes) %> col-divider col-pu"><%= totalPuInstalacoes %></td>
+          <td class="<%= numCls('', totalTecnicosInstalacoes) %> col-tecnicos"><%= totalTecnicosInstalacoes %></td>
         </tr>
       </tfoot>
     </table>
@@ -365,7 +370,7 @@
         <col class="colw-num" /><col class="colw-num" /><col class="colw-num" />
         <% janelasServicoLabels.forEach(() => { %><col class="colw-num" /><% }) %>
         <% janelasServicoLabels.forEach(() => { %><col class="colw-num" /><% }) %>
-        <col class="colw-num" /><col class="colw-num" />
+        <%# PU e Técnicos ocultos (.col-pu/.col-tecnicos): os <col> deles foram removidos, senão o navegador cria colunas vazias e sobra espaço à direita %>
       </colgroup>
       <thead>
         <tr>
@@ -374,8 +379,8 @@
           <th colspan="3" class="group-header col-backlog col-divider" title="Quantidade de serviços em aberto, a meta calculada sobre eles e a Sugestão baseada na Carga configurada">BACKLOG</th>
           <th colspan="<%= janelasServicoLabels.length %>" class="group-header col-ordens col-divider" title="Previsto de cada bucket dividido entre as janelas de horário — % configurável por aliada na faixa de cada aliada">ORDENS</th>
           <th colspan="<%= janelasServicoLabels.length %>" class="group-header col-minutos col-divider" title="Ordens de cada janela × tempo de serviço do bucket (depara_tempo_bucket)">COTAS(min)</th>
-          <th rowspan="2" class="num col-divider" title="Técnicos = PU ÷ Meta de PU por técnico — Meta configurável por aliada na faixa de cada aliada">PU</th>
-          <th rowspan="2" class="num" title="Técnicos necessários = PU ÷ Meta de PU por técnico, arredondado para cima (não existe fração de técnico)">Técnicos</th>
+          <th rowspan="2" class="num col-divider col-pu" title="Técnicos = PU ÷ Meta de PU por técnico — Meta configurável por aliada na faixa de cada aliada">PU</th>
+          <th rowspan="2" class="num col-tecnicos" title="Técnicos necessários = PU ÷ Meta de PU por técnico, arredondado para cima (não existe fração de técnico)">Técnicos</th>
         </tr>
         <tr>
           <th class="num col-backlog col-divider" title="Total de serviços em aberto no bucket (regra de backlog no topo da página)">Backlog Serviços</th>
@@ -418,8 +423,8 @@
             <% linha.minutos.forEach((min, i) => { %>
               <td class="<%= numCls('col-minutos', min) %> <%= i === 0 ? 'col-divider' : '' %>"><%= min %></td>
             <% }) %>
-            <td class="<%= numCls('', linha.pu) %> col-divider"><%= linha.pu %></td>
-            <td class="<%= numCls('', linha.tecnicos) %>"><%= linha.tecnicos %></td>
+            <td class="<%= numCls('', linha.pu) %> col-divider col-pu"><%= linha.pu %></td>
+            <td class="<%= numCls('', linha.tecnicos) %> col-tecnicos"><%= linha.tecnicos %></td>
           </tr>
         <% }) %>
       </tbody>
@@ -440,8 +445,8 @@
           <% totalMinutosServicos.forEach((min, i) => { %>
             <td class="<%= numCls('col-minutos', min) %> <%= i === 0 ? 'col-divider' : '' %>"><%= min %></td>
           <% }) %>
-          <td class="<%= numCls('', totalPuServicos) %> col-divider"><%= totalPuServicos %></td>
-          <td class="<%= numCls('', totalTecnicosServicos) %>"><%= totalTecnicosServicos %></td>
+          <td class="<%= numCls('', totalPuServicos) %> col-divider col-pu"><%= totalPuServicos %></td>
+          <td class="<%= numCls('', totalTecnicosServicos) %> col-tecnicos"><%= totalTecnicosServicos %></td>
         </tr>
       </tfoot>
     </table>
@@ -530,7 +535,7 @@
         <col class="colw-num" /><col class="colw-num" /><col class="colw-num" />
         <% janelasMeLabels.forEach(() => { %><col class="colw-num" /><% }) %>
         <% janelasMeLabels.forEach(() => { %><col class="colw-num" /><% }) %>
-        <col class="colw-num" /><col class="colw-num" />
+        <%# PU e Técnicos ocultos (.col-pu/.col-tecnicos): os <col> deles foram removidos, senão o navegador cria colunas vazias e sobra espaço à direita %>
       </colgroup>
       <thead>
         <tr>
@@ -539,8 +544,8 @@
           <th colspan="3" class="group-header col-backlog col-divider" title="Quantidade de ME em aberto, a meta calculada sobre elas e a Sugestão baseada na Carga configurada">BACKLOG</th>
           <th colspan="<%= janelasMeLabels.length %>" class="group-header col-ordens col-divider" title="Previsto de cada bucket dividido entre as janelas de horário — % configurável por aliada na faixa de cada aliada">ORDENS</th>
           <th colspan="<%= janelasMeLabels.length %>" class="group-header col-minutos col-divider" title="Ordens de cada janela × tempo de ME do bucket (depara_tempo_bucket)">COTAS(min)</th>
-          <th rowspan="2" class="num col-divider" title="Técnicos = PU ÷ Meta de PU por técnico — Meta configurável por aliada na faixa de cada aliada">PU</th>
-          <th rowspan="2" class="num" title="Técnicos necessários = PU ÷ Meta de PU por técnico, arredondado para cima (não existe fração de técnico)">Técnicos</th>
+          <th rowspan="2" class="num col-divider col-pu" title="Técnicos = PU ÷ Meta de PU por técnico — Meta configurável por aliada na faixa de cada aliada">PU</th>
+          <th rowspan="2" class="num col-tecnicos" title="Técnicos necessários = PU ÷ Meta de PU por técnico, arredondado para cima (não existe fração de técnico)">Técnicos</th>
         </tr>
         <tr>
           <th class="num col-backlog col-divider" title="Total de ME em aberto no bucket (regra de backlog no topo da página)">Backlog ME</th>
@@ -583,8 +588,8 @@
             <% linha.minutos.forEach((min, i) => { %>
               <td class="<%= numCls('col-minutos', min) %> <%= i === 0 ? 'col-divider' : '' %>"><%= min %></td>
             <% }) %>
-            <td class="<%= numCls('', linha.pu) %> col-divider"><%= linha.pu %></td>
-            <td class="<%= numCls('', linha.tecnicos) %>"><%= linha.tecnicos %></td>
+            <td class="<%= numCls('', linha.pu) %> col-divider col-pu"><%= linha.pu %></td>
+            <td class="<%= numCls('', linha.tecnicos) %> col-tecnicos"><%= linha.tecnicos %></td>
           </tr>
         <% }) %>
       </tbody>
@@ -605,8 +610,8 @@
           <% totalMinutosMe.forEach((min, i) => { %>
             <td class="<%= numCls('col-minutos', min) %> <%= i === 0 ? 'col-divider' : '' %>"><%= min %></td>
           <% }) %>
-          <td class="<%= numCls('', totalPuMe) %> col-divider"><%= totalPuMe %></td>
-          <td class="<%= numCls('', totalTecnicosMe) %>"><%= totalTecnicosMe %></td>
+          <td class="<%= numCls('', totalPuMe) %> col-divider col-pu"><%= totalPuMe %></td>
+          <td class="<%= numCls('', totalTecnicosMe) %> col-tecnicos"><%= totalTecnicosMe %></td>
         </tr>
       </tfoot>
     </table>
@@ -687,7 +692,7 @@
         <col class="colw-num" /><col class="colw-num" /><col class="colw-num" />
         <col class="colw-num" /><col class="colw-num" />
         <col class="colw-num" /><col class="colw-num" />
-        <col class="colw-num" /><col class="colw-num" />
+        <%# PU e Técnicos ocultos (.col-pu/.col-tecnicos): os <col> deles foram removidos, senão o navegador cria colunas vazias e sobra espaço à direita %>
       </colgroup>
       <thead>
         <tr>
@@ -696,8 +701,8 @@
           <th colspan="3" class="group-header col-backlog col-divider" title="Quantidade de reparos em aberto, a meta calculada sobre eles e a Sugestão baseada na Carga configurada">BACKLOG</th>
           <th colspan="2" class="group-header col-ordens col-divider" title="Previsto de cada bucket dividido entre as 2 janelas de horário — % configurável por aliada na faixa de cada aliada">ORDENS</th>
           <th colspan="2" class="group-header col-minutos col-divider" title="Ordens de cada janela × tempo de reparo do bucket (depara_tempo_bucket)">COTAS(min)</th>
-          <th rowspan="2" class="num col-divider" title="Técnicos = PU ÷ Meta de PU por técnico — Meta configurável por aliada na faixa de cada aliada">PU</th>
-          <th rowspan="2" class="num" title="Técnicos necessários = PU ÷ Meta de PU por técnico, arredondado para cima (não existe fração de técnico)">Técnicos</th>
+          <th rowspan="2" class="num col-divider col-pu" title="Técnicos = PU ÷ Meta de PU por técnico — Meta configurável por aliada na faixa de cada aliada">PU</th>
+          <th rowspan="2" class="num col-tecnicos" title="Técnicos necessários = PU ÷ Meta de PU por técnico, arredondado para cima (não existe fração de técnico)">Técnicos</th>
         </tr>
         <tr>
           <th class="num col-backlog col-divider" title="Total de chamados de reparo em aberto no bucket (regra de backlog no topo da página)">Backlog Reparos</th>
@@ -736,8 +741,8 @@
             <td class="<%= numCls('col-ordens', linha.janelas[1]) %>"><%= linha.janelas[1] %></td>
             <td class="<%= numCls('col-minutos', linha.minutos[0]) %> col-divider"><%= linha.minutos[0] %></td>
             <td class="<%= numCls('col-minutos', linha.minutos[1]) %>"><%= linha.minutos[1] %></td>
-            <td class="<%= numCls('', linha.pu) %> col-divider"><%= linha.pu %></td>
-            <td class="<%= numCls('', linha.tecnicos) %>"><%= linha.tecnicos %></td>
+            <td class="<%= numCls('', linha.pu) %> col-divider col-pu"><%= linha.pu %></td>
+            <td class="<%= numCls('', linha.tecnicos) %> col-tecnicos"><%= linha.tecnicos %></td>
           </tr>
         <% }) %>
       </tbody>
@@ -756,8 +761,8 @@
           <td class="<%= numCls('col-ordens', totalJanelas[1]) %>"><%= totalJanelas[1] %></td>
           <td class="<%= numCls('col-minutos', totalMinutos[0]) %> col-divider"><%= totalMinutos[0] %></td>
           <td class="<%= numCls('col-minutos', totalMinutos[1]) %>"><%= totalMinutos[1] %></td>
-          <td class="<%= numCls('', totalPu) %> col-divider"><%= totalPu %></td>
-          <td class="<%= numCls('', totalTecnicos) %>"><%= totalTecnicos %></td>
+          <td class="<%= numCls('', totalPu) %> col-divider col-pu"><%= totalPu %></td>
+          <td class="<%= numCls('', totalTecnicos) %> col-tecnicos"><%= totalTecnicos %></td>
         </tr>
       </tfoot>
     </table>

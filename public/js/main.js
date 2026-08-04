@@ -31,7 +31,6 @@ document.querySelectorAll('form').forEach((form) => {
 
 document.addEventListener('DOMContentLoaded', () => {
   const modais = [
-    { modalId: 'config-elos-modal', openId: 'config-elos-open-btn', closeId: 'config-elos-close-btn' },
     { modalId: 'cotas-upload-modal', openId: 'cotas-upload-open-btn', closeId: 'cotas-upload-close-btn' },
   ];
 
@@ -57,131 +56,6 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
   });
-
-  // Status "ao vivo" da raspagem, no modal "Credenciais do Elos" -- só fica
-  // consultando (polling) o servidor enquanto o modal está aberto, pra não
-  // bater a cada 3s à toa quando ninguém está olhando.
-  const elosModal = document.getElementById('config-elos-modal');
-  const elosOpenBtn = document.getElementById('config-elos-open-btn');
-  const boxStatusRaspagem = document.getElementById('raspagem-status-box');
-  const textoStatusRaspagem = document.getElementById('raspagem-status-texto');
-
-  if (elosModal && elosOpenBtn && boxStatusRaspagem && textoStatusRaspagem) {
-    let intervaloStatusRaspagem = null;
-
-    // Miniaturas dos screenshots que a raspagem tira a cada etapa (login,
-    // dashboard, exportação...) -- cada <img> só aparece se aquele arquivo
-    // realmente existir agora (nem toda etapa é sempre alcançada). Query string
-    // com timestamp evita servir uma imagem em cache de uma raspagem anterior.
-    const atualizarScreenshotsRaspagem = () => {
-      const agora = Date.now();
-      document.querySelectorAll('#raspagem-screenshots img[data-nome]').forEach((img) => {
-        img.onload = () => { img.style.display = ''; };
-        img.onerror = () => { img.style.display = 'none'; };
-        img.src = `/raspagem-screenshots/${img.dataset.nome}?t=${agora}`;
-      });
-    };
-
-    const atualizarStatusRaspagem = async () => {
-      try {
-        const resposta = await fetch('/api/raspagem-status');
-        const dados = await resposta.json();
-
-        boxStatusRaspagem.classList.remove('alert', 'alert-ok', 'alert-erro');
-
-        if (dados.etapa !== 'ocioso') {
-          boxStatusRaspagem.classList.add('alert', 'alert-ok');
-          textoStatusRaspagem.textContent = `Rodando agora: ${dados.mensagem}`;
-        } else if (dados.ultimoResultado === 'erro') {
-          boxStatusRaspagem.classList.add('alert', 'alert-erro');
-          textoStatusRaspagem.textContent = `Última raspagem falhou em ${dados.ultimaExecucaoEm}: ${dados.ultimoErro}`;
-        } else if (dados.ultimoResultado === 'sucesso') {
-          boxStatusRaspagem.classList.add('alert', 'alert-ok');
-          textoStatusRaspagem.textContent = dados.ultimasLinhas > 0
-            ? `Última raspagem em ${dados.ultimaExecucaoEm}: ${dados.ultimasLinhas} linha(s) importada(s).`
-            : `Última raspagem em ${dados.ultimaExecucaoEm}: sem dados novos no Elos.`;
-        } else {
-          textoStatusRaspagem.textContent = 'Nenhuma raspagem rodou ainda.';
-        }
-      } catch (err) {
-        textoStatusRaspagem.textContent = 'Não foi possível consultar o status agora.';
-      }
-    };
-
-    const atualizarTudoRaspagem = () => {
-      atualizarStatusRaspagem();
-      atualizarScreenshotsRaspagem();
-    };
-
-    elosOpenBtn.addEventListener('click', () => {
-      atualizarTudoRaspagem();
-      if (intervaloStatusRaspagem) clearInterval(intervaloStatusRaspagem);
-      intervaloStatusRaspagem = setInterval(atualizarTudoRaspagem, 3000);
-    });
-
-    elosModal.addEventListener('close', () => {
-      if (intervaloStatusRaspagem) {
-        clearInterval(intervaloStatusRaspagem);
-        intervaloStatusRaspagem = null;
-      }
-    });
-
-    const btnExecutarAgora = document.getElementById('raspagem-executar-agora-btn');
-    if (btnExecutarAgora) {
-      btnExecutarAgora.addEventListener('click', async () => {
-        const textoOriginal = btnExecutarAgora.textContent;
-        btnExecutarAgora.disabled = true;
-        btnExecutarAgora.textContent = 'Solicitado...';
-
-        try {
-          await fetch('/api/raspagem-executar-agora', { method: 'POST' });
-        } catch (err) {
-          // a raspagem em si roda em outro processo -- se o pedido falhar aqui,
-          // o usuário só tenta de novo; não tem nada mais a fazer neste catch.
-        }
-
-        atualizarTudoRaspagem();
-
-        // A raspagem confere o pedido a cada 5s (ver loop-instalacoes.js) --
-        // dá uma folga maior que isso antes de deixar clicar de novo.
-        setTimeout(() => {
-          btnExecutarAgora.disabled = false;
-          btnExecutarAgora.textContent = textoOriginal;
-        }, 8000);
-      });
-    }
-
-    // Clique numa miniatura abre ela ampliada num lightbox por cima do modal --
-    // só liga uma vez (os <img> não são recriados, só o src muda a cada poll).
-    const lightbox = document.getElementById('raspagem-screenshot-lightbox');
-    const lightboxImg = document.getElementById('raspagem-screenshot-lightbox-img');
-    const lightboxClose = document.getElementById('raspagem-screenshot-lightbox-close');
-
-    if (lightbox && lightboxImg) {
-      document.querySelectorAll('#raspagem-screenshots img[data-nome]').forEach((thumb) => {
-        const abrirLightbox = () => {
-          if (!thumb.src || thumb.style.display === 'none') return;
-          lightboxImg.src = thumb.src;
-          lightboxImg.alt = thumb.alt;
-          lightbox.showModal();
-        };
-        thumb.addEventListener('click', abrirLightbox);
-        thumb.addEventListener('keydown', (event) => {
-          if (event.key === 'Enter' || event.key === ' ') {
-            event.preventDefault();
-            abrirLightbox();
-          }
-        });
-      });
-
-      if (lightboxClose) {
-        lightboxClose.addEventListener('click', () => lightbox.close());
-      }
-      lightbox.addEventListener('click', (event) => {
-        if (event.target === lightbox) lightbox.close();
-      });
-    }
-  }
 
   // Botão "Salvar planejamento" (sidebar da index): abre modal de confirmação
   // antes de chamar POST /api/snapshot-manual, para o usuário entender o que vai
@@ -564,8 +438,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if (modoAtual === 'percentual') {
               hidden.value = clamp(Number(display.value));
             } else {
-              const total = Number(janelasTotalInput.value) || 0;
-              hidden.value = total > 0 ? clamp((Number(display.value) || 0) / total * 100) : 0;
+              const carga = Number(janelasCargaInput.value) || 0;
+              hidden.value = carga > 0 ? clamp((Number(display.value) || 0) / carga * 100) : 0;
             }
             recalcularRestante();
           });
