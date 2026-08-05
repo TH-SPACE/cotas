@@ -8,7 +8,7 @@
   desatualizados se a base não for reenviada -- ver aviso no rodapé da página).
   Consumo vem de COTA_USADA da mesma linha (ver mapaCotas/getCotasD1aD7 em
   cotasService.js) -- ANTES vinha de uma contagem própria de ordens agendadas
-  em backlog_instalacoes/backlog_elos por data de calendário (getConsumoD1aD7),
+  em backlog_instalacoes/backlog_reparos por data de calendário (getConsumoD1aD7),
   que podia divergir do que o ETA já registrava como usado. Os dois (Cota
   Aberta e Consumo) são agregados por bucket somando/contando todas as janelas
   daquele bucket no dia (um bucket pode ter janelas com Status diferentes no

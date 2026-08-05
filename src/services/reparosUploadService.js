@@ -1,8 +1,9 @@
 const pool = require('../db');
 
-// backlog_elos mora em outro banco (indicadores), compartilhado com outro
-// aplicativo -- ver comentário equivalente em bucketService.js.
-const TABELA_BACKLOG_ELOS = `${process.env.DB_NAME_INDICADORES || 'indicadores'}.backlog_elos`;
+// backlog_reparos mora no banco `cotas` (default da pool), mas continua sendo
+// alimentada pela raspagem do ELOS que roda na intranet -- ou seja, ainda é
+// compartilhada com outro processo. Ver comentário equivalente em bucketService.js.
+const TABELA_BACKLOG_REPAROS = 'backlog_reparos';
 
 // Ordem e nomes exatos do cabeçalho do export de Reparos do ELOS (pipe-delimited,
 // ISO-8859-1/latin1) -- mesma lista de colunas usada pela raspagem automática
@@ -11,7 +12,7 @@ const TABELA_BACKLOG_ELOS = `${process.env.DB_NAME_INDICADORES || 'indicadores'}
 //
 // Diferença importante em relação à raspagem automática: aqui é upload manual
 // (TRUNCATE + INSERT, substitui tudo), não upsert por COD_SS -- decisão do
-// usuário, ciente de que backlog_elos é compartilhada com outro sistema.
+// usuário, ciente de que backlog_reparos é compartilhada com a raspagem.
 const COLUNAS = [
   'COD_SS', 'STATUS', 'STATUS_REASON', 'DATA_STATUS', 'ARMARIO', 'STREETNAME',
   'STATEORPROVINCE', 'POSTCODE', 'CNL', 'NEIGHBORDHOOD', 'CATEGORIZES_TYPE',
@@ -68,7 +69,7 @@ function montarCreateTableSql() {
     .join(',\n    ');
 
   return `
-    CREATE TABLE IF NOT EXISTS ${TABELA_BACKLOG_ELOS} (
+    CREATE TABLE IF NOT EXISTS ${TABELA_BACKLOG_REPAROS} (
       ${colunasSql},
       STATUS_GOPER VARCHAR(20),
       PRIMARY KEY (COD_SS),
@@ -143,12 +144,14 @@ async function inserirBatch(conn, tabela, linhas) {
 // lê o tamanho real de cada coluna no banco e corta o valor pra caber, evitando
 // o erro "Data too long" que já aconteceu aqui uma vez.
 async function obterTamanhosColunas(conn) {
-  const [dbName, tabela] = TABELA_BACKLOG_ELOS.split('.');
+  // DATABASE() = banco da conexão (cotas, ver .env DB_NAME). Antes o nome vinha
+  // qualificado ("indicadores.backlog_elos") e era quebrado no ponto; agora a
+  // tabela é do próprio banco da pool, então não há prefixo pra separar.
   const [rows] = await conn.query(
     `SELECT COLUMN_NAME, CHARACTER_MAXIMUM_LENGTH
      FROM information_schema.columns
-     WHERE table_schema = ? AND table_name = ?`,
-    [dbName, tabela]
+     WHERE table_schema = DATABASE() AND table_name = ?`,
+    [TABELA_BACKLOG_REPAROS]
   );
 
   const mapa = {};
@@ -170,15 +173,15 @@ function truncarParaCaber(linhas, tamanhos) {
 // certo. Necessário porque TRUNCATE é DDL e "comita" sozinho mesmo dentro de uma
 // transação -- um erro no meio dos INSERTs (já aconteceu: campo maior que a
 // coluna) deixava a tabela truncada sem jeito de desfazer com rollback. Com
-// staging, se algum INSERT falhar, backlog_elos real nem chega a ser tocada.
+// staging, se algum INSERT falhar, backlog_reparos real nem chega a ser tocada.
 async function importarReparos(buffer) {
   const linhas = parseCsv(buffer);
 
   const conn = await pool.getConnection();
-  const tabelaStaging = `${TABELA_BACKLOG_ELOS}_staging_upload`;
-  const tabelaBackup = `${TABELA_BACKLOG_ELOS}_backup_upload`;
+  const tabelaStaging = `${TABELA_BACKLOG_REPAROS}_staging_upload`;
+  const tabelaBackup = `${TABELA_BACKLOG_REPAROS}_backup_upload`;
   try {
-    // Rede de segurança: só cria de verdade se backlog_elos ainda não existir
+    // Rede de segurança: só cria de verdade se backlog_reparos ainda não existir
     // (banco novo/dev). Em produção já existe, isso vira um no-op.
     await conn.query(montarCreateTableSql());
 
@@ -186,7 +189,7 @@ async function importarReparos(buffer) {
     const linhasAjustadas = truncarParaCaber(linhas, tamanhos);
 
     await conn.query(`DROP TABLE IF EXISTS ${tabelaStaging}`);
-    await conn.query(`CREATE TABLE ${tabelaStaging} LIKE ${TABELA_BACKLOG_ELOS}`);
+    await conn.query(`CREATE TABLE ${tabelaStaging} LIKE ${TABELA_BACKLOG_REPAROS}`);
 
     for (let i = 0; i < linhasAjustadas.length; i += BATCH_SIZE) {
       await inserirBatch(conn, tabelaStaging, linhasAjustadas.slice(i, i + BATCH_SIZE));
@@ -194,7 +197,7 @@ async function importarReparos(buffer) {
 
     await conn.query(`DROP TABLE IF EXISTS ${tabelaBackup}`);
     await conn.query(
-      `RENAME TABLE ${TABELA_BACKLOG_ELOS} TO ${tabelaBackup}, ${tabelaStaging} TO ${TABELA_BACKLOG_ELOS}`
+      `RENAME TABLE ${TABELA_BACKLOG_REPAROS} TO ${tabelaBackup}, ${tabelaStaging} TO ${TABELA_BACKLOG_REPAROS}`
     );
     await conn.query(`DROP TABLE IF EXISTS ${tabelaBackup}`);
 

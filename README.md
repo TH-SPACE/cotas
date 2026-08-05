@@ -9,12 +9,11 @@ Painel web (Node.js + Express + EJS) que estima quantos técnicos são necessár
 - MySQL (mysql2)
 - dotenv
 
-## Dois bancos de dados
+## Banco de dados
 
-- **`indicadores`**: só a tabela `backlog_elos` (Reparos) mora aqui — ela já tem sua própria raspagem automática rodando na intranet, separada deste projeto. Nome do banco configurável via `DB_NAME_INDICADORES`.
-- **`cotas`**: todo o resto que este app usa/cria — `depara_bucket`, `depara_tempo_bucket`, `depara_pu_produto*`, `backlog_instalacoes`, `elos_credenciais`. Nome configurável via `DB_NAME` (banco padrão da conexão).
+- **`cotas`**: tudo que este app usa/cria mora aqui — `depara_bucket`, `depara_tempo_bucket`, `depara_pu_produto*`, `backlog_instalacoes`, `backlog_reparos`, `elos_credenciais`. Nome configurável via `DB_NAME` (banco padrão da conexão).
 
-A única query que cruza os dois bancos (`src/services/bucketService.js`) referencia `backlog_elos` com o nome do banco qualificado no SQL — não depende de `USE`/schema padrão.
+O backlog de Reparos ficava em `indicadores.backlog_elos` (outro banco, referenciado com nome qualificado no SQL e configurável via `DB_NAME_INDICADORES`). Passou a ser `cotas.backlog_reparos`, com o mesmo layout de colunas do export do ELOS — não existe mais query cruzando bancos, e `DB_NAME_INDICADORES` não é mais lido por nada.
 
 ## Subprojeto: raspagem automática de Instalações
 
@@ -22,7 +21,7 @@ A única query que cruza os dois bancos (`src/services/bucketService.js`) refere
 
 - `loop-instalacoes.js`: roda pra sempre, raspando a cada intervalo aleatório de 10 a 25 min.
 - Credenciais do Elos (`ELOS_USER`/`ELOS_PASSWORD`) podem ser cadastradas pela própria página (botão de chave no topo da barra de navegação) em vez de só pelo `.env` — fica salvo na tabela `cotas.elos_credenciais`, útil quando quem cuida disso sai de férias e outra pessoa precisa trocar o usuário.
-- Reparos **não** é raspado por aqui — já existe outro sistema na intranet cuidando de `backlog_elos`.
+- Reparos **não** é raspado por aqui — já existe outro sistema na intranet cuidando de `backlog_reparos`.
 
 ## Estrutura
 
@@ -49,7 +48,6 @@ DB_PORT=3306
 DB_USER=root
 DB_PASSWORD=
 DB_NAME=cotas
-DB_NAME_INDICADORES=indicadores
 
 # Chave de criptografia da senha do Elos salva em elos_credenciais (ver
 # src/services/cryptoUtil.js) -- gere uma vez com:
@@ -91,7 +89,7 @@ npm run start:all   # mesma coisa, sem --watch
    cd elos-backlog-scraper && npm install && cd ..
    ```
 
-3. **Banco de dados**: se o `cotas` do servidor estiver vazio, ver a seção "Banco vazio no servidor novo?" abaixo antes de continuar. `indicadores`/`backlog_elos` presumidamente já existe lá, mantido pela raspagem de Reparos que já roda na intranet.
+3. **Banco de dados**: se o `cotas` do servidor estiver vazio, ver a seção "Banco vazio no servidor novo?" abaixo antes de continuar. `backlog_reparos` presumidamente já existe lá, mantida pela raspagem de Reparos que já roda na intranet.
 
 4. **Configurar os dois `.env`** (raiz e `elos-backlog-scraper/`) com os dados do banco daquele servidor. Não precisa preencher `ELOS_USER`/`ELOS_PASSWORD` — dá pra cadastrar depois pela própria página.
 

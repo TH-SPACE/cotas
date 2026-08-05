@@ -1,14 +1,13 @@
 const pool = require('../db');
 const { paraInClause } = require('./sqlUtils');
 
-// Único table deste app que mora em outro banco (indicadores, não cotas) --
-// backlog_elos já tem sua própria raspagem na intranet e continua lá por
-// decisão do usuário; toda tabela nossa (depara_bucket, depara_tempo_bucket etc.)
-// vive em cotas, que é o banco default da pool (ver src/db.js / .env DB_NAME).
-// Por isso essa é a única referência com o banco qualificado no nome -- o nome
-// do banco vem do .env (DB_NAME_INDICADORES) em vez de fixo no código, pra dar
-// pra trocar por ambiente sem editar fonte.
-const TABELA_BACKLOG_ELOS = `${process.env.DB_NAME_INDICADORES || 'indicadores'}.backlog_elos`;
+// Backlog de Reparos. Antes era `indicadores.backlog_elos` (outro banco,
+// compartilhado com outro sistema); passou a ser `backlog_reparos` no próprio
+// banco `cotas` -- mesmo layout de colunas do export do ELOS, alimentado pela
+// raspagem que já roda na intranet. Com isso NENHUMA tabela deste app mora fora
+// de `cotas`, o banco default da pool (ver src/db.js / .env DB_NAME), então o
+// nome não precisa mais vir qualificado nem configurável por .env.
+const TABELA_BACKLOG_REPAROS = 'backlog_reparos';
 
 // Escopo do projeto é o cluster GOIANIA, não o estado GO inteiro (que também
 // inclui armários de ANAPOLIS/BRASILIA fora do depara_bucket).
@@ -32,7 +31,7 @@ const STATUS_EXCLUIDOS_PADRAO = ['CANCELADA', 'ENCERRADA', 'EXECUCAO'];
 // aqui o padrão é uma lista de INCLUSÃO -- só esses contam por padrão. Pedido do
 // usuário: a home calcula pra D+1, então só importa backlog sem motivo bloqueador
 // (`''`, "(sem motivo)" no front), já agendado (`AGENDAMENTO`), em análise técnica
-// (`TECNICA`, sem acento -- é como vem gravado em backlog_elos) ou em triagem
+// (`TECNICA`, sem acento -- é como vem gravado em backlog_reparos) ou em triagem
 // (`TRIAGEM`); qualquer outro motivo (aguardando peça, cliente ausente etc.) não
 // é candidato a D+1 por padrão -- o usuário pode marcar manualmente se quiser
 // incluir outros motivos.
@@ -51,7 +50,7 @@ async function getResumoBuckets(tecnologias, filtros) {
          COUNT(b.COD_SS) AS backlogReparos,
          COALESCE(t.REPARO, 0) AS tempoReparoMinutos
        FROM depara_bucket d
-       LEFT JOIN ${TABELA_BACKLOG_ELOS} b
+       LEFT JOIN ${TABELA_BACKLOG_REPAROS} b
          ON b.ARMARIO = d.ARMARIO
          AND b.CLUSTER_ = ?
          AND b.SPECIFICATION_TYPE = ?
@@ -70,7 +69,7 @@ async function getResumoBuckets(tecnologias, filtros) {
          ? AS bucket,
          COUNT(b.COD_SS) AS backlogReparos,
          COALESCE(MAX(t.REPARO), 0) AS tempoReparoMinutos
-       FROM ${TABELA_BACKLOG_ELOS} b
+       FROM ${TABELA_BACKLOG_REPAROS} b
        LEFT JOIN depara_bucket d ON d.ARMARIO = b.ARMARIO
        LEFT JOIN depara_tempo_bucket t ON t.BUCKET = ?
        WHERE d.ARMARIO IS NULL
@@ -117,7 +116,7 @@ async function getOrdensBacklog(tecnologias, filtros) {
        b.PHYSICAL_LINK_MEDIA_TYPE AS tecnologia,
        b.DATA_VENCIMENTO AS dataAgendamento,
        b.TIME_SLOT AS timeSlot
-     FROM ${TABELA_BACKLOG_ELOS} b
+     FROM ${TABELA_BACKLOG_REPAROS} b
      LEFT JOIN depara_bucket d ON d.ARMARIO = b.ARMARIO
      WHERE b.CLUSTER_ = ?
        AND b.SPECIFICATION_TYPE = ?
@@ -136,12 +135,12 @@ async function getOrdensBacklog(tecnologias, filtros) {
   return rows;
 }
 
-// Tecnologias distintas hoje em backlog_elos para o cluster (ex.: GPON, METALICO),
+// Tecnologias distintas hoje em backlog_reparos para o cluster (ex.: GPON, METALICO),
 // usadas para montar o filtro — assim o front não precisa hardcodar os valores.
 async function getTecnologiasDisponiveis() {
   const [rows] = await pool.query(
     `SELECT DISTINCT PHYSICAL_LINK_MEDIA_TYPE AS tecnologia
-     FROM ${TABELA_BACKLOG_ELOS}
+     FROM ${TABELA_BACKLOG_REPAROS}
      WHERE CLUSTER_ = ? AND PHYSICAL_LINK_MEDIA_TYPE <> ''
      ORDER BY PHYSICAL_LINK_MEDIA_TYPE`,
     [CLUSTER_ESCOPO]
@@ -158,8 +157,8 @@ async function getFiltrosDisponiveisReparo() {
 
   // As 2 queries são independentes -> rodam em paralelo (metade das idas ao banco).
   const [[statusRows], [statusReasonRows]] = await Promise.all([
-    pool.query(`SELECT DISTINCT STATUS AS valor FROM ${TABELA_BACKLOG_ELOS} WHERE ${escopo} ORDER BY STATUS`, params),
-    pool.query(`SELECT DISTINCT STATUS_REASON AS valor FROM ${TABELA_BACKLOG_ELOS} WHERE ${escopo} ORDER BY STATUS_REASON`, params),
+    pool.query(`SELECT DISTINCT STATUS AS valor FROM ${TABELA_BACKLOG_REPAROS} WHERE ${escopo} ORDER BY STATUS`, params),
+    pool.query(`SELECT DISTINCT STATUS_REASON AS valor FROM ${TABELA_BACKLOG_REPAROS} WHERE ${escopo} ORDER BY STATUS_REASON`, params),
   ]);
 
   return {
@@ -168,12 +167,12 @@ async function getFiltrosDisponiveisReparo() {
   };
 }
 
-// Data da última carga do ELOS pro backlog_elos inteiro (coluna DATA_CARGA vem do
+// Data da última carga do ELOS pro backlog_reparos inteiro (coluna DATA_CARGA vem do
 // próprio export, igual em todas as linhas de uma mesma carga — não confundir com
 // quando a raspagem rodou aqui, é o horário que o ELOS registra a carga dele).
 async function getDataCargaReparo() {
   const [rows] = await pool.query(
-    `SELECT MAX(STR_TO_DATE(DATA_CARGA, '%d/%m/%Y %H:%i:%s')) AS dataCarga FROM ${TABELA_BACKLOG_ELOS}`
+    `SELECT MAX(STR_TO_DATE(DATA_CARGA, '%d/%m/%Y %H:%i:%s')) AS dataCarga FROM ${TABELA_BACKLOG_REPAROS}`
   );
   return rows[0].dataCarga;
 }
@@ -187,6 +186,6 @@ module.exports = {
   getDataCargaReparo,
   STATUS_EXCLUIDOS_PADRAO,
   STATUS_REASON_INCLUIDOS_PADRAO,
-  TABELA_BACKLOG_ELOS,
+  TABELA_BACKLOG_REPAROS,
   SPECIFICATION_TYPE_REPARO,
 };

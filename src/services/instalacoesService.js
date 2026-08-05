@@ -41,7 +41,7 @@ const BATCH_SIZE = 500;
 // NUMERO_OS não é único no arquivo (ex.: Mudança de Endereço gera 2 linhas com a
 // mesma OS — uma de DESCONEXAO e outra de INSTALACAO/ALTERACAO), então a tabela usa
 // ID auto-increment como chave. Collation utf8mb4_general_ci para permitir JOIN
-// futuro com backlog_elos/depara_bucket sem erro de mix de collations.
+// futuro com backlog_reparos/depara_bucket sem erro de mix de collations.
 function montarCreateTableSql() {
   const colunasSql = COLUNAS
     .map(nome => `\`${nome}\` ${tipoColuna(nome)}`)

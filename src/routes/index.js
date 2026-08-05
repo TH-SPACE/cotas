@@ -72,7 +72,7 @@ const {
 const { memoTTL } = require('../services/cacheUtil');
 
 // As OPÇÕES de filtro (status/statusReason/tecnologia) varrem backlog_instalacoes/
-// backlog_elos (colunas TEXT, sem índice) e só mudam quando um novo backlog é
+// backlog_reparos (colunas TEXT, sem índice) e só mudam quando um novo backlog é
 // carregado -- cacheadas por 15s pra não pagar ~60ms de DISTINCT em TODA página.
 // Os NÚMEROS (getResumoBuckets*) continuam sempre frescos, sem cache. Staleness de
 // até 15s numa lista de checkbox de filtro é irrelevante.
@@ -365,7 +365,7 @@ async function carregarDadosPainel(query) {
   // Os 4 conjuntos de filtros disponíveis (status/statusReason/tecnologia por
   // seção) são independentes entre si -> buscados em PARALELO num único lote, em
   // vez de 4 esperas em série antes do lote principal. Cada um só depende do que
-  // existe hoje na base daquela seção (backlog_elos / backlog_instalacoes).
+  // existe hoje na base daquela seção (backlog_reparos / backlog_instalacoes).
   const [
     filtrosDisponiveisReparo,
     filtrosDisponiveisInstalacoes,
@@ -1041,7 +1041,7 @@ router.get('/cotas-planejadas', async (req, res, next) => {
       janelasMeLabels: dados.janelasMeLabels,
       aliadaCoresMe: dados.aliadaCoresMe,
       mapaCotasD0Me,
-      // Reparos: único tipo em backlog_elos (não backlog_instalacoes); tempo
+      // Reparos: único tipo em backlog_reparos (não backlog_instalacoes); tempo
       // próprio (depara_tempo_bucket.REPARO), só 2 janelas (não 4).
       linhasReparos: linhasReparosComPlanej,
       janelasReparoLabels: dados.janelasReparoLabels,
@@ -1498,9 +1498,9 @@ router.post('/instalacoes/upload', upload.single('arquivo'), async (req, res, ne
   }
 });
 
-// Upload manual do backlog de Reparos -- TRUNCATE + INSERT em backlog_elos
+// Upload manual do backlog de Reparos -- TRUNCATE + INSERT em backlog_reparos
 // (substitui tudo), igual ao de Instalações. Diferente de Instalações, essa
-// tabela é compartilhada com outro sistema (ver reparosUploadService.js) --
+// tabela é compartilhada com a raspagem do ELOS (ver reparosUploadService.js) --
 // decisão consciente do usuário de manter simples em vez de um upsert escopado.
 router.post('/reparos/upload', upload.single('arquivo'), async (req, res, next) => {
   try {

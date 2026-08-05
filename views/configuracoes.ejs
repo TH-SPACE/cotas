@@ -202,7 +202,7 @@
 
 <details class="panel config-page-panel" id="config-upload">
   <summary class="modal-header">
-    <h3 title="Envia manualmente o export diário do ELOS para as tabelas backlog_instalacoes e backlog_elos">Upload manual de backlog</h3>
+    <h3 title="Envia manualmente o export diário do ELOS para as tabelas backlog_instalacoes e backlog_reparos">Upload manual de backlog</h3>
   </summary>
 
   <% if (instalacoesUpload === 'ok') { %>
@@ -211,7 +211,7 @@
     <p class="alert alert-erro" data-auto-dismiss style="margin: 1.25rem 1.25rem 0;">Falha ao importar instalações: <%= instalacoesUploadErro %></p>
   <% } %>
   <% if (reparosUpload === 'ok') { %>
-    <p class="alert alert-ok" data-auto-dismiss style="margin: 1.25rem 1.25rem 0;">Arquivo de reparos importado: <strong><%= reparosUploadLinhas %></strong> linhas gravadas em <code>backlog_elos</code>.</p>
+    <p class="alert alert-ok" data-auto-dismiss style="margin: 1.25rem 1.25rem 0;">Arquivo de reparos importado: <strong><%= reparosUploadLinhas %></strong> linhas gravadas em <code>backlog_reparos</code>.</p>
   <% } else if (reparosUpload === 'erro') { %>
     <p class="alert alert-erro" data-auto-dismiss style="margin: 1.25rem 1.25rem 0;">Falha ao importar reparos: <%= reparosUploadErro %></p>
   <% } %>
@@ -236,9 +236,9 @@
       </div>
       <div class="cota-upload-row">
         <input type="file" name="arquivo" accept=".csv,.txt" required aria-label="CSV de Reparos" />
-        <button type="submit" title="Envia e substitui os dados de backlog_elos">Enviar</button>
+        <button type="submit" title="Envia e substitui os dados de backlog_reparos">Enviar</button>
       </div>
-      <p class="cota-upload-hint cota-upload-hint-warn">⚠ Substitui <code>backlog_elos</code> — tabela compartilhada com outro sistema: arquivo errado apaga dados que não são deste app.</p>
+      <p class="cota-upload-hint cota-upload-hint-warn">⚠ Substitui <code>backlog_reparos</code> — tabela compartilhada com outro sistema: arquivo errado apaga dados que não são deste app.</p>
     </form>
   </div>
 </details>

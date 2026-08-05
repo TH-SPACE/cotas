@@ -5,7 +5,7 @@ const pool = require('../src/db');
 
 const FILE_PATH = path.join(__dirname, '..', 'data', 'deparabucket.txt');
 
-// Collation alinhada com backlog_elos.ARMARIO (utf8mb4_general_ci) para permitir JOIN
+// Collation alinhada com backlog_reparos.ARMARIO (utf8mb4_general_ci) para permitir JOIN
 // sem erro "Illegal mix of collations" — o default do banco é utf8mb4_uca1400_ai_ci.
 const CREATE_TABLE_SQL = `
   CREATE TABLE IF NOT EXISTS depara_bucket (
