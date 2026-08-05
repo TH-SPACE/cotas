@@ -4,9 +4,16 @@ const { paraInClause } = require('./sqlUtils');
 // Backlog de Reparos. Antes era `indicadores.backlog_elos` (outro banco,
 // compartilhado com outro sistema); passou a ser `backlog_reparos` no próprio
 // banco `cotas` -- mesmo layout de colunas do export do ELOS, alimentado pela
-// raspagem que já roda na intranet. Com isso NENHUMA tabela deste app mora fora
-// de `cotas`, o banco default da pool (ver src/db.js / .env DB_NAME), então o
-// nome não precisa mais vir qualificado nem configurável por .env.
+// raspagem que já roda na intranet.
+//
+// Motivo da troca: `backlog_reparos` é a que recebe carga fresca hoje -- a
+// `backlog_elos` ficou pra trás (na troca, a nova estava com a carga do dia e a
+// antiga com a da tarde anterior). Se algum dia os números da home parecerem
+// velhos, comparar MAX(DATA_CARGA) das duas antes de suspeitar do cálculo.
+//
+// Com isso NENHUMA tabela deste app mora fora de `cotas`, o banco default da
+// pool (ver src/db.js / .env DB_NAME), então o nome não precisa mais vir
+// qualificado nem configurável por .env.
 const TABELA_BACKLOG_REPAROS = 'backlog_reparos';
 
 // Escopo do projeto é o cluster GOIANIA, não o estado GO inteiro (que também
