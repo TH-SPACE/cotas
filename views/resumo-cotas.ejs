@@ -17,6 +17,16 @@
     // em bucket sem tempo cadastrado, onde ordens existem mas os minutos dão 0).
     return `<td class="num ${_min === 0 && _qtd === 0 ? 'valor-zero' : ''} ${classes}"><span class="v-min">${_min}</span><span class="v-qtd">${_qtd}</span></td>`;
   };
+  const somar = (valores) => (valores || []).reduce((acc, v) => acc + (v || 0), 0);
+  // Célula do "Total por tipo": mesmo par min/ordens das outras, mas ocupando
+  // todas as janelas daquele painel (colspan) -- é a soma horizontal da linha
+  // "Total geral" dentro de cada grupo (INSTALAÇÃO, ME, SERVIÇOS, REPAROS).
+  const celulaTotalTipo = (minutos, ordens, rotulo) => {
+    if (!minutos || minutos.length === 0) return '';
+    const _min = somar(minutos);
+    const _qtd = somar(ordens);
+    return `<td class="num col-divider total-tipo" colspan="${minutos.length}" title="${rotulo} — soma de todas as janelas de horário"><span class="v-min">${_min}</span><span class="v-qtd">${_qtd}</span></td>`;
+  };
 %>
 
 <section class="panel" id="secao-resumo-cotas">
@@ -119,6 +129,14 @@
           <% totalMinutosReparo.forEach((min, i) => { %>
             <%- celulaUnidade(min, totalOrdensReparo[i], i === 0 ? 'col-divider' : '') %>
           <% }) %>
+        </tr>
+        <tr class="linha-total-tipo">
+          <td colspan="2" title="Soma de todas as janelas de horário de cada painel">Total por tipo</td>
+          <td class="num col-divider col-tecnicos"></td>
+          <%- celulaTotalTipo(totalMinutosInstalacao, totalOrdensInstalacao, 'Instalação') %>
+          <%- celulaTotalTipo(totalMinutosMe, totalOrdensMe, 'ME') %>
+          <%- celulaTotalTipo(totalMinutosServico, totalOrdensServico, 'Serviços') %>
+          <%- celulaTotalTipo(totalMinutosReparo, totalOrdensReparo, 'Reparos') %>
         </tr>
       </tfoot>
     </table>

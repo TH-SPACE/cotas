@@ -971,6 +971,19 @@ body {
   border-bottom: none;
 }
 
+/* Segunda linha do rodapé do Resumo de Cotas: fecha cada painel num número só
+   (soma horizontal das janelas daquele tipo). Borda de topo mais fina que a do
+   "Total geral" pra ler como um desdobramento dele, não como outro total solto. */
+.cotas-table tfoot .linha-total-tipo td {
+  border-top: 1px solid var(--border);
+  font-size: 0.95em;
+  opacity: 0.9;
+}
+
+.cotas-table tfoot .total-tipo {
+  text-align: center;
+}
+
 /* Total geral do Backlog (home) é clicável -- baixa em CSV as ordens que
    compõem aquele número, mesmos filtros da tela (pra conferir contra o ELOS).
    Sublinhado pontilhado (mesma linguagem de ".tem-detalhe") avisa que dá pra
